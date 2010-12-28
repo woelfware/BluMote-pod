@@ -13,15 +13,10 @@ server_sock.listen(1)
 
 port = server_sock.getsockname()[1]
 
-uuid = "1518d772-83b7-4fe4-9ed4-66fb348a9274"        
-
 advertise_service(server_sock,
 	"BlueMote",
-	service_id = uuid,
-	service_classes = [uuid, SERIAL_PORT_CLASS],
-	profiles = [SERIAL_PORT_PROFILE], 
-#				   protocols = [OBEX_UUID] 
-	)
+	service_classes = [SERIAL_PORT_CLASS],
+	profiles = [SERIAL_PORT_PROFILE])
 				   
 print "Waiting for connection on RFCOMM channel %d" % port
 
