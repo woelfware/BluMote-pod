@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-# file: rfcomm-server.py
-# auth: Albert Huang <albert@csail.mit.edu>
-# desc: simple demonstration of a server application that uses RFCOMM sockets
-#
-# $Id: rfcomm-server.py 518 2007-08-10 07:20:07Z albert $
+# Copyright © 2010 Woelfware
 
 from bluetooth import *
 
@@ -37,9 +33,8 @@ try:
 			client_sock.send("ACK")
 except IOError:
 	pass
-
-print "disconnected"
-
-client_sock.close()
-server_sock.close()
-print "all done"
+finally:
+	print "disconnected"
+	client_sock.close()
+	server_sock.close()
+	print "all done"

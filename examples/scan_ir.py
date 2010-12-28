@@ -1,14 +1,4 @@
 #!/usr/bin/env python
-# 
-# This program requires the lirc module
-# $ yum install lirc
-#
-# Release the serial port and load the lirc module
-# $ setserial /dev/ttyS0 uart none
-# $ modprobe lirc_serial
-#
-# © 2010 Woelfware
-
 import sys
 import subprocess
 import time
@@ -66,7 +56,7 @@ if __name__ == "__main__":
 				sys.stderr.write("bad state: " + str(state) + "\n")
 				ir_scanner.process.terminate()
 				exit(1)
-			
+
 	except KeyboardInterrupt:
 		print
 	finally:
