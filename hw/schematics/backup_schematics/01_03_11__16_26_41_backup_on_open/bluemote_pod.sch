@@ -93,7 +93,7 @@ Sheet: 1 of 1
 T 56650 40500 1 8 1 0 0 0 1
 Schematic name: bluemote_pod.sch
 T 56650 40800 1 8 1 0 0 0 1
-Project name: /home/ken/bluemote/hw
+Project name: /home/ken/Documents/woelfware/bluemote/hardware_pod
 T 62250 40200 1 8 1 0 0 0 1
 Start date: December 23, 2010
 L 40000 41000 40150 41000 1 10 0 0 -1 -1
@@ -224,5 +224,4 @@ footprint=roving_networks_rn42.fp
 T 54800 52800 5 8 0 0 0 1 1
 symversion=1.0
 }
-
 
