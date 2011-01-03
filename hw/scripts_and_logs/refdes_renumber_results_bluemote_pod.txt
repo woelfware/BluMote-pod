@@ -1,0 +1,22 @@
+Results from Refdes Renumber project: bluemote_pod.proj
+Prepared on 12/26/10 at 11:36:55 by Kenneth Hutchins - kenneth.hutchins@gmail.com - for personal use
+Project Generator v 3.9.3 - Kiwi PCB - Copyright 2010, www.KiwiPCB.com
+
+Project name: /home/ken/Documents/woelfware/bluemote/hardware_pod/bluemote_pod.proj
+PCB name: bluemote_pod.pcb
+Schematic files in this project:
+"    1      /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+"*** WARNING!!!!  you are only working with schematic: /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+******************************************************************************************
+
+
+Found 1 files to process
+Now processing input file #1: /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch
+Processing refdes=U101 ....
+Refdes line "refdes=U101" has pre=U suf=101
+Renumbering refdes=U101 to U101
+Processing refdes=U102 ....
+Refdes line "refdes=U102" has pre=U suf=102
+Renumbering refdes=U102 to U102

@@ -1,0 +1,19 @@
+"Grouped BOM (bill of material) from schematics project: bluemote_pod.proj"
+"Prepared on 12/26/10 at 11:37:08 by Kenneth Hutchins - kenneth.hutchins@gmail.com - for personal use"
+"Project Generator v 3.9.3 - Kiwi PCB - Copyright 2010, www.KiwiPCB.com"
+
+"Project name: /home/ken/Documents/woelfware/bluemote/hardware_pod/bluemote_pod.proj"
+"PCB name: bluemote_pod.pcb"
+"Schematic files in this project:"
+"    1      /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+"*** WARNING!!!!  you are only working with schematic: /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+
+
+"REFDES"	"DEVICE"	"DESCRIPTION"	"VALUE"	"FOOTPRINT"	"COMMENT"	"DOCUMENTATION"	"SYMVERSION"	"QUANTITY"
+
+"(U102)"	"Bluetooth_Module"	"Class 2 Bluetooth Module"	"none"	"roving_networks_rn42.fp"	"no comments"	"rn-42.pdf"	"1.0"	"1"a
+"(U101)"	"Microprocessor"	"MSP430x22x2 DA Package"	"none"	"texas_instruments_tssop_38pin.fp"	"no comments"	"msp430f2232.pdf"	"1.0"	"1"a
+""
+"End of BOM"

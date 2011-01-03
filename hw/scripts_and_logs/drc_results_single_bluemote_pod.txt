@@ -1,0 +1,106 @@
+Results from the standard DRC (design rule check) of schematics project: bluemote_pod.proj
+Prepared on 12/26/10 at 11:37:52 by Kenneth Hutchins - kenneth.hutchins@gmail.com - for personal use
+Project Generator v 3.9.3 - Kiwi PCB - Copyright 2010, www.KiwiPCB.com
+
+Project name: /home/ken/Documents/woelfware/bluemote/hardware_pod/bluemote_pod.proj
+PCB name: bluemote_pod.pcb
+Schematic files in this project:
+"    1      /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+"*** WARNING!!!!  you are only working with schematic: /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+Make sure to correct or address all warnings and errors.
+
+******************************************************************************************
+
+
+Checking non-numbered parts...
+
+Checking duplicated references...
+
+Checking nets with only one connection...
+
+Checking pins without the 'pintype' attribute...
+
+Checking type of pins connected to a net...
+
+Checking unconnected pins...
+WARNING: Unconnected pin U102:1
+WARNING: Unconnected pin U102:2
+WARNING: Unconnected pin U102:3
+WARNING: Unconnected pin U102:4
+WARNING: Unconnected pin U102:5
+WARNING: Unconnected pin U102:6
+WARNING: Unconnected pin U102:7
+WARNING: Unconnected pin U102:8
+WARNING: Unconnected pin U102:9
+WARNING: Unconnected pin U102:10
+WARNING: Unconnected pin U102:11
+WARNING: Unconnected pin U102:12
+WARNING: Unconnected pin U102:13
+WARNING: Unconnected pin U102:14
+WARNING: Unconnected pin U102:15
+WARNING: Unconnected pin U102:16
+WARNING: Unconnected pin U102:17
+WARNING: Unconnected pin U102:18
+WARNING: Unconnected pin U102:19
+WARNING: Unconnected pin U102:20
+WARNING: Unconnected pin U102:21
+WARNING: Unconnected pin U102:22
+WARNING: Unconnected pin U102:23
+WARNING: Unconnected pin U102:24
+WARNING: Unconnected pin U102:28
+WARNING: Unconnected pin U102:29
+WARNING: Unconnected pin U102:30
+WARNING: Unconnected pin U102:31
+WARNING: Unconnected pin U102:32
+WARNING: Unconnected pin U102:33
+WARNING: Unconnected pin U102:34
+WARNING: Unconnected pin U102:35
+WARNING: Unconnected pin U101:1
+WARNING: Unconnected pin U101:2
+WARNING: Unconnected pin U101:3
+WARNING: Unconnected pin U101:4
+WARNING: Unconnected pin U101:5
+WARNING: Unconnected pin U101:6
+WARNING: Unconnected pin U101:7
+WARNING: Unconnected pin U101:8
+WARNING: Unconnected pin U101:9
+WARNING: Unconnected pin U101:10
+WARNING: Unconnected pin U101:11
+WARNING: Unconnected pin U101:12
+WARNING: Unconnected pin U101:13
+WARNING: Unconnected pin U101:14
+WARNING: Unconnected pin U101:15
+WARNING: Unconnected pin U101:16
+WARNING: Unconnected pin U101:17
+WARNING: Unconnected pin U101:18
+WARNING: Unconnected pin U101:19
+WARNING: Unconnected pin U101:20
+WARNING: Unconnected pin U101:21
+WARNING: Unconnected pin U101:22
+WARNING: Unconnected pin U101:23
+WARNING: Unconnected pin U101:24
+WARNING: Unconnected pin U101:25
+WARNING: Unconnected pin U101:26
+WARNING: Unconnected pin U101:27
+WARNING: Unconnected pin U101:28
+WARNING: Unconnected pin U101:29
+WARNING: Unconnected pin U101:30
+WARNING: Unconnected pin U101:31
+WARNING: Unconnected pin U101:32
+WARNING: Unconnected pin U101:33
+WARNING: Unconnected pin U101:34
+WARNING: Unconnected pin U101:35
+WARNING: Unconnected pin U101:36
+WARNING: Unconnected pin U101:37
+WARNING: Unconnected pin U101:38
+
+Checking slots...
+
+Checking duplicated slots...
+
+Checking unused slots...
+
+Found 70 warnings.
+No errors found. 

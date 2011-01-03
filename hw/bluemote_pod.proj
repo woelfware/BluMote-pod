@@ -1,0 +1,10 @@
+#This is an auto generated Project File for use with Project Generator.
+#Project Generator v 3.9.3 - Kiwi PCB
+#Copyright 2010, www.KiwiPCB.com
+#This release is for general use.
+# Created on 12/26/10 at 11:35:17
+
+%pcb_name=bluemote_pod.pcb;
+%pcb_style=Double_Sided_PCB.scm;
+
+%sch_name=bluemote_pod.sch;

@@ -1,0 +1,128 @@
+Results from the verbose DRC (design rule check) of schematics project: bluemote_pod.proj
+Prepared on 12/26/10 at 11:37:52 by Kenneth Hutchins - kenneth.hutchins@gmail.com - for personal use
+Project Generator v 3.9.3 - Kiwi PCB - Copyright 2010, www.KiwiPCB.com
+
+Project name: /home/ken/Documents/woelfware/bluemote/hardware_pod/bluemote_pod.proj
+PCB name: bluemote_pod.pcb
+Schematic files in this project:
+"    1      /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+"*** WARNING!!!!  you are only working with schematic: /home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch"
+
+Make sure to correct or address all warnings and errors.
+
+******************************************************************************************
+
+
+DRC warnings found. See output file.
+Loading schematic [/home/ken/Documents/woelfware/bluemote/hardware_pod/schematics/bluemote_pod.sch]
+
+
+------------------------------------------------------
+Verbose mode legend
+
+n : Found net
+C : Found component (staring to traverse component)
+p : Found pin (starting to traverse pin / or examining pin)
+P : Found end pin connection (end of this net)
+R : Starting to rename a net
+v : Found source attribute, traversing down
+^ : Finished underlying source, going back up
+u : Found a refdes which needs to be demangle
+U : Found a connected_to refdes which needs to be demangle
+------------------------------------------------------
+
+- Starting internal netlist creation
+ C C C DONE
+
+- Staring post processing
+- Naming nets:
+pnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnp
+npnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpnpn DONE
+- Renaming nets:
+ DONE
+- Resolving hierarchy:
+ DONE
+ DONE
+
+- Staring post processing
+- Naming nets of graphical objects:
+ DONE
+
+Internal netlist representation:
+
+component U101 
+	pin 1 (SBWTCK) unconnected_pin-1
+	pin 2 (DVCC) unconnected_pin-2
+	pin 3 (P2.5) unconnected_pin-3
+	pin 4 (DVSS) unconnected_pin-4
+	pin 5 (P2.7) unconnected_pin-5
+	pin 6 (P2.6) unconnected_pin-6
+	pin 7 (SBWTDIO) unconnected_pin-7
+	pin 8 (P2.0) unconnected_pin-8
+	pin 9 (P2.1) unconnected_pin-9
+	pin 10 (P2.2) unconnected_pin-10
+	pin 11 (P3.0) unconnected_pin-11
+	pin 12 (P3.1) unconnected_pin-12
+	pin 13 (P3.2) unconnected_pin-13
+	pin 14 (P3.3) unconnected_pin-14
+	pin 15 (AVSS) unconnected_pin-15
+	pin 16 (AVCC) unconnected_pin-16
+	pin 17 (P4.0) unconnected_pin-17
+	pin 18 (P4.1) unconnected_pin-18
+	pin 19 (P4.2) unconnected_pin-19
+	pin 20 (P4.3) unconnected_pin-20
+	pin 21 (P4.4) unconnected_pin-21
+	pin 22 (P4.5) unconnected_pin-22
+	pin 23 (P4.6) unconnected_pin-23
+	pin 24 (P4.7) unconnected_pin-24
+	pin 25 (P3.4) unconnected_pin-25
+	pin 26 (P3.5) unconnected_pin-26
+	pin 27 (P3.6) unconnected_pin-27
+	pin 28 (P3.7) unconnected_pin-28
+	pin 29 (P2.3) unconnected_pin-29
+	pin 30 (P2.4) unconnected_pin-30
+	pin 31 (P1.0) unconnected_pin-31
+	pin 32 (P1.1) unconnected_pin-32
+	pin 33 (P1.2) unconnected_pin-33
+	pin 34 (P1.3) unconnected_pin-34
+	pin 35 (P1.4) unconnected_pin-35
+	pin 36 (P1.5) unconnected_pin-36
+	pin 37 (P1.6) unconnected_pin-37
+	pin 38 (P1.7) unconnected_pin-38
+
+component U102 
+	pin 1 (GND) unconnected_pin-39
+	pin 2 (SPI_MOSI) unconnected_pin-40
+	pin 3 (PIO6) unconnected_pin-41
+	pin 4 (PIO7) unconnected_pin-42
+	pin 5 (RESET) unconnected_pin-43
+	pin 6 (SPI_CLK) unconnected_pin-44
+	pin 7 (PCM_CLK) unconnected_pin-45
+	pin 8 (PCM_SYNC) unconnected_pin-46
+	pin 9 (PCM_IN) unconnected_pin-47
+	pin 10 (PCM_OUT) unconnected_pin-48
+	pin 11 (VDD) unconnected_pin-49
+	pin 12 (GND) unconnected_pin-50
+	pin 13 (UART_RX) unconnected_pin-51
+	pin 14 (UART_TX) unconnected_pin-52
+	pin 15 (UART_RTS) unconnected_pin-53
+	pin 16 (UART_CTS) unconnected_pin-54
+	pin 17 (USB_D+) unconnected_pin-55
+	pin 18 (USB_D-) unconnected_pin-56
+	pin 19 (PIO2) unconnected_pin-57
+	pin 20 (PIO3) unconnected_pin-58
+	pin 21 (PIO5) unconnected_pin-59
+	pin 22 (PIO4) unconnected_pin-60
+	pin 23 (SPI_CSB) unconnected_pin-61
+	pin 24 (SPI_MISO) unconnected_pin-62
+	pin 28 (GND) unconnected_pin-63
+	pin 29 (GND) unconnected_pin-64
+	pin 30 (AIO0) unconnected_pin-65
+	pin 31 (PIO8) unconnected_pin-66
+	pin 32 (PIO9) unconnected_pin-67
+	pin 33 (PIO10) unconnected_pin-68
+	pin 34 (PIO11) unconnected_pin-69
+	pin 35 (AIO1) unconnected_pin-70
+
+
