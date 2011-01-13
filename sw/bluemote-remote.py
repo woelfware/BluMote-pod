@@ -1,46 +1,78 @@
 #!/usr/bin/env python
-# file: rfcomm-client.py
-# auth: Albert Huang <albert@csail.mit.edu>
-# desc: simple demonstration of a client application that uses RFCOMM sockets
-#	   intended for use with rfcomm-server
-#
-# $Id: rfcomm-client.py 424 2006-08-24 03:35:54Z albert $
+# Copyright (c) 2011 Woelfware
 
 from bluetooth import *
-import sys
+import bluemote
 
-addr = None
+class Bluemote_Client(bluemote.Services):
+	def __init__(self):
+		bluemote.Services.__init__(self)
+		self.addr = None
+		self.pkt_cnt = 0
 
-print "Searching all nearby bluetooth devices for the BlueMote service"
-service_matches = find_service(name = "BlueMote")
+	def find_bluemote_pods(self):
+		print "Searching for \"%s\" service..." % (self.service_name)
+		return find_service(name = self.service_name)
 
-nbr_of_bluemotes = len(service_matches)
-if nbr_of_bluemotes == 0:
-	print "Couldn't find any BlueMotes"
-	sys.exit(0)
-elif:
-	print "Found a BlueMote"
-else:
-	print "Found " + str(nbr_of_bluemotes) + " BlueMotes"
-	print "Using the first BlueMote"
+	def connect_to_bluemote_pod(self, pod):
+		port = pod["port"]
+		name = pod["name"]
+		host = pod["host"]
 
-first_match = service_matches[0]
-port = first_match["port"]
-name = first_match["name"]
-host = first_match["host"]
+		# Create the client socket
+		self.client_sock = BluetoothSocket(RFCOMM)
+		self.client_sock.connect((host, port))
 
-print "Connecting to \"%s\" on %s" % (name, host)
+	def init(self):
+		# have to train first or load a config from a database
+		pass
 
-# Create the client socket
-sock = BluetoothSocket(RFCOMM)
-sock.connect((host, port))
+	def rename_device(self):
+		pass
 
-print "Connected.  type stuff"
-while True:
-	data = raw_input()
-	if len(data) == 0:
-		break
-	sock.send(data)
-	print sock.recv(1024)
+	def train(self):
+		self.client_sock.send(self.cmd_codes.train)
+		pass
 
-sock.close()
+	def _get_version_unpack_msg(self, msg):
+		version = []
+		versions = struct.unpack(len(msg) * "B", msg)
+
+		i = 0
+		while i < len(msg):
+			for cc in dir(self.component_codes):
+				if getattr(self.component_codes, cc) == versions[i]:
+					version.append((cc,
+							"%u.%u.%u" % \
+								(versions[i + 1], \
+								 versions[i + 2], \
+								 versions[i + 3])))
+			i += 4
+
+		return version
+
+	def get_version(self):
+		byte = (self.cmd_codes.get_version << 1) | (self.pkt_cnt & 0x01)
+		self.pkt_cnt = (self.pkt_cnt + 1) % 2
+		msg = struct.pack('B', byte)
+		self.client_sock.send(msg)
+		msg = self.client_sock.recv(1024)
+		return self._get_version_unpack_msg(msg)
+
+	def ir_transmit(self):
+		pass
+
+if __name__ == "__main__":
+	bm_remote = Bluemote_Client()
+
+	try:
+		bm_pods = bm_remote.find_bluemote_pods()
+		bm_remote.connect_to_bluemote_pod(bm_pods[0])
+
+		version = bm_remote.get_version()
+		for component in version:
+			print "%s version: %s" % component
+	except IOError:
+		pass
+	finally:
+		bm_remote.client_sock.close()
