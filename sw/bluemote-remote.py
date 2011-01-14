@@ -23,23 +23,32 @@ class Bluemote_Client(bluemote.Services):
 		self.client_sock = BluetoothSocket(RFCOMM)
 		self.client_sock.connect((host, port))
 
+	def transport_tx(self, cmd, msg):
+		full_msg = struct.pack("B", (cmd << 1) | (self.pkt_cnt & 0x01))
+		full_msg += msg
+		self.client_sock.send(full_msg)
+
 	def init(self):
 		# have to train first or load a config from a database
+		#self.transport_tx(self.cmd_codes.init, "")
 		pass
 
 	def rename_device(self):
+		#self.transport_tx(self.cmd_codes.rename_device, "")
 		pass
 
 	def train(self):
-		self.client_sock.send(self.cmd_codes.train)
+		self.transport_tx(self.cmd_codes.train, "")
 		pass
 
 	def _get_version_unpack_msg(self, msg):
 		version = []
-		versions = struct.unpack(len(msg) * "B", msg)
+		full_msg = struct.unpack(len(msg) * "B", msg)
+		flags = full_msg[0]
+		versions = full_msg[1:]
 
 		i = 0
-		while i < len(msg):
+		while i < len(versions):
 			for cc in dir(self.component_codes):
 				if getattr(self.component_codes, cc) == versions[i]:
 					version.append((cc,
@@ -52,14 +61,12 @@ class Bluemote_Client(bluemote.Services):
 		return version
 
 	def get_version(self):
-		byte = (self.cmd_codes.get_version << 1) | (self.pkt_cnt & 0x01)
-		self.pkt_cnt = (self.pkt_cnt + 1) % 2
-		msg = struct.pack('B', byte)
-		self.client_sock.send(msg)
+		self.transport_tx(self.cmd_codes.get_version, "")
 		msg = self.client_sock.recv(1024)
 		return self._get_version_unpack_msg(msg)
 
 	def ir_transmit(self):
+		#self.transport_tx(self.cmd_codes.ir_transmit, "")
 		pass
 
 if __name__ == "__main__":
@@ -75,4 +82,7 @@ if __name__ == "__main__":
 	except IOError:
 		pass
 	finally:
-		bm_remote.client_sock.close()
+		try:
+			bm_remote.client_sock.close()
+		except:
+			pass

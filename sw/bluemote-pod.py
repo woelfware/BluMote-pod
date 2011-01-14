@@ -21,13 +21,18 @@ class Bluemote_Server(bluemote.Services):
 		port = self.server_sock.getsockname()[1]
 
 		advertise_service(self.server_sock,
-			"Bluemote",
+			self.service_name,
 			service_classes = [SERIAL_PORT_CLASS],
 			profiles = [SERIAL_PORT_PROFILE])
 						   
 		print "Waiting for connection on RFCOMM channel %d" % port
 		self.client_sock, self.client_info = self.server_sock.accept()
 		print "Accepted connection from ", self.client_info
+
+	def transport_tx(self, cmd, msg):
+		full_msg = struct.pack("B", (cmd << 1) | (self.pkt_cnt & 0x01))
+		full_msg += msg
+		self.client_sock.send(full_msg)
 
 	def get_command(self):
 		full_msg = None
@@ -84,14 +89,13 @@ class Bluemote_Server(bluemote.Services):
 
 	def init(self, msg):
 		self._init_unpack_msg(msg)
-
-		self.client_sock.send(self.cmd_rc.ack)
+		self.transport_tx(self.cmd_rc.ack, "")
 
 	def rename_device(self, msg):
-		self.client_sock.send(self.cmd_rc.ack)
+		self.transport_tx(self.cmd_rc.ack, "")
 
 	def train(self, msg):
-		self.client_sock.send(self.cmd_rc.ack)
+		self.transport_tx(self.cmd_rc.ack, "")
 
 	def get_version(self, msg):
 		return_msg = ""
@@ -99,10 +103,10 @@ class Bluemote_Server(bluemote.Services):
 		for v in self.version:
 			return_msg += struct.pack(len(v) * "B", *v)
 
-		self.client_sock.send(return_msg)
+		self.transport_tx(self.cmd_rc.ack, return_msg)
 
 	def ir_transmit(self, msg):
-		self.client_sock.send(self.cmd_rc.ack)
+		self.transport_tx(self.cmd_rc.ack, "")
 
 if __name__ == "__main__":
 	bm_pod = Bluemote_Server()
