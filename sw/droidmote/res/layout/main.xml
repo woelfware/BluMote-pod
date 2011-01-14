@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+	<Spinner 	
+		android:id="@+id/device_spinner" 
+		android:prompt="@string/spinner_prompt"
+		android:layout_width="fill_parent" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="center">
+	</Spinner>
+	<TableLayout
+		android:id="@+id/TableLayout01" 
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="center">     
+         <TableRow>
+ 			<Button
+        		android:id="@+id/btn_volume_up"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:padding="10dp"
+		        android:background="@drawable/volume_up" />
+            <Button
+               	android:id="@+id/btn_volume_down"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:padding="10dp"
+		        android:background="@drawable/volume_down" />
+            <Button
+               	android:id="@+id/btn_channel_up"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:padding="10dp"
+		        android:background="@drawable/channel_up" />
+            <Button
+               	android:id="@+id/btn_channel_down"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:padding="10dp"
+		        android:background="@drawable/channel_down" />
+         </TableRow>     
+    </TableLayout>
+	<ListView android:id="@+id/in"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:stackFromBottom="true"
+        android:transcriptMode="alwaysScroll"
+        android:layout_weight="1"
+    />
+</LinearLayout>
