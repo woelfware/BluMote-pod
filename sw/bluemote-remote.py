@@ -3,6 +3,7 @@
 
 from bluetooth import *
 import bluemote
+import os
 
 class Bluemote_Client(bluemote.Services):
 	def __init__(self):
@@ -25,6 +26,7 @@ class Bluemote_Client(bluemote.Services):
 
 	def transport_tx(self, cmd, msg):
 		full_msg = struct.pack("B", (cmd << 1) | (self.pkt_cnt & 0x01))
+		self.pkt_cnt = (self.pkt_cnt + 1) % 2
 		full_msg += msg
 		self.client_sock.send(full_msg)
 
@@ -37,9 +39,24 @@ class Bluemote_Client(bluemote.Services):
 		#self.transport_tx(self.cmd_codes.rename_device, "")
 		pass
 
+	def _train_unpack_msg(self, msg):
+		key_code = []
+		buf = struct.pack(">H", 0)
+		full_msg = struct.unpack(len(msg) * "B", msg)
+		flags = full_msg[0]
+		key_codes = full_msg[1:]
+
+		i = 0
+		while i < len(key_codes):
+			key_code.append((key_codes[i] << 8) + key_codes[i + 1])
+			i += 2
+
+		return key_code
+
 	def train(self):
 		self.transport_tx(self.cmd_codes.train, "")
-		pass
+		msg = self.client_sock.recv(1024)
+		return self._train_unpack_msg(msg)
 
 	def _get_version_unpack_msg(self, msg):
 		version = []
@@ -79,6 +96,11 @@ if __name__ == "__main__":
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
+
+		print "Please push key \"1\" on your remote."
+		key_code = bm_remote.train()
+		print key_code
+		
 	except IOError:
 		pass
 	finally:

@@ -3,6 +3,10 @@
 
 from bluetooth import *
 import bluemote
+import time
+import sys
+import subprocess
+#import multiprocessing
 
 class Bluemote_Server(bluemote.Services):
 	def __init__(self):
@@ -47,6 +51,8 @@ class Bluemote_Server(bluemote.Services):
 			if pkt_cnt == self.pkt_cnt:
 				new_data = True
 				self.pkt_cnt = (self.pkt_cnt + 1) % 2
+			else:
+				print "Duplicate packet detected."
 
 		cmd_code = flags >> 1
 		try:
@@ -95,7 +101,36 @@ class Bluemote_Server(bluemote.Services):
 		self.transport_tx(self.cmd_rc.ack, "")
 
 	def train(self, msg):
-		self.transport_tx(self.cmd_rc.ack, "")
+		(GET_PKT_1, GET_PKT_1_TAILER, GET_PKT_2) = range(3)
+		state = GET_PKT_1
+		key_code = {"old": "", "new": ""}
+		return_msg = ""
+
+		ir_scanner = ir()
+
+		scan_codes = True
+		try:
+			while scan_codes:
+				type, value = ir_scanner.get_input().split()
+				# get the first pause between packets
+				if state is GET_PKT_1:
+					if type == "space" and int(value) > 20000:
+						state = GET_PKT_1_TAILER
+				# get the second pause between packets
+				elif state is GET_PKT_1_TAILER:
+					if type == "space" and int(value) > 20000:
+						state = GET_PKT_2
+				elif state is GET_PKT_2:
+					if type == "space" and int(value) > 20000:
+						scan_codes = False
+					else:
+						return_msg += struct.pack(">H", int(value))
+		except KeyboardInterrupt:
+			print
+		finally:
+			ir_scanner.process.terminate()
+
+		self.transport_tx(self.cmd_rc.ack, return_msg)
 
 	def get_version(self, msg):
 		return_msg = ""
@@ -108,13 +143,36 @@ class Bluemote_Server(bluemote.Services):
 	def ir_transmit(self, msg):
 		self.transport_tx(self.cmd_rc.ack, "")
 
+class ir():
+	def __init__(self):
+		try:
+			self.process = subprocess.Popen("mode2", stdout = subprocess.PIPE)
+		except:
+			sys.stderr.write("Couldn't open \"mode2\"\n")
+			exit(1)
+		time.sleep(1)
+		if self.process.poll():
+			exit(1)
+
+	def get_input(self):
+		input = ""
+
+		while len(input) == 0:
+			input = self.process.stdout.readline()
+		return input
+
 if __name__ == "__main__":
+	if os.getuid() != 0:
+		print "This script requires root priveleges. Re-run as root."
+		exit(1)
+
 	bm_pod = Bluemote_Server()
 
 	try:
 		while True:
 			cmd_code, msg = bm_pod.get_command()
 			if cmd_code != None:
+				print "Received", cmd_code
 				getattr(bm_pod, cmd_code)(msg)
 			else:
 				print "Invalid Command Code"

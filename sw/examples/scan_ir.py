@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright (c) 2011 Woelfware
+
 import sys
 import subprocess
 import time
