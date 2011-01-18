@@ -31,7 +31,7 @@ class Bluemote_Client(bluemote.Services):
 		self.client_sock.send(full_msg)
 
 	def init(self):
-		# have to train first or load a config from a database
+		# have to learn the codes first or load a config from a database
 		#self.transport_tx(self.cmd_codes.init, "")
 		pass
 
@@ -39,7 +39,7 @@ class Bluemote_Client(bluemote.Services):
 		#self.transport_tx(self.cmd_codes.rename_device, "")
 		pass
 
-	def _train_unpack_msg(self, msg):
+	def _learn_unpack_msg(self, msg):
 		key_code = []
 		buf = struct.pack(">H", 0)
 		full_msg = struct.unpack(len(msg) * "B", msg)
@@ -53,10 +53,10 @@ class Bluemote_Client(bluemote.Services):
 
 		return key_code
 
-	def train(self):
-		self.transport_tx(self.cmd_codes.train, "")
+	def learn(self):
+		self.transport_tx(self.cmd_codes.learn, "")
 		msg = self.client_sock.recv(1024)
-		return self._train_unpack_msg(msg)
+		return self._learn_unpack_msg(msg)
 
 	def _get_version_unpack_msg(self, msg):
 		version = []
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 			print "%s version: %s" % component
 
 		print "Please push key \"1\" on your remote."
-		key_code = bm_remote.train()
+		key_code = bm_remote.learn()
 		print key_code
 		
 	except IOError:

@@ -100,7 +100,7 @@ class Bluemote_Server(bluemote.Services):
 	def rename_device(self, msg):
 		self.transport_tx(self.cmd_rc.ack, "")
 
-	def train(self, msg):
+	def learn(self, msg):
 		(GET_PKT_1, GET_PKT_1_TAILER, GET_PKT_2) = range(3)
 		state = GET_PKT_1
 		key_code = {"old": "", "new": ""}
