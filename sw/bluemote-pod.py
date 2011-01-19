@@ -53,9 +53,8 @@ class Bluemote_Server(bluemote.Services):
 				new_data = True
 				self.pkt_cnt = (self.pkt_cnt + 1) % 2
 			else:
-				print "Duplicate packet detected."
-				print "Resending last response packet."
 				self.client_sock.send(self.last_msg)
+				return (None, None)
 
 		cmd_code = flags >> 1
 		try:
@@ -178,7 +177,7 @@ if __name__ == "__main__":
 				print "Received", cmd_code
 				getattr(bm_pod, cmd_code)(msg)
 			else:
-				print "Invalid Command Code"
+				print "Invalid Command Code or duplicate packet found"
 	except IOError:
 		pass
 	finally:
