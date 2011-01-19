@@ -37,6 +37,7 @@ class Bluemote_Server(bluemote.Services):
 		full_msg = struct.pack("B", (cmd << 1) | (self.pkt_cnt & 0x01))
 		full_msg += msg
 		self.client_sock.send(full_msg)
+		self.last_msg = full_msg
 
 	def get_command(self):
 		full_msg = None
@@ -53,6 +54,8 @@ class Bluemote_Server(bluemote.Services):
 				self.pkt_cnt = (self.pkt_cnt + 1) % 2
 			else:
 				print "Duplicate packet detected."
+				print "Resending last response packet."
+				self.client_sock.send(self.last_msg)
 
 		cmd_code = flags >> 1
 		try:
