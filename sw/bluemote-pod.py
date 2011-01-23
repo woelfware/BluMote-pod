@@ -172,11 +172,11 @@ class ir():
 	def __init__(self):
 		try:
 			self.process = subprocess.Popen("mode2", stdout = subprocess.PIPE)
+			time.sleep(1)
+			if self.process.poll():
+				raise
 		except:
 			sys.stderr.write("Couldn't open \"mode2\"\n")
-			exit(1)
-		time.sleep(1)
-		if self.process.poll():
 			exit(1)
 
 	def get_input(self):
