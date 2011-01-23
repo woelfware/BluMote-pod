@@ -39,14 +39,29 @@ public class MyDB {
 	// returns the rowID of the addition
 	public long insertButton(String curTable, String buttonID, String content)
 	{
-		try{
-			ContentValues newTaskValue = new ContentValues();
-			newTaskValue.put(Constants.BUTTON_ID, buttonID);
-			newTaskValue.put(Constants.BUTTON_DATA, content);
-			return db.insertOrThrow(curTable, null, newTaskValue);
-		} catch(SQLiteException ex) {
-			Log.v("Insert into database exception caught",
-					ex.getMessage());
+		try {
+		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
+				null, null, null, null);
+		int test = c.getCount();
+		if (c.getCount() > 0) { // then we already have this entry so call updateButton
+			updateButton(curTable, buttonID, content);
+			return -1;
+		}
+		else { // this must be a new entry , so try to insert it
+			try{
+				ContentValues newTaskValue = new ContentValues();
+				newTaskValue.put(Constants.BUTTON_ID, buttonID);
+				newTaskValue.put(Constants.BUTTON_DATA, content);
+				// DEBUG
+				db = dbhelper.getWritableDatabase();
+				return db.insertOrThrow(curTable, null, newTaskValue);
+			} catch(SQLiteException ex) {
+				Log.v("Insert into database exception caught", ex.getMessage());
+				return -1;
+			}
+		}
+		} catch (Exception e) {
+			Log.e("Oops",e.getMessage());
 			return -1;
 		}
 	}
@@ -60,16 +75,19 @@ public class MyDB {
 	}
 	
 	// This should return one of the buttons of a particular device selection
+	// TODO this should return a byte or byte[] i think
 	public String getKey(String curTable, String buttonID)
 	{
 		String button;
 		
 		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
 				null, null, null, null);
-		
-		c.moveToFirst();
-		button = c.getString(c.getColumnIndex(Constants.BUTTON_DATA));
-		return button;
+		if (c != null) {
+			c.moveToFirst();
+			button = c.getString(c.getColumnIndex(Constants.BUTTON_DATA));
+			return button;
+		}
+		return "error";
 	}
 	
 	// returns 1 if successful, 0 if some error and 2 if duplicate exists
@@ -134,6 +152,6 @@ public class MyDB {
         ContentValues args = new ContentValues();
         args.put(Constants.BUTTON_DATA, content);
         return db.update(curTable, args, 
-                  Constants.BUTTON_ID + "=" + buttonID, null) > 0;
+                  Constants.BUTTON_ID + "='" + buttonID+"'", null) > 0;
     }
 }
