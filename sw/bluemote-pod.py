@@ -6,6 +6,7 @@ import bluemote
 import time
 import sys
 import subprocess
+import os
 #import multiprocessing
 
 # sample key codes of buttons "0" through "9" for use in creating a learning function
@@ -197,6 +198,29 @@ if __name__ == "__main__":
 	if os.getuid() != 0:
 		print "This script requires root priveleges. Re-run as root."
 		exit(1)
+
+	try:
+		process = subprocess.Popen("lsmod", stdout = subprocess.PIPE)
+		input = "dummy"
+		lirc_module_loaded = False
+		while len(input) != 0:
+			input = process.stdout.readline()
+			if input.find("lirc_serial") != -1:
+				lirc_module_loaded = True
+				break
+
+		print "lirc_module_loaded:", lirc_module_loaded
+		if lirc_module_loaded == False:
+			os.system("setserial /dev/ttyS0 uart none")
+			if os.system("modprobe lirc_serial") == 0:
+				print "Loaded LIRC driver"
+			else:
+				print "Failed to load the LIRC driver"
+				print "You won't be able to run IR related commands."
+	except:
+		print "error:", sys.exc_info()[0]
+		print "Failed to setup the LIRC driver"
+		print "You won't be able to run IR related commands."
 
 	bm_pod = Bluemote_Server()
 
