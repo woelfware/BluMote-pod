@@ -113,14 +113,19 @@ if __name__ == "__main__":
 
 		print "Trying out debug message to get a precanned button press."
 		for i in range(10):
+			print "Requesting button \"%d\"." % (i)
 			key_code = bm_remote.debug(struct.pack('B', i))
 			print key_code
 
 		new_pod_name = "indigomote"
+		print "Renaming pod to \"%s\"." % (new_pod_name)
 		bm_remote.rename_device(new_pod_name)
+
 		bm_remote.client_sock.close()
+
 		bm_pods = bm_remote.find_bluemote_pods(new_pod_name)
 		bm_remote.connect_to_bluemote_pod(bm_pods[0])
+
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component

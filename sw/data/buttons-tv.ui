@@ -17,9 +17,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <accelerator key="1" signal="clicked"/>
             <accelerator key="KP_1" signal="clicked"/>
-            <signal name="can-activate-accel" handler="on_button_can_activate_accel" swapped="no"/>
+            <accelerator key="1" signal="clicked"/>
             <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
@@ -266,9 +265,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <accelerator key="2" signal="clicked"/>
             <accelerator key="KP_2" signal="clicked"/>
-            <signal name="can-activate-accel" handler="on_button_can_activate_accel" swapped="no"/>
+            <accelerator key="2" signal="clicked"/>
             <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
@@ -286,9 +284,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <accelerator key="2" signal="clicked"/>
             <accelerator key="KP_3" signal="clicked"/>
-            <signal name="can-activate-accel" handler="on_button_can_activate_accel" swapped="no"/>
+            <accelerator key="2" signal="clicked"/>
             <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
