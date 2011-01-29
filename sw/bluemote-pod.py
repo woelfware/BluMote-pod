@@ -176,6 +176,11 @@ class Bluemote_Server(bluemote.Services):
 			return_msg = ""
 		self.transport_tx(rc, return_msg)
 
+	def reset(self):
+		self.client_sock.close()
+		self.server_sock.close()
+		self.pkt_cnt = 0
+
 class ir():
 	def __init__(self):
 		try:
@@ -238,9 +243,8 @@ if __name__ == "__main__":
 			except IOError:
 				pass
 			finally:
+				bm_pod.reset()
 				print "disconnected"
-				bm_pod.client_sock.close()
-				bm_pod.server_sock.close()
 	except KeyboardInterrupt:
 		print
 	print "all done"

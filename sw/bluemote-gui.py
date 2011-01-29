@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # Copyright (c) 2011 Woelfware
 
-import sys
+import sys, os
 import gtk
+
+path = os.getcwd() + "/" + sys.argv[0]
+bm_path = ""
+for d in path.split("/")[:-1]:
+	bm_path += d + "/"
 
 class Bluemote_GUI:
 	def delete_event(self, widget, event, data = None):
@@ -26,7 +31,7 @@ class Bluemote_GUI:
 		accelgroup = gtk.AccelGroup()
 		self.window.add_accel_group(accelgroup)
 
-		self.window.set_icon_from_file("data/bluemote_Icon72.png")
+		self.window.set_icon_from_file(bm_path + "data/bluemote_Icon72.png")
 		self.window.set_title("Bluemote - %s Mode" % ("TV"))
 
 	def on_window_key_press_event(self, widget, event):
@@ -58,7 +63,7 @@ class Bluemote:
 		# use GtkBuilder to build our interface from the XML file
 		try:
 			builder = gtk.Builder()
-			builder.add_from_file("data/buttons-tv.ui")
+			builder.add_from_file(bm_path + "data/buttons-tv.ui")
 		except:
 			self.error_message("Failed to load UI XML file: buttons-tv.ui")
 			sys.exit(1)
