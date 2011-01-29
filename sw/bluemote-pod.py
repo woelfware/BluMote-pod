@@ -68,7 +68,10 @@ class Bluemote_Server(bluemote.Services):
 				new_data = True
 				self.pkt_cnt = (self.pkt_cnt + 1) % 2
 			else:
-				self.client_sock.send(self.last_msg)
+				try:
+					self.client_sock.send(self.last_msg)
+				except AttributeError:
+					sys.stderr.write("First packet received; Contains pkt_cnt mismatch.")
 				return (None, None)
 
 		cmd_code = flags >> 1
