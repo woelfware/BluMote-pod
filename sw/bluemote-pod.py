@@ -6,6 +6,7 @@ import bluemote
 import time
 import sys
 import subprocess
+import os
 #import multiprocessing
 
 # sample key codes of buttons "0" through "9" for use in creating a learning function
@@ -30,12 +31,14 @@ class Bluemote_Server(bluemote.Services):
 		self.header = None
 		self.tailer = None
 
+	def listen(self):
 		self.server_sock = BluetoothSocket(RFCOMM)
 		self.server_sock.bind(("", PORT_ANY))
 		self.server_sock.listen(1)
 
 		port = self.server_sock.getsockname()[1]
 
+		print "Advertising \"%s\" service" % (self.service_name)
 		advertise_service(self.server_sock,
 			self.service_name,
 			service_classes = [SERIAL_PORT_CLASS],
@@ -70,7 +73,7 @@ class Bluemote_Server(bluemote.Services):
 
 		cmd_code = flags >> 1
 		try:
-			msg = struct.unpack_from(">B", full_msg, 1)
+			msg = struct.unpack_from(len(full_msg[1:]) * "B", full_msg, 1)
 		except:
 			msg = None
 
@@ -112,6 +115,11 @@ class Bluemote_Server(bluemote.Services):
 		self.transport_tx(self.cmd_rc.ack, "")
 
 	def rename_device(self, msg):
+		name = ""
+		for i in msg:
+			name += chr(i)
+		print "Renaming to %s" % (name)
+		self.service_name = name
 		self.transport_tx(self.cmd_rc.ack, "")
 
 	def learn(self, msg):
@@ -191,20 +199,48 @@ if __name__ == "__main__":
 		print "This script requires root priveleges. Re-run as root."
 		exit(1)
 
+	try:
+		process = subprocess.Popen("lsmod", stdout = subprocess.PIPE)
+		input = "dummy"
+		lirc_module_loaded = False
+		while len(input) != 0:
+			input = process.stdout.readline()
+			if input.find("lirc_serial") != -1:
+				lirc_module_loaded = True
+				break
+
+		print "lirc_module_loaded:", lirc_module_loaded
+		if lirc_module_loaded == False:
+			os.system("setserial /dev/ttyS0 uart none")
+			if os.system("modprobe lirc_serial") == 0:
+				print "Loaded LIRC driver"
+			else:
+				print "Failed to load the LIRC driver"
+				print "You won't be able to run IR related commands."
+	except:
+		print "error:", sys.exc_info()[0]
+		print "Failed to setup the LIRC driver"
+		print "You won't be able to run IR related commands."
+
 	bm_pod = Bluemote_Server()
 
 	try:
 		while True:
-			cmd_code, msg = bm_pod.get_command()
-			if cmd_code != None:
-				print "Received", cmd_code
-				getattr(bm_pod, cmd_code)(msg)
-			else:
-				print "Invalid Command Code or duplicate packet found"
-	except IOError:
-		pass
-	finally:
-		print "disconnected"
-		bm_pod.client_sock.close()
-		bm_pod.server_sock.close()
-		print "all done"
+			bm_pod.listen()
+			try:
+				while True:
+					cmd_code, msg = bm_pod.get_command()
+					if cmd_code != None:
+						print "Received", cmd_code
+						getattr(bm_pod, cmd_code)(msg)
+					else:
+						print "Invalid Command Code or duplicate packet found"
+			except IOError:
+				pass
+			finally:
+				print "disconnected"
+				bm_pod.client_sock.close()
+				bm_pod.server_sock.close()
+	except KeyboardInterrupt:
+		print
+	print "all done"

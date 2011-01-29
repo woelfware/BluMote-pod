@@ -11,9 +11,11 @@ class Bluemote_Client(bluemote.Services):
 		self.addr = None
 		self.pkt_cnt = 0
 
-	def find_bluemote_pods(self):
-		print "Searching for \"%s\" service..." % (self.service_name)
-		return find_service(name = self.service_name)
+	def find_bluemote_pods(self, pod_name = None):
+		if pod_name is None:
+			pod_name = self.service_name
+		print "Searching for \"%s\" service..." % (pod_name)
+		return find_service(name = pod_name)
 
 	def connect_to_bluemote_pod(self, pod):
 		port = pod["port"]
@@ -35,8 +37,8 @@ class Bluemote_Client(bluemote.Services):
 		#self.transport_tx(self.cmd_codes.init, "")
 		pass
 
-	def rename_device(self):
-		#self.transport_tx(self.cmd_codes.rename_device, "")
+	def rename_device(self, name):
+		self.transport_tx(self.cmd_codes.rename_device, name)
 		pass
 
 	def _learn_unpack_msg(self, msg):
@@ -113,7 +115,15 @@ if __name__ == "__main__":
 		for i in range(10):
 			key_code = bm_remote.debug(struct.pack('B', i))
 			print key_code
-		
+
+		new_pod_name = "indigomote"
+		bm_remote.rename_device(new_pod_name)
+		bm_remote.client_sock.close()
+		bm_pods = bm_remote.find_bluemote_pods(new_pod_name)
+		bm_remote.connect_to_bluemote_pod(bm_pods[0])
+		version = bm_remote.get_version()
+		for component in version:
+			print "%s version: %s" % component
 	except IOError:
 		pass
 	finally:
