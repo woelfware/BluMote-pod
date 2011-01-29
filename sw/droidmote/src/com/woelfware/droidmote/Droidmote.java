@@ -527,8 +527,9 @@ public class Droidmote extends Activity {
     		if (column.equals(buttonCode)) {
     			short temp = devices.getShort(2); // we store a short to the database
     			byte code = (byte)(0x00FF & temp); // convert to a byte
-    			code = (byte)((code << 1) | Codes.PKT_COUNT); 
-    			byte[] toSend = {Codes.Commands.IR_TRANSMIT, 0x00, code}; // 0x00 is reserved byte
+    			//code = (byte)((code << 1) | Codes.PKT_COUNT); 
+    			byte command = (byte)((Codes.Commands.IR_TRANSMIT << 1) | Codes.PKT_COUNT);
+    			byte[] toSend = {command, 0x00, code}; // 0x00 is reserved byte
     			sendMessage(toSend); // send data if matches 
     		}
     	}   
@@ -541,7 +542,7 @@ public class Droidmote extends Activity {
     	switch (code) {
     	case Codes.Commands.LEARN:
     		toSend = new byte[2];
-    		toSend[0] = Codes.Commands.LEARN;
+    		toSend[0] = Codes.Commands.DEBUG; // DEBUG , should be LEARN
     		toSend[0] = (byte)((toSend[0] << 1) | Codes.PKT_COUNT);
     		toSend[1] = 0x00; // Reserved
     		STATE = Codes.Commands.LEARN;
@@ -557,7 +558,7 @@ public class Droidmote extends Activity {
     		break;
     	case Codes.Commands.INIT:
     		toSend = new byte[28];
-    		toSend[0] = Codes.Commands.ABORT_LEARN;
+    		toSend[0] = Codes.Commands.INIT;
     		toSend[0] = (byte)((toSend[0] << 1) | Codes.PKT_COUNT);
     		toSend[1] = 0x00; // Reserved
     		// need to send the following data:
