@@ -69,7 +69,9 @@ class Bluemote_Server(bluemote.Services):
 				self.pkt_cnt = (self.pkt_cnt + 1) % 2
 			else:
 				try:
+					sys.stdout.write("Duplicate packet detected.\n")
 					self.client_sock.send(self.last_msg)
+					sys.stdout.write("Resent last packet.\n")
 				except AttributeError:
 					sys.stderr.write("First packet received; Contains pkt_cnt mismatch.")
 				return (None, None)
@@ -121,7 +123,7 @@ class Bluemote_Server(bluemote.Services):
 		name = ""
 		for i in msg:
 			name += chr(i)
-		print "Renaming to %s" % (name)
+		print "Renaming to \"%s\"" % (name)
 		self.service_name = name
 		self.transport_tx(self.cmd_rc.ack, "")
 

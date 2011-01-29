@@ -122,6 +122,7 @@ if __name__ == "__main__":
 		bm_remote.rename_device(new_pod_name)
 
 		bm_remote.client_sock.close()
+		bm_remote.pkt_cnt = 0
 
 		bm_pods = bm_remote.find_bluemote_pods(new_pod_name)
 		bm_remote.connect_to_bluemote_pod(bm_pods[0])
