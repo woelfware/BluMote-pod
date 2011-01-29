@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk+" version="2.24"/>
+  <requires lib="gtk+" version="2.22"/>
   <!-- interface-naming-policy project-wide -->
-  <object class="GtkWindow" id="window1">
-    <property name="can_focus">False</property>
+  <object class="GtkWindow" id="dummy_window">
     <child>
-      <object class="GtkTable" id="table1">
+      <object class="GtkTable" id="button_panel">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <property name="n_rows">7</property>
         <property name="n_columns">3</property>
         <property name="homogeneous">True</property>
@@ -19,6 +17,9 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
+            <accelerator key="1" signal="clicked"/>
+            <accelerator key="KP_1" signal="clicked"/>
+            <signal name="can-activate-accel" handler="on_button_can_activate_accel" swapped="no"/>
             <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
@@ -65,28 +66,21 @@
             <child>
               <object class="GtkHBox" id="hbox3">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <child>
                   <object class="GtkLabel" id="label5">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Special</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkArrow" id="arrow5">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="arrow_type">down</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -107,28 +101,21 @@
             <child>
               <object class="GtkVBox" id="vbox1">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <child>
                   <object class="GtkArrow" id="arrow1">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="arrow_type">up</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkLabel" id="label1">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Ch</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -166,28 +153,21 @@
             <child>
               <object class="GtkHBox" id="hbox2">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <child>
                   <object class="GtkArrow" id="arrow4">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="arrow_type">left</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Vol</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -223,27 +203,20 @@
             <child>
               <object class="GtkHBox" id="hbox1">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <child>
                   <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Vol</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkArrow" id="arrow3">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -293,7 +266,10 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="2" signal="clicked"/>
+            <accelerator key="KP_2" signal="clicked"/>
+            <signal name="can-activate-accel" handler="on_button_can_activate_accel" swapped="no"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">1</property>
@@ -310,7 +286,10 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="2" signal="clicked"/>
+            <accelerator key="KP_3" signal="clicked"/>
+            <signal name="can-activate-accel" handler="on_button_can_activate_accel" swapped="no"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">2</property>
@@ -327,7 +306,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="KP_4" signal="clicked"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="top_attach">1</property>
@@ -344,7 +324,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="KP_5" signal="clicked"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">1</property>
@@ -363,7 +344,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="KP_6" signal="clicked"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">2</property>
@@ -382,7 +364,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="KP_8" signal="clicked"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">1</property>
@@ -401,7 +384,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="KP_7" signal="clicked"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="top_attach">2</property>
@@ -418,7 +402,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="KP_9" signal="clicked"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">2</property>
@@ -437,7 +422,8 @@
             <property name="receives_default">True</property>
             <property name="use_action_appearance">False</property>
             <property name="use_underline">True</property>
-            <signal name="clicked" handler="digi_cb" swapped="no"/>
+            <accelerator key="KP_0" signal="clicked"/>
+            <signal name="clicked" handler="digit_cb" swapped="no"/>
           </object>
           <packing>
             <property name="top_attach">3</property>
@@ -455,28 +441,21 @@
             <child>
               <object class="GtkVBox" id="vbox2">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <child>
                   <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Ch</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkArrow" id="arrow2">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="arrow_type">down</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
