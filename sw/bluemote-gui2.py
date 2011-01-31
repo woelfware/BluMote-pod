@@ -12,22 +12,31 @@ class Panel():
 		self.images = {}
 		self.type = panel_type
 
+	def button_with_pic(self, button_name, image_file):
+		self.pixbufs[button_name] = gtk.gdk.pixbuf_new_from_file(image_file)
+		self.images[button_name] = gtk.Image()
+		self.images[button_name].set_from_pixbuf(self.pixbufs[button_name])
+		self.buttons[button_name] = gtk.Button()
+		self.buttons[button_name].set_image(self.images[button_name])
+
 class TV_panel(Panel):
 	def __init__(self):
 		Panel.__init__(self, "TV", 7, 3)
 
 		for i in range(10):
 			self.buttons["%d" % i] = gtk.Button("%d" % i)
-
-		self.pixbufs["pwr"] = gtk.gdk.pixbuf_new_from_file(sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/actions/system-shutdown.svg")
-		self.images["pwr"] = gtk.Image()
-		self.images["pwr"].set_from_pixbuf(self.pixbufs["pwr"])
-		self.buttons["pwr"] = gtk.Button()
-		self.buttons["pwr"].set_image(self.images["pwr"])
+		self.buttons["select"] = gtk.Button("Select")
+		self.buttons["channel-last"] = gtk.Button("Prev Ch")
+		self.buttons["menu"] = gtk.Button("Menu")
+		self.button_with_pic("pwr", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/actions/system-shutdown.svg")
+		self.button_with_pic("volume-up", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/status/audio-volume-high.svg")
+		self.button_with_pic("volume-down", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/status/audio-volume-low.svg")
+		self.button_with_pic("volume-mute", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/status/audio-volume-muted.svg")
+		self.button_with_pic("channel-up", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/actions/go-up.svg")
+		self.button_with_pic("channel-down", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/actions/go-down.svg")
 		#self.pixbufs["pwr"] = gtk.gdk.pixbuf_new_from_file_at_size(sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/actions/system-shutdown.svg", 200, 200)
 		#self.images["pwr"].set_from_pixbuf(self.pixbufs["pwr"].scale_simple(4, 4, gtk.gdk.INTERP_BILINEAR))
 		#self.images["pwr"].set_from_pixbuf(self.pixbufs["pwr"].scale_simple(350, 350, gtk.gdk.INTERP_BILINEAR))
-		#/data/tango-icon-theme-0.8.90/scalable/status/audio-volume-high.svg
 
 		# pack widgets
 		self.table.attach(self.buttons["pwr"], 0,1, 0, 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
@@ -35,6 +44,14 @@ class TV_panel(Panel):
 			for col in range(3):
 				self.table.attach(self.buttons["%d" % ((row - 1) * 3 + col + 1)], col, col + 1, row, row + 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
 		self.table.attach(self.buttons["0"], 0, 1, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["volume-up"], 2, 3, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["volume-down"], 0, 1, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["volume-mute"], 2, 3, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["channel-up"], 1, 2, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["channel-down"], 1, 2, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["select"], 1, 2, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["channel-last"], 2, 3, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.table.attach(self.buttons["menu"], 0, 1, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
 
 class VCR_panel(Panel):
 	def __init__(self):
