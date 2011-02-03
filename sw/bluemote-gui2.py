@@ -4,9 +4,9 @@
 import sys, os
 import gtk
 
-class Panel():
+class Panel(gtk.Table):
 	def __init__(self, panel_type, rows, columns, homogenous = True):
-		self.table = gtk.Table(rows, columns, homogenous)
+		super(Panel, self).__init__(rows, columns, homogenous)
 		self.buttons = {}
 		self.pixbufs = {}
 		self.images = {}
@@ -21,7 +21,7 @@ class Panel():
 
 class TV_panel(Panel):
 	def __init__(self):
-		Panel.__init__(self, "TV", 7, 3)
+		super(TV_panel, self).__init__("TV", 7, 3)
 
 		for i in range(10):
 			self.buttons["%d" % i] = gtk.Button("%d" % i)
@@ -38,24 +38,23 @@ class TV_panel(Panel):
 		#self.images["pwr"].set_from_pixbuf(self.pixbufs["pwr"].scale_simple(4, 4, gtk.gdk.INTERP_BILINEAR))
 		#self.images["pwr"].set_from_pixbuf(self.pixbufs["pwr"].scale_simple(350, 350, gtk.gdk.INTERP_BILINEAR))
 
-		# pack widgets
-		self.table.attach(self.buttons["pwr"], 0,1, 0, 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["pwr"], 0,1, 0, 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
 		for row in range(1, 4):
 			for col in range(3):
-				self.table.attach(self.buttons["%d" % ((row - 1) * 3 + col + 1)], col, col + 1, row, row + 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["0"], 0, 1, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["volume-up"], 2, 3, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["volume-down"], 0, 1, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["volume-mute"], 2, 3, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["channel-up"], 1, 2, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["channel-down"], 1, 2, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["select"], 1, 2, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["channel-last"], 2, 3, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
-		self.table.attach(self.buttons["menu"], 0, 1, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+				self.attach(self.buttons["%d" % ((row - 1) * 3 + col + 1)], col, col + 1, row, row + 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["0"], 0, 1, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["volume-up"], 2, 3, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["volume-down"], 0, 1, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["volume-mute"], 2, 3, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["channel-up"], 1, 2, 4, 5, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["channel-down"], 1, 2, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["select"], 1, 2, 5, 6, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["channel-last"], 2, 3, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
+		self.attach(self.buttons["menu"], 0, 1, 6, 7, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0)
 
 class VCR_panel(Panel):
 	def __init__(self):
-		Panel.__init__(self, "VCR", 1, 1)
+		super(VCR_panel, self).__init__("VCR", 1, 1)
 
 		self.buttons["play"] = gtk.Button()
 
@@ -65,17 +64,62 @@ class VCR_panel(Panel):
 		self.buttons["play"] = gtk.Button()
 		self.buttons["play"].set_image(self.images["play"])
 
-		# pack widgets
-		self.table.attach(self.buttons["play"], 0, 1, 0, 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0) 
+		self.attach(self.buttons["play"], 0, 1, 0, 1, gtk.EXPAND | gtk.FILL, yoptions = gtk.EXPAND | gtk.FILL, xpadding = 0, ypadding = 0) 
 
-class Bluemote_GUI:
-	def delete_event(self, widget, event, data=None):
-		# If you return FALSE in the "delete_event" signal handler,
-		# GTK will emit the "destroy" signal. Returning TRUE means
-		# you don't want the window to be destroyed.
-		# This is useful for popping up 'are you sure you want to quit?'
-		# type dialogs.
-		print "delete event occurred"
+class Menu(gtk.VBox):
+	def __init__(self, window):
+		super(Menu, self).__init__(False, 2)
+
+		mb = gtk.MenuBar()
+
+		mb.append(self._bluemote_menu(window))
+		mb.append(self._mode_menu(window))
+
+		self.pack_start(mb, False, False, 0)
+
+	def _bluemote_menu(self, window):
+		bluemote_menu = gtk.Menu()
+		bluemote = gtk.MenuItem("_Bluemote")
+		bluemote.set_submenu(bluemote_menu)
+
+		learn = gtk.MenuItem("_Learn")
+		bluemote_menu.append(learn)
+
+		bluemote_menu.append(gtk.SeparatorMenuItem())
+
+		agr = gtk.AccelGroup()
+		window.add_accel_group(agr)
+
+		exit = gtk.ImageMenuItem(gtk.STOCK_QUIT, agr)
+		key, mod = gtk.accelerator_parse("<Control>Q")
+		exit.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
+
+		exit.connect("activate", gtk.main_quit)
+
+		bluemote_menu.append(exit)
+
+		return bluemote
+
+	def _mode_menu(self, window):
+		mode_menu = gtk.Menu()
+		mode = gtk.MenuItem("_Mode")
+		mode.set_submenu(mode_menu)
+		
+		tv_mode = gtk.RadioMenuItem(None, "_TV", True)
+		tv_mode.set_active(True)
+		mode_menu.append(tv_mode)
+		vcr_mode = gtk.RadioMenuItem(tv_mode, "_VCR", True)
+		mode_menu.append(vcr_mode)
+
+		return mode
+
+class Bluemote_GUI(gtk.Window):
+	def delete_event(self, widget, event, data = None):
+		# If you return FALSE in the "delete_event" signal handler, GTK
+		# will emit the "destroy" signal. Returning TRUE means you don't
+		# want the window to be destroyed.  This is useful for popping
+		# up 'are you sure you want to quit?' type dialogs.
+		#print "delete event occurred"
 
 		# Change FALSE to TRUE and the main window will not be destroyed
 		# with a "delete_event".
@@ -85,30 +129,39 @@ class Bluemote_GUI:
 		gtk.mainquit()
 
 	def __init__(self):
-		# create widgets
-		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.panels = {}
-		self.panels["TV"] = TV_panel()
-		self.panels["VCR"] = VCR_panel()
+		super(Bluemote_GUI, self).__init__()
+
+		self.set_resizable(False)
+		self.set_border_width(10)
+		self.set_icon_from_file(sys.path[0] + "/data/bluemote_Icon72.png")
+		self.set_title("Bluemote")
+		self.set_position(gtk.WIN_POS_CENTER)
+
+		menu = Menu(self)
+
+		self.panels = {"TV" : TV_panel(),
+			"VCR" : VCR_panel()}
 		self.panel = self.panels["TV"]
 
-		# connect signals
-		self.window.connect("delete_event", self.delete_event)
-		self.window.connect("destroy", self.destroy)
-		self.window.connect("key-press-event", self.on_window_key_press_event, self.panel.buttons)
+		self.statusbar = gtk.Statusbar()
+		self.statusbar.set_has_resize_grip(False)
+		self.statusbar.push(0, "Welcome to Bluemote!")
+
+		self.connect("delete_event", self.delete_event)
+		self.connect("destroy", self.destroy)
+		self.connect("key-press-event", self.on_window_key_press_event, self.panel.buttons)
 		self.connect_buttons()
 
-		# additional configs
-		self.window.set_resizable(False)
-		self.window.set_border_width(10)
-		self.window.set_icon_from_file(sys.path[0] + "/data/bluemote_Icon72.png")
-		self.window.set_title("Bluemote - %s Mode" % ("TV"))
+		vbox = gtk.VBox()
+		vbox.add(menu)
+		vbox.add(self.panel)
+		vbox.add(self.statusbar)
+		self.add(vbox)
 
-		# pack widgets
-		# button pad setup
-		self.window.add(self.panel.table)
-
-		self.window.show_all()
+		self.show_all()
+		settings = self.get_settings()
+		settings.set_long_property("gtk-menu-images", True, "")
+		settings.set_long_property("gtk-button-images", True, "")
 
 	def connect_buttons(self):
 		if self.panel.type == "TV":
@@ -117,9 +170,6 @@ class Bluemote_GUI:
 				self.panel.buttons["%d" % i].connect("clicked", self.button_cb)
 		elif self.panel.type == "VCR":
 			self.panel.buttons["play"].connect("clicked", self.button_play_cb)
-
-	def resize_image(self, widget, event, button):
-		print "resizing image"
 
 	def on_window_key_press_event(self, widget, event, data = None):
 		keyval_name = gtk.gdk.keyval_name(event.keyval)
@@ -137,10 +187,14 @@ class Bluemote_GUI:
 			data[keyval_name[-1]].emit("clicked")
 
 	def button_cb(self, widget, data = None):
-		print "got button press", widget.get_label()
+		self.statusbar.pop(0)
+		self.statusbar.push(0, "Got button press %s" % (widget.get_label()))
+		#print "got button press", widget.get_label()
 
 	def button_pwr_cb(self, widget, data = None):
-		print "got pwr button press"
+		self.statusbar.pop(0)
+		self.statusbar.push(0, "Got pwr button press")
+		#print "got pwr button press"
 
 	def button_play_cb(self, widget, data = None):
 		print "got play button press"
