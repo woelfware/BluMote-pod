@@ -42,7 +42,9 @@ class Bluemote_Server(bluemote.Services):
 		advertise_service(self.server_sock,
 			self.service_name,
 			service_classes = [SERIAL_PORT_CLASS],
-			profiles = [SERIAL_PORT_PROFILE])
+			profiles = [SERIAL_PORT_PROFILE],
+			provider = "Woelfware",
+			description = "IR XPDR")
 						   
 		print "Waiting for connection on RFCOMM channel %d" % port
 		self.client_sock, self.client_info = self.server_sock.accept()

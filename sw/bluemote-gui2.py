@@ -3,6 +3,8 @@
 
 import sys, os
 import gtk
+from bluemote_remote import *
+import bluetooth
 
 class Panel(gtk.Table):
 	def __init__(self, panel_type, rows, columns, homogenous = True):
@@ -29,6 +31,9 @@ class TV_panel(Panel):
 		self.buttons["channel-last"] = gtk.Button("Prev Ch")
 		self.buttons["menu"] = gtk.Button("Menu")
 		self.button_with_pic("pwr", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/actions/system-shutdown.svg")
+		self.buttons["pwr"].modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse("red"))
+		self.buttons["pwr"].modify_bg(gtk.STATE_ACTIVE, gtk.gdk.Color("#D00000"))
+		self.buttons["pwr"].modify_bg(gtk.STATE_PRELIGHT, gtk.gdk.color_parse("red"))
 		self.button_with_pic("volume-up", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/status/audio-volume-high.svg")
 		self.button_with_pic("volume-down", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/status/audio-volume-low.svg")
 		self.button_with_pic("volume-mute", sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/status/audio-volume-muted.svg")
@@ -82,8 +87,11 @@ class Menu(gtk.VBox):
 		bluemote = gtk.MenuItem("_Bluemote")
 		bluemote.set_submenu(bluemote_menu)
 
-		learn = gtk.MenuItem("_Learn")
-		bluemote_menu.append(learn)
+		self.connect = gtk.MenuItem("_Connect")
+		bluemote_menu.append(self.connect)
+
+		self.learn = gtk.MenuItem("_Learn")
+		bluemote_menu.append(self.learn)
 
 		bluemote_menu.append(gtk.SeparatorMenuItem())
 
@@ -131,6 +139,8 @@ class Bluemote_GUI(gtk.Window):
 	def __init__(self):
 		super(Bluemote_GUI, self).__init__()
 
+		self.bm_client = Bluemote_Client()
+
 		self.set_resizable(False)
 		self.set_border_width(10)
 		self.set_icon_from_file(sys.path[0] + "/data/bluemote_Icon72.png")
@@ -151,6 +161,8 @@ class Bluemote_GUI(gtk.Window):
 		self.connect("destroy", self.destroy)
 		self.connect("key-press-event", self.on_window_key_press_event, self.panel.buttons)
 		self.connect_buttons()
+
+		menu.connect.connect("activate", self.connect_to_pod)
 
 		vbox = gtk.VBox()
 		vbox.add(menu)
@@ -199,10 +211,72 @@ class Bluemote_GUI(gtk.Window):
 	def button_play_cb(self, widget, data = None):
 		print "got play button press"
 
+	def connect_to_pod(self, widget, data = None):
+		podlist = bluemote_pod_list()
+		#bm_pods = self.bm_client.find_bluemote_pods()
+		#self.bm_client.connect_to_bluemote_pod(bm_pods[0])
+
 	def main(self):
 		# All PyGTK applications must have a gtk.main(). Control ends here
 		# and waits for an event to occur (like a key press or mouse event).
 		gtk.main()
+
+class bluemote_pod_list(gtk.Dialog):
+	def __init__(self):
+		super(bluemote_pod_list, self).__init__()
+
+		self.set_size_request(450, 250)
+		self.set_position(gtk.WIN_POS_CENTER)
+
+		self.connect("destroy", gtk.main_quit)
+		self.set_title("Pod View")
+
+		sw = gtk.ScrolledWindow()
+		sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+		sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+
+		self.vbox.pack_start(sw, True, True, 0)
+
+		self.show_all()
+
+		store = self.create_pods()
+
+		treeView = gtk.TreeView(store)
+		treeView.connect("row-activated", self.on_activated)
+		treeView.set_rules_hint(True)
+		sw.add(treeView)
+
+		self.create_columns(treeView)
+
+		self.show_all()
+
+	def create_pods(self):
+		store = gtk.ListStore(str, str, str, str, str, str, str, str, str)
+
+		bluetooth_devices =  bluetooth.find_service()
+		for bt_dev in bluetooth_devices:
+			if bt_dev["name"] == "Bluemote":
+				store.append([bt_dev["name"], bt_dev["host"], bt_dev["description"], bt_dev["provider"], bt_dev["protocol"], bt_dev["port"], bt_dev["service-classes"], bt_dev["profiles"], bt_dev["service-id"]])
+
+		return store
+
+	def create_columns(self, treeView):
+		columns = ["name", "host", "description", "provider", "protocol", "port", "service-classes", "profiles", "service-id"]
+
+		i = 0
+		for column_name in columns:
+			rendererText = gtk.CellRendererText()
+			column = gtk.TreeViewColumn(column_name, rendererText, text = i)
+			column.set_sort_column_id(i)
+			treeView.append_column(column)
+			i += 1
+
+	def on_activated(self, widget, row, col):
+		model = widget.get_model()
+		text = model[row][0]
+		for i in range(1, 10):
+			text += ", " + model[row][i]
+		self.statusbar.push(0, text)
 
 # If the program is run directly or passed as an argument to the python
 # interpreter then create a Bluemote_GUI instance and show it
