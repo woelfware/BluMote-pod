@@ -2,9 +2,14 @@
 # Copyright (c) 2011 Woelfware
 
 import sys, os
-import gtk
+import time
+import threading
+import gobject, gtk
 from bluemote_remote import *
 import bluetooth
+import bluemote
+
+gobject.threads_init()
 
 class Panel(gtk.Table):
 	def __init__(self, panel_type, rows, columns, homogenous = True):
@@ -199,9 +204,7 @@ class Bluemote_GUI(gtk.Window):
 			data[keyval_name[-1]].emit("clicked")
 
 	def button_cb(self, widget, data = None):
-		self.statusbar.pop(0)
-		self.statusbar.push(0, "Got button press %s" % (widget.get_label()))
-		#print "got button press", widget.get_label()
+		bp = button_press(self.statusbar, widget.get_label())
 
 	def button_pwr_cb(self, widget, data = None):
 		self.statusbar.pop(0)
@@ -212,6 +215,11 @@ class Bluemote_GUI(gtk.Window):
 		print "got play button press"
 
 	def connect_to_pod(self, widget, data = None):
+		notice = gtk.Label("Searching for bluemotes...")
+		notify = gtk.Dialog()
+		notify.vbox.add(notice)
+		notify.show_all()
+
 		podlist = bluemote_pod_list()
 		#bm_pods = self.bm_client.find_bluemote_pods()
 		#self.bm_client.connect_to_bluemote_pod(bm_pods[0])
@@ -221,11 +229,23 @@ class Bluemote_GUI(gtk.Window):
 		# and waits for an event to occur (like a key press or mouse event).
 		gtk.main()
 
+class button_press(threading.Thread):
+	def __init__(self, statusbar, msg):
+		super(button_press, self).__init__()
+
+		self.statusbar = statusbar
+		self.msg = msg
+		self.start()
+
+	def run(self):
+		self.statusbar.pop(0)
+		self.statusbar.push(0, "Got button press %s" % self.msg)
+
 class bluemote_pod_list(gtk.Dialog):
 	def __init__(self):
 		super(bluemote_pod_list, self).__init__()
 
-		self.set_size_request(450, 250)
+		self.set_size_request(450, 150)
 		self.set_position(gtk.WIN_POS_CENTER)
 
 		self.connect("destroy", gtk.main_quit)
@@ -237,9 +257,7 @@ class bluemote_pod_list(gtk.Dialog):
 
 		self.vbox.pack_start(sw, True, True, 0)
 
-		self.show_all()
-
-		store = self.create_pods()
+		store = gtk.ListStore(str, str, str, str)
 
 		treeView = gtk.TreeView(store)
 		treeView.connect("row-activated", self.on_activated)
@@ -249,19 +267,17 @@ class bluemote_pod_list(gtk.Dialog):
 		self.create_columns(treeView)
 
 		self.show_all()
+		self.create_pods(store)
 
-	def create_pods(self):
-		store = gtk.ListStore(str, str, str, str, str, str, str, str, str)
-
+	def create_pods(self, store):
 		bluetooth_devices =  bluetooth.find_service()
 		for bt_dev in bluetooth_devices:
-			if bt_dev["name"] == "Bluemote":
-				store.append([bt_dev["name"], bt_dev["host"], bt_dev["description"], bt_dev["provider"], bt_dev["protocol"], bt_dev["port"], bt_dev["service-classes"], bt_dev["profiles"], bt_dev["service-id"]])
-
-		return store
+			if bt_dev["provider"] == bluemote.Services().service["provider"] \
+				and bt_dev["description"] == bluemote.Services().service["description"]:
+				store.append([bt_dev["name"], bt_dev["description"], bt_dev["provider"], bt_dev["host"]])
 
 	def create_columns(self, treeView):
-		columns = ["name", "host", "description", "provider", "protocol", "port", "service-classes", "profiles", "service-id"]
+		columns = ["Name", "Description", "Provider", "Host"]
 
 		i = 0
 		for column_name in columns:
