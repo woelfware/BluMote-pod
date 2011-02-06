@@ -3,7 +3,7 @@
 
 import sys, os
 import time
-import threading
+from threading import Thread
 import gobject, gtk
 from bluemote_remote import *
 import bluetooth
@@ -92,8 +92,15 @@ class Menu(gtk.VBox):
 		bluemote = gtk.MenuItem("_Bluemote")
 		bluemote.set_submenu(bluemote_menu)
 
-		self.connect = gtk.MenuItem("_Connect")
-		bluemote_menu.append(self.connect)
+		connect_menu = gtk.Menu()
+		connect = gtk.MenuItem("_Connect")
+		connect.set_submenu(connect_menu)
+		bluemote_menu.append(connect)
+
+		self.connect_last = gtk.MenuItem("<fixme: show last connection>")
+		connect_menu.append(self.connect_last)
+		self.connect_new = gtk.MenuItem("New")
+		connect_menu.append(self.connect_new)
 
 		self.learn = gtk.MenuItem("_Learn")
 		bluemote_menu.append(self.learn)
@@ -126,6 +133,92 @@ class Menu(gtk.VBox):
 
 		return mode
 
+class connect_to_pod_thread(Thread):
+	def __init__(self, window):
+		super(connect_to_pod_thread, self).__init__()
+
+		self.window = window
+		self.start()
+
+	def display_pods(self):
+		store = self.__create_pod_store()
+		self.__update_gui(store)
+
+	def __update_gui(self, store):
+		self.window.label.destroy()
+
+		self.window.set_size_request(450, 150)
+
+		vbox = gtk.VBox(False, 8)
+
+		sw = gtk.ScrolledWindow()
+		sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+		sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+
+		vbox.pack_start(sw, True, True, 0)
+
+		treeView = gtk.TreeView(store)
+		treeView.set_rules_hint(True)
+		sw.add(treeView)
+
+		self.__create_columns(treeView)
+
+		self.window.add(vbox)
+		self.window.show_all()
+
+	def __create_columns(self, treeView):
+		columns = ["Name", "Description", "Provider", "Host"]
+
+		i = 0
+		for column_name in columns:
+			rendererText = gtk.CellRendererText()
+			column = gtk.TreeViewColumn(column_name, rendererText, text = i)
+			column.set_sort_column_id(i)
+			treeView.append_column(column)
+			i += 1
+		
+	def __create_pod_store(self):
+		store = gtk.ListStore(str, str, str, str)
+
+		bluetooth_devices =  bluetooth.find_service()
+
+		for bt_dev in bluetooth_devices:
+			if bt_dev["provider"] == bluemote.Services().service["provider"] \
+				and bt_dev["description"] == bluemote.Services().service["description"]:
+				store.append([bt_dev["name"], bt_dev["description"], bt_dev["provider"], bt_dev["host"]])
+
+		return store
+
+	def run(self):
+		gobject.idle_add(self.display_pods)
+
+class Connect(gtk.Window):
+	def __init__(self):
+		super(Connect, self).__init__()
+		self.set_position(gtk.WIN_POS_CENTER)
+		self.set_title("Pod View")
+		self.set_icon_from_file(sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/devices/network-wireless.svg")
+
+		self.label = gtk.Label("Searching for Bluemote pods")
+		self.add(self.label)
+
+		self.show_all()
+
+class button_cb_thread(Thread):
+	def __init__(self, statusbar, digit):
+		super(button_cb_thread, self).__init__()
+
+		self.statusbar = statusbar
+		self.digit = digit
+		self.start()
+
+	def send_digit(self, statusbar, digit):
+		statusbar.pop(0)
+		statusbar.push(0, "Got button press %s" % digit)
+
+	def run(self):
+		gobject.idle_add(self.send_digit, self.statusbar, self.digit)
+
 class Bluemote_GUI(gtk.Window):
 	def delete_event(self, widget, event, data = None):
 		# If you return FALSE in the "delete_event" signal handler, GTK
@@ -139,7 +232,7 @@ class Bluemote_GUI(gtk.Window):
 		return False
 
 	def destroy(self, widget, data = None):
-		gtk.mainquit()
+		gtk.main_quit()
 
 	def __init__(self):
 		super(Bluemote_GUI, self).__init__()
@@ -153,6 +246,7 @@ class Bluemote_GUI(gtk.Window):
 		self.set_position(gtk.WIN_POS_CENTER)
 
 		menu = Menu(self)
+		menu.connect_new.connect("activate", self.connect_to_pod)
 
 		self.panels = {"TV" : TV_panel(),
 			"VCR" : VCR_panel()}
@@ -166,8 +260,6 @@ class Bluemote_GUI(gtk.Window):
 		self.connect("destroy", self.destroy)
 		self.connect("key-press-event", self.on_window_key_press_event, self.panel.buttons)
 		self.connect_buttons()
-
-		menu.connect.connect("activate", self.connect_to_pod)
 
 		vbox = gtk.VBox()
 		vbox.add(menu)
@@ -204,98 +296,24 @@ class Bluemote_GUI(gtk.Window):
 			data[keyval_name[-1]].emit("clicked")
 
 	def button_cb(self, widget, data = None):
-		bp = button_press(self.statusbar, widget.get_label())
+		button_cb_thread(self.statusbar, widget.get_label())
 
 	def button_pwr_cb(self, widget, data = None):
 		self.statusbar.pop(0)
 		self.statusbar.push(0, "Got pwr button press")
-		#print "got pwr button press"
 
 	def button_play_cb(self, widget, data = None):
 		print "got play button press"
 
 	def connect_to_pod(self, widget, data = None):
-		notice = gtk.Label("Searching for bluemotes...")
-		notify = gtk.Dialog()
-		notify.vbox.add(notice)
-		notify.show_all()
+		if hasattr(self, "connect_window") == False:
+			self.connect_window = self.__create_connect_window()
 
-		podlist = bluemote_pod_list()
-		#bm_pods = self.bm_client.find_bluemote_pods()
-		#self.bm_client.connect_to_bluemote_pod(bm_pods[0])
+		connect_to_pod_thread(self.connect_window)
 
-	def main(self):
-		# All PyGTK applications must have a gtk.main(). Control ends here
-		# and waits for an event to occur (like a key press or mouse event).
-		gtk.main()
+	def __create_connect_window(self):
+		return Connect()
 
-class button_press(threading.Thread):
-	def __init__(self, statusbar, msg):
-		super(button_press, self).__init__()
-
-		self.statusbar = statusbar
-		self.msg = msg
-		self.start()
-
-	def run(self):
-		self.statusbar.pop(0)
-		self.statusbar.push(0, "Got button press %s" % self.msg)
-
-class bluemote_pod_list(gtk.Dialog):
-	def __init__(self):
-		super(bluemote_pod_list, self).__init__()
-
-		self.set_size_request(450, 150)
-		self.set_position(gtk.WIN_POS_CENTER)
-
-		self.connect("destroy", gtk.main_quit)
-		self.set_title("Pod View")
-
-		sw = gtk.ScrolledWindow()
-		sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
-		sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-
-		self.vbox.pack_start(sw, True, True, 0)
-
-		store = gtk.ListStore(str, str, str, str)
-
-		treeView = gtk.TreeView(store)
-		treeView.connect("row-activated", self.on_activated)
-		treeView.set_rules_hint(True)
-		sw.add(treeView)
-
-		self.create_columns(treeView)
-
-		self.show_all()
-		self.create_pods(store)
-
-	def create_pods(self, store):
-		bluetooth_devices =  bluetooth.find_service()
-		for bt_dev in bluetooth_devices:
-			if bt_dev["provider"] == bluemote.Services().service["provider"] \
-				and bt_dev["description"] == bluemote.Services().service["description"]:
-				store.append([bt_dev["name"], bt_dev["description"], bt_dev["provider"], bt_dev["host"]])
-
-	def create_columns(self, treeView):
-		columns = ["Name", "Description", "Provider", "Host"]
-
-		i = 0
-		for column_name in columns:
-			rendererText = gtk.CellRendererText()
-			column = gtk.TreeViewColumn(column_name, rendererText, text = i)
-			column.set_sort_column_id(i)
-			treeView.append_column(column)
-			i += 1
-
-	def on_activated(self, widget, row, col):
-		model = widget.get_model()
-		text = model[row][0]
-		for i in range(1, 10):
-			text += ", " + model[row][i]
-		self.statusbar.push(0, text)
-
-# If the program is run directly or passed as an argument to the python
-# interpreter then create a Bluemote_GUI instance and show it
 if __name__ == "__main__":
 	gui = Bluemote_GUI()
-	gui.main()
+	gtk.main()
