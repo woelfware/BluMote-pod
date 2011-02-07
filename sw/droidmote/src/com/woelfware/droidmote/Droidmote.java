@@ -1,5 +1,7 @@
 package com.woelfware.droidmote;
 
+import java.util.HashMap;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -111,6 +113,9 @@ public class Droidmote extends Activity {
     // keeps track of # of times the MESSAGE_PRESSED has been called, creator/consumer idea
     // prevents user from double tapping a button and creating double messages in queue
     private int NUM_MESSAGES = 0;
+    
+    // Hash map to keep track of all the buttons on the interface and associated properties
+    HashMap<Integer,Object[]> button_map;
     
     /** Called when the activity is first created. */
     @Override
@@ -271,56 +276,27 @@ public class Droidmote extends Activity {
     	}
     }
     private void touchButton(int rbutton) {
-    	Button button;
-    	switch (rbutton) {
-    	case R.id.btn_volume_up:
-    		button = (Button) findViewById(R.id.btn_volume_up);
-    		break;
-    	case R.id.btn_volume_down:
-    		button = (Button) findViewById(R.id.btn_volume_down);
-    		break;
-    	case R.id.btn_channel_up:
-    		button = (Button) findViewById(R.id.btn_channel_up);
-    		break;
-    	case R.id.btn_channel_down:
-    		button = (Button) findViewById(R.id.btn_channel_down);
-    		break;
-    		//TODO add reset of buttons here
-    	default:
-    		button = null;
-    		break;
-    	}
-    	if (button != null) {
+    	Button button = null; // if we can't find one in button_map, set to null
+    	Object[] payload = null;    	
+    	    	    	  	    	
+    	payload = button_map.get(rbutton);
+
+    	if (payload != null) {
+    		button = (Button)payload[0];
+    		
     		button.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
     		LOOP_KEY = true; // start looping until we lift finger off key
     		Message msg = new Message();            
     		msg.what = MESSAGE_KEY_PRESSED;
 
-    		if (button == btn_volume_up) {    		
-    			button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_volume_pressed));
-    			buttonSend(Constants.VOLUME_UP);
-    			msg.arg1 = R.id.btn_volume_up;
-    		} 	
-    		else if (button == btn_volume_down) {
-    			button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_volume_pressed));
-    			buttonSend(Constants.VOLUME_DOWN);
-    			msg.arg1 = R.id.btn_volume_down;
-    		}
-    		else if(button == btn_channel_up) {
-    			button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_ch_pressed));
-    			buttonSend(Constants.CHANNEL_UP);
-    			msg.arg1 = R.id.btn_channel_up;
-    		}
-    		else if(button == btn_channel_down) {
-    			button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_ch_pressed));
-    			buttonSend(Constants.CHANNEL_DOWN);
-    			msg.arg1 = R.id.btn_channel_down;
-    		}
+    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[3]));
+    		buttonSend((String)payload[1]);
+    		msg.arg1 = rbutton;
     			
-    	// TODO add rest of buttons here
 			NUM_MESSAGES++; //increment on each sendMessage, decrement on each performClick()
     		mHandler.sendMessageDelayed(msg, DELAY_TIME);
-    	}
+    		
+    	}    	    	    	    
     }
 
     View.OnTouchListener buttonTouch = new View.OnTouchListener() {
@@ -348,53 +324,33 @@ public class Droidmote extends Activity {
     
     View.OnClickListener buttonClick = new OnClickListener() {
         public void onClick(View v) {
+        	BUTTON_ID = v.getId();
+        	
         	if (LEARN_MODE) {
-    			// need to set button to pressed and send code to Pod
-    			BUTTON_ID = v.getId();
-        		Button button = (Button) findViewById(v.getId());
-    			switch (v.getId()) {
-    			case R.id.btn_volume_up:
-    				button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_volume_pressed));
-    				sendCode(Commands.LEARN);
-    				break;
-    			case R.id.btn_volume_down:
-    				button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_volume_pressed));
-    				sendCode(Commands.LEARN);
-    				break;
-    			case R.id.btn_channel_up:
-    				button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_ch_pressed));
-    				sendCode(Commands.LEARN);
-    				break;
-    			case R.id.btn_channel_down:
-    				button.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_ch_pressed));
-    				sendCode(Commands.LEARN);
-    				break;
-    				//TODO add rest of buttons here
-    			}   			
+    			// need to set button to pressed and send code to Pod    			
+    			Button button = null; // if we can't find one in button_map, set to null
+    	    	Object[] payload = null;    	  	    	
+    	    	payload = button_map.get(BUTTON_ID);
+
+    	    	if (payload != null) {
+    	    		button = (Button)payload[0];
+    	    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[3]));
+    	    		sendCode(Commands.LEARN);
+    	    	}    	    	    	    	    	    	 			
     		}
         	else { // skip this handler if we are in learn button mode
         		// send message to handler after the delay expires, allows for repeating event
         		Message msg = new Message();
         		msg.what = MESSAGE_KEY_PRESSED;
-
-        		switch (v.getId()) {
-        		case R.id.btn_volume_up:
-        			msg.arg1 = R.id.btn_volume_up;
-        			buttonSend(Constants.VOLUME_UP);
-        			break;
-        		case R.id.btn_volume_down:
-        			msg.arg1 = R.id.btn_volume_down;
-        			buttonSend(Constants.VOLUME_DOWN);
-        			break;	
-        		case R.id.btn_channel_up:
-        			msg.arg1 = R.id.btn_channel_up;
-        			buttonSend(Constants.CHANNEL_UP);
-        			break;	
-        		case R.id.btn_channel_down:
-        			msg.arg1 = R.id.btn_channel_down;
-        			buttonSend(Constants.CHANNEL_DOWN);
-        			break;	
-        		}
+      		
+    	    	Object[] payload = null;    	
+    	    	payload = button_map.get(BUTTON_ID);
+    	    	
+    	    	if (payload != null) {
+    	    		msg.arg1 = BUTTON_ID;
+    	    		buttonSend((String)payload[1]);
+    	    	}
+	    	
         		//TODO add rest of buttons here
 				NUM_MESSAGES++;
         		mHandler.sendMessageDelayed(msg, DELAY_TIME);      		
@@ -428,6 +384,18 @@ public class Droidmote extends Activity {
         btn_channel_up.setOnClickListener(buttonClick);
         btn_channel_down.setOnTouchListener(buttonTouch);
         btn_channel_down.setOnClickListener(buttonClick);
+        
+        //set bundle of associated button properties
+        Object[] btn_1 = {btn_volume_up, Constants.VOLUME_UP, R.drawable.arrow_up_volume, R.drawable.arrow_up_volume_pressed};
+        Object[] btn_2 = {btn_volume_down, Constants.VOLUME_DOWN, R.drawable.arrow_down_volume, R.drawable.arrow_down_volume_pressed};
+        Object[] btn_3 = {btn_channel_up, Constants.CHANNEL_UP, R.drawable.arrow_up_ch, R.drawable.arrow_up_ch_pressed};
+        Object[] btn_4 = {btn_channel_down, Constants.CHANNEL_DOWN, R.drawable.arrow_down_ch, R.drawable.arrow_down_ch_pressed};
+        // bundle all the button data into a big hashtable
+        button_map = new HashMap<Integer,Object[]>();
+        button_map.put(R.id.btn_volume_up, btn_1);
+        button_map.put(R.id.btn_volume_down, btn_2);
+        button_map.put(R.id.btn_channel_up, btn_3);
+        button_map.put(R.id.btn_channel_down, btn_4);
         
         // Initialize the BluetoothChatService to perform bluetooth connections
         mChatService = new BluetoothChatService(this, mHandler);
@@ -502,21 +470,12 @@ public class Droidmote extends Activity {
             	// check if button is still depressed, if so, then generate a touch event
             	NUM_MESSAGES--;
             	if (LOOP_KEY) {
-            		switch(msg.arg1) {
-            		case R.id.btn_volume_up:
-            			btn_volume_up.performClick();
-            			break;
-            		case R.id.btn_volume_down:
-            			btn_volume_down.performClick();
-            			break;
-            		case R.id.btn_channel_up:
-            			btn_channel_up.performClick();
-            			break;
-            		case R.id.btn_channel_down:
-            			btn_channel_down.performClick();
-            			break;            						
-            		}            		
-            		// TODO add reset of buttons here
+            		Button toclick;
+            		Object[] payload = button_map.get(msg.arg1);
+            		if (payload != null) {
+            			toclick = (Button)payload[0];
+            			toclick.performClick();
+            		}        		
             	}
             	break;
             }
@@ -780,25 +739,15 @@ public class Droidmote extends Activity {
     			for (int i=0; i< bytes; i++) {
     				content[i] = response[i];
     			}
-    			switch (BUTTON_ID) {
-    			case R.id.btn_volume_up:
-    				btn_volume_up.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_volume));
-        			device_data.insertButton(cur_table, Constants.VOLUME_UP, content);
-    				break;
-    			case R.id.btn_volume_down:
-    				btn_volume_down.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_volume));
-    				device_data.insertButton(cur_table, Constants.VOLUME_DOWN, content);
-    				break;
-    			case R.id.btn_channel_up:
-    				btn_channel_up.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_ch));
-    				device_data.insertButton(cur_table, Constants.CHANNEL_UP, content);
-    				break;
-    			case R.id.btn_channel_down:
-    				btn_channel_down.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_ch));
-    				device_data.insertButton(cur_table, Constants.CHANNEL_DOWN, content);
-    				break;
+    			Button btn = null;
+    			Object[] payload = null;
+    			payload = button_map.get(BUTTON_ID);
+    			
+    			if (payload != null) {
+    				btn = (Button)payload[0];
+    				btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[2]));
+    				device_data.insertButton(cur_table, (String)payload[1], content);
     			}
-    			//TODO add rest of buttons here
     		    		    
     			// refresh the local Cursor with new database updates
     			fetchButtons();
