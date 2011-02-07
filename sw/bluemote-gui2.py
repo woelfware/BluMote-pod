@@ -134,10 +134,11 @@ class Menu(gtk.VBox):
 		return mode
 
 class connect_to_pod_thread(Thread):
-	def __init__(self, window):
+	def __init__(self, window, bluemote_client):
 		super(connect_to_pod_thread, self).__init__()
 
 		self.window = window
+		self.bm_client = bluemote_client
 		self.start()
 
 	def display_pods(self):
@@ -149,25 +150,37 @@ class connect_to_pod_thread(Thread):
 
 		self.window.set_size_request(450, 150)
 
-		vbox = gtk.VBox(False, 8)
+		self.window.vbox = gtk.VBox(False, 8)
 
 		sw = gtk.ScrolledWindow()
 		sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
 		sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 
-		vbox.pack_start(sw, True, True, 0)
+		self.window.vbox.pack_start(sw, True, True, 0)
 
 		treeView = gtk.TreeView(store)
+		treeView.connect("row-activated", self.on_activated)
 		treeView.set_rules_hint(True)
 		sw.add(treeView)
 
 		self.__create_columns(treeView)
 
-		self.window.add(vbox)
+		self.window.add(self.window.vbox)
 		self.window.show_all()
 
+	def on_activated(self, widget, row, col):
+		model = widget.get_model()
+		for pod in self.pods:
+			if pod["host"] == model[row][3] \
+				and pod["port"] == int(model[row][4]):
+				print "connecting to:", pod["host"], pod["port"]
+				self.bm_client.connect_to_bluemote_pod(pod)
+				print "connected"
+				self.window.destroy()
+				break
+
 	def __create_columns(self, treeView):
-		columns = ["Name", "Description", "Provider", "Host"]
+		columns = ["Name", "Description", "Provider", "Host", "Port"]
 
 		i = 0
 		for column_name in columns:
@@ -178,31 +191,25 @@ class connect_to_pod_thread(Thread):
 			i += 1
 		
 	def __create_pod_store(self):
-		store = gtk.ListStore(str, str, str, str)
+		store = gtk.ListStore(str, str, str, str, str)
 
 		bluetooth_devices =  bluetooth.find_service()
+		self.pods = []
 
 		for bt_dev in bluetooth_devices:
 			if bt_dev["provider"] == bluemote.Services().service["provider"] \
 				and bt_dev["description"] == bluemote.Services().service["description"]:
-				store.append([bt_dev["name"], bt_dev["description"], bt_dev["provider"], bt_dev["host"]])
+				store.append([bt_dev["name"],
+						bt_dev["description"],
+						bt_dev["provider"],
+						bt_dev["host"],
+						bt_dev["port"]])
+				self.pods.append(bt_dev)
 
 		return store
 
 	def run(self):
 		gobject.idle_add(self.display_pods)
-
-class Connect(gtk.Window):
-	def __init__(self):
-		super(Connect, self).__init__()
-		self.set_position(gtk.WIN_POS_CENTER)
-		self.set_title("Pod View")
-		self.set_icon_from_file(sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/devices/network-wireless.svg")
-
-		self.label = gtk.Label("Searching for Bluemote pods")
-		self.add(self.label)
-
-		self.show_all()
 
 class button_cb_thread(Thread):
 	def __init__(self, statusbar, digit):
@@ -306,13 +313,22 @@ class Bluemote_GUI(gtk.Window):
 		print "got play button press"
 
 	def connect_to_pod(self, widget, data = None):
-		if hasattr(self, "connect_window") == False:
-			self.connect_window = self.__create_connect_window()
-
-		connect_to_pod_thread(self.connect_window)
+		window = self.__create_connect_window()
+		connect_to_pod_thread(window, self.bm_client)
 
 	def __create_connect_window(self):
-		return Connect()
+		window = gtk.Window()
+		window.set_position(gtk.WIN_POS_CENTER)
+		window.set_resizable(False)
+		window.set_title("Pod View")
+		window.set_icon_from_file(sys.path[0] + "/data/tango-icon-theme-0.8.90/scalable/devices/network-wireless.svg")
+		window.set_modal(True)
+
+		window.label = gtk.Label("Searching for Bluemote pods")
+		window.add(window.label)
+
+		window.show_all()
+		return window
 
 if __name__ == "__main__":
 	gui = Bluemote_GUI()
