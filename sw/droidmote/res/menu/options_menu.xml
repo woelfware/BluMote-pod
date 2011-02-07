@@ -17,10 +17,23 @@
     <item android:id="@+id/scan"
           android:icon="@android:drawable/ic_menu_search"
           android:title="@string/connect" />
-    <item android:id="@+id/discoverable"
-          android:icon="@android:drawable/ic_menu_add"
-          android:title="@string/discoverable" />
+    
     <item android:id="@+id/manage_devices"
           android:icon="@android:drawable/ic_menu_edit"
-          android:title="@string/manage_devices" />
+          android:title="@string/manage_devices" ></item>
+    <item android:id="@+id/learn_button"
+          android:icon="@android:drawable/ic_input_add"
+          android:title="@string/learn_button" ></item>
+    <item android:id="@+id/stop_learn"
+          android:icon="@android:drawable/ic_input_delete"
+          android:title="Cancel Learn" ></item>
+    <item android:id="@+id/advanced"
+          android:title="Advanced" 
+          android:icon ="@android:drawable/ic_menu_more">
+		<menu>
+			<item android:title="@string/discoverable" android:id="@+id/discoverable" android:icon="@android:drawable/ic_menu_add" />
+			<item android:title="@string/rename_pod" android:id="@+id/rename_pod" android:icon="@android:drawable/ic_menu_edit" />
+			<item android:title="@string/get_pod_info" android:id="@+id/get_info" android:icon="@android:drawable/ic_menu_info_details" />			
+		</menu>
+	</item>
 </menu>

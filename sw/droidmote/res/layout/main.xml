@@ -42,11 +42,4 @@
 		        android:background="@drawable/channel_down" />
          </TableRow>     
     </TableLayout>
-	<ListView android:id="@+id/in"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:stackFromBottom="true"
-        android:transcriptMode="alwaysScroll"
-        android:layout_weight="1"
-    />
 </LinearLayout>

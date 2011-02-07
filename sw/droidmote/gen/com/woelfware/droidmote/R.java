@@ -60,6 +60,7 @@ public final class R {
     }
     public static final class id {
         public static final int TableLayout01=0x7f07000a;
+        public static final int advanced=0x7f070016;
         public static final int btn_channel_down=0x7f07000e;
         public static final int btn_channel_up=0x7f07000d;
         public static final int btn_volume_down=0x7f07000c;
@@ -67,16 +68,19 @@ public final class R {
         public static final int button_scan=0x7f070006;
         public static final int device_name=0x7f070007;
         public static final int device_spinner=0x7f070009;
-        public static final int devices_list=0x7f070011;
-        public static final int devices_textview=0x7f070010;
-        public static final int discoverable=0x7f070014;
+        public static final int devices_list=0x7f070010;
+        public static final int devices_textview=0x7f07000f;
+        public static final int discoverable=0x7f070017;
         public static final int enter_button=0x7f070008;
-        public static final int in=0x7f07000f;
-        public static final int manage_devices=0x7f070015;
-        public static final int menu_add_item=0x7f070012;
+        public static final int get_info=0x7f070019;
+        public static final int learn_button=0x7f070014;
+        public static final int manage_devices=0x7f070013;
+        public static final int menu_add_item=0x7f070011;
         public static final int new_devices=0x7f070005;
         public static final int paired_devices=0x7f070003;
-        public static final int scan=0x7f070013;
+        public static final int rename_pod=0x7f070018;
+        public static final int scan=0x7f070012;
+        public static final int stop_learn=0x7f070015;
         public static final int title_left_text=0x7f070000;
         public static final int title_new_devices=0x7f070004;
         public static final int title_paired_devices=0x7f070002;
@@ -106,11 +110,14 @@ public final class R {
         public static final int connect=0x7f05000e;
         public static final int discoverable=0x7f05000f;
         public static final int enter_device_title=0x7f050014;
+        public static final int get_pod_info=0x7f050017;
+        public static final int learn_button=0x7f050018;
         public static final int manage_devices=0x7f050015;
         public static final int menu_add=0x7f050012;
         public static final int none_found=0x7f05000a;
         public static final int none_paired=0x7f050009;
         public static final int not_connected=0x7f050002;
+        public static final int rename_pod=0x7f050016;
         /**   DeviceListActivity 
          */
         public static final int scanning=0x7f050007;

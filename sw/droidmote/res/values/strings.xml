@@ -43,4 +43,8 @@
 <string name="add_device_text">Enter device name:</string>
 <string name="enter_device_title">Enter device name</string>
 <string name="manage_devices">Manage Devices</string>
+<string name="rename_pod">Rename Pod</string>
+<string name="get_pod_info">Pod Information</string>
+<string name="learn_button">Learn</string>
+
 </resources>

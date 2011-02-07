@@ -37,12 +37,12 @@ public class MyDB {
 	//TODO - content should be a byte[] argument I think
 	// pass in the current-table that we are working with then the button ID and the content
 	// returns the rowID of the addition
-	public long insertButton(String curTable, String buttonID, String content)
+	public long insertButton(String curTable, String buttonID, byte[] content)
 	{
 		try {
 		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
 				null, null, null, null);
-		int test = c.getCount();
+//		int test = c.getCount();
 		if (c.getCount() > 0) { // then we already have this entry so call updateButton
 			updateButton(curTable, buttonID, content);
 			return -1;
@@ -76,18 +76,19 @@ public class MyDB {
 	
 	// This should return one of the buttons of a particular device selection
 	// TODO this should return a byte or byte[] i think
-	public String getKey(String curTable, String buttonID)
+	public byte[] getKey(String curTable, String buttonID)
 	{
-		String button;
+		byte[] button;
 		
 		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
 				null, null, null, null);
 		if (c != null) {
 			c.moveToFirst();
-			button = c.getString(c.getColumnIndex(Constants.BUTTON_DATA));
+			button = c.getBlob(c.getColumnIndex(Constants.BUTTON_DATA));
+			//button = c.getString(c.getColumnIndex(Constants.BUTTON_DATA));
 			return button;
 		}
-		return "error";
+		return null;
 	}
 	
 	// returns 1 if successful, 0 if some error and 2 if duplicate exists
@@ -146,12 +147,15 @@ public class MyDB {
     }
     
     // updates a button
-    // returns true if succeeded
-    public boolean updateButton(String curTable, String buttonID, String content) 
+    // returns true if succeeded, externally should call insertButton
+    private boolean updateButton(String curTable, String buttonID, byte[] content) 
     {
+    	// DEBUG var
+    	boolean debug;
         ContentValues args = new ContentValues();
         args.put(Constants.BUTTON_DATA, content);
-        return db.update(curTable, args, 
+        debug = db.update(curTable, args, 
                   Constants.BUTTON_ID + "='" + buttonID+"'", null) > 0;
+        return debug;
     }
 }
