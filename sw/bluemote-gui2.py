@@ -281,11 +281,37 @@ class Bluemote_GUI(gtk.Window):
 
 	def connect_buttons(self):
 		if self.panel.type == "TV":
-			self.panel.buttons["pwr"].connect("clicked", self.button_pwr_cb)
+			self.panel.buttons["pwr"].connect("clicked", self.on_button_click, "pwr")
+			self.panel.buttons["volume-up"].connect("clicked", self.on_button_click, "volume-up")
+			self.panel.buttons["volume-down"].connect("clicked", self.on_button_click, "volume-down")
+			self.panel.buttons["volume-mute"].connect("clicked", self.on_button_click, "volume-mute")
+			self.panel.buttons["channel-up"].connect("clicked", self.on_button_click, "channel-up")
+			self.panel.buttons["channel-down"].connect("clicked", self.on_button_click, "channel-down")
+			self.panel.buttons["select"].connect("clicked", self.on_button_click)
+			self.panel.buttons["channel-last"].connect("clicked", self.on_button_click)
+			self.panel.buttons["menu"].connect("clicked", self.on_button_click)
 			for i in range(10):
-				self.panel.buttons["%d" % i].connect("clicked", self.button_cb)
+				self.panel.buttons["%d" % i].connect("clicked", self.on_button_click)
+				self.panel.buttons["%d" % i].connect("button_press_event", self.on_button_press_event)
+				self.panel.buttons["%d" % i].connect("button_release_event", self.on_button_release_event)
 		elif self.panel.type == "VCR":
 			self.panel.buttons["play"].connect("clicked", self.button_play_cb)
+
+	def on_button_click(self, widget, data = None):
+		if data is None:
+			data = widget.get_label()
+		self.statusbar.pop(0)
+		self.statusbar.push(0, "Got %s button click" % widget.get_label())
+		print "Clicked", data
+		button_cb_thread(self.statusbar, data)
+
+	def on_button_press_event(self, widget, event):
+		if event.button == 3:
+			print "Right-clicked", widget.get_label()
+
+	def on_button_release_event(self, widget, event):
+		if event.button == 1:
+			print "Left-clicked", widget.get_label()
 
 	def on_window_key_press_event(self, widget, event, data = None):
 		keyval_name = gtk.gdk.keyval_name(event.keyval)
@@ -301,16 +327,6 @@ class Bluemote_GUI(gtk.Window):
 			"9", "KP_9")
 		if keyval_name in digit_keys:
 			data[keyval_name[-1]].emit("clicked")
-
-	def button_cb(self, widget, data = None):
-		button_cb_thread(self.statusbar, widget.get_label())
-
-	def button_pwr_cb(self, widget, data = None):
-		self.statusbar.pop(0)
-		self.statusbar.push(0, "Got pwr button press")
-
-	def button_play_cb(self, widget, data = None):
-		print "got play button press"
 
 	def connect_to_pod(self, widget, data = None):
 		window = self.__create_connect_window()
