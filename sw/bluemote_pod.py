@@ -38,7 +38,7 @@ class Bluemote_Server(bluemote.Services):
 
 		port = self.server_sock.getsockname()[1]
 
-		print "Advertising \"%s\" service" % (self.service_name)
+		print "Advertising \"%s\" service" % (self.service["name"])
 		advertise_service(self.server_sock,
 			self.service["name"],
 			service_classes = [SERIAL_PORT_CLASS],
