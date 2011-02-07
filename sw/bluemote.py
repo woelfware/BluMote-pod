@@ -8,7 +8,7 @@ class Command_Codes():
 		self.learn         = 0x02
 		self.get_version   = 0x03
 		self.ir_transmit   = 0x04
-		self.debug         = 0x7F	# specialized debug command that can change whenever
+		self.debug         = 0x7F	# specialized debug command whose functionality change whenever
 
 class Command_Return_Codes():
 	def __init__(self):
@@ -27,4 +27,6 @@ class Services():
 		self.cmd_codes = Command_Codes()
 		self.cmd_rc = Command_Return_Codes()
 		self.component_codes = Component_Codes()
-		self.service_name = "Bluemote"
+		self.service = {"name" : "Bluemote",
+			"provider" : "Woelfware",
+			"description" : "IR XPDR"}
