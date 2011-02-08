@@ -121,7 +121,6 @@ public class Droidmote extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
-        if(D) Log.e(TAG, "+++ ON CREATE +++");
   
         // Set up the window layout
         requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
@@ -170,7 +169,6 @@ public class Droidmote extends Activity {
     @Override
     public void onStart() {
         super.onStart();
-        if(D) Log.e(TAG, "++ ON START ++");
 
         // If BT is not on, request that it be enabled.
         // setupChat() will then be called during onActivityResult
@@ -186,7 +184,6 @@ public class Droidmote extends Activity {
     @Override
     public synchronized void onResume() {
         super.onResume();
-        if(D) Log.e(TAG, "+ ON RESUME +");
 
         // Performing this check in onResume() covers the case in which BT was
         // not enabled during onStart(), so we were paused to enable it...
@@ -221,7 +218,6 @@ public class Droidmote extends Activity {
     public synchronized void onPause() {
         super.onPause();
         
-        if(D) Log.e(TAG, "- ON PAUSE -");
     }
 
     @Override
@@ -231,7 +227,6 @@ public class Droidmote extends Activity {
         // close sqlite database connection
         device_data.close();
                      
-        if(D) Log.e(TAG, "-- ON STOP --");
     }
     
     @Override
@@ -244,9 +239,7 @@ public class Droidmote extends Activity {
         Editor mEditor =  prefs.edit();
         mEditor.putString("lastDevice",cur_table);
         mEditor.commit();   
-        
-        if(D) Log.e(TAG, "--- ON DESTROY ---");
-        
+                
     }
     
     // this is called after resume from another full-screen activity
@@ -403,7 +396,6 @@ public class Droidmote extends Activity {
     }
 
     private void ensureDiscoverable() {
-        if(D) Log.d(TAG, "ensure discoverable");
         if (mBluetoothAdapter.getScanMode() !=
             BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -433,7 +425,6 @@ public class Droidmote extends Activity {
         public void handleMessage(Message msg) {
             switch (msg.what) {
             case MESSAGE_STATE_CHANGE:
-                if(D) Log.i(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
                 switch (msg.arg1) {
                 case BluetoothChatService.STATE_CONNECTED:
                     mTitle.setText(R.string.title_connected_to);
@@ -483,7 +474,6 @@ public class Droidmote extends Activity {
     };
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(D) Log.d(TAG, "onActivityResult " + resultCode);
         switch (requestCode) {
         case REQUEST_CONNECT_DEVICE:
             // When DeviceListActivity returns with a device to connect
@@ -511,7 +501,6 @@ public class Droidmote extends Activity {
                 setupChat();
             } else {
                 // User did not enable Bluetooth or an error occured
-                Log.d(TAG, "BT not enabled");
                 Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
                 finish();
             }
