@@ -1,6 +1,9 @@
 package com.woelfware.droidmote;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -14,7 +17,6 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.HapticFeedbackConstants;
 import android.view.Menu;
@@ -200,7 +202,6 @@ public class Droidmote extends Activity {
 		fetchButtons();
 		
 		// See if the bluetooth device is connected, if not connect to last stored connection
-		// TODO
 		if (mBluetoothAdapter.isEnabled()) {
 			if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
 				String address = prefs.getString("lastPod", null);
@@ -344,7 +345,6 @@ public class Droidmote extends Activity {
     	    		buttonSend((String)payload[1]);
     	    	}
 	    	
-        		//TODO add rest of buttons here
 				NUM_MESSAGES++;
         		mHandler.sendMessageDelayed(msg, DELAY_TIME);      		
         	}
@@ -353,11 +353,18 @@ public class Droidmote extends Activity {
     
     
     private void resetButtons() {
-		btn_volume_up.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_volume));
-		btn_volume_down.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_volume));   					    					
-		btn_channel_up.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_up_ch));   					    					
-		btn_channel_down.setBackgroundDrawable(getResources().getDrawable(R.drawable.arrow_down_ch));   					    					
-		//TODO add rest of buttons here
+    	Object[] payload;    	
+    	Button btn;
+    	
+    	// need iterate through button_map and reset images to unpressed state image
+    	Iterator itr = button_map.keySet().iterator();
+    	while (itr.hasNext()) {
+    		Integer key = (Integer)itr.next();
+    		payload = button_map.get(key);
+    		btn = (Button)payload[0];
+    		btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[2]));    		
+    	}
+    	payload = button_map.get(BUTTON_ID);
     }
     
     private void setupChat() {
@@ -561,13 +568,6 @@ public class Droidmote extends Activity {
         	sendCode(Codes.Commands.GET_VERSION);
         	return true;
         case R.id.learn_button:
-        	//TODO implement learn button,
-        	// pop up Toast that says to click on a button
-        	// set flag that says in learn mode
-        	// pick up on this flag in the action handlers
-        	// send code to pod on click listener
-        	// change button color in click listener
-        	// reset key background on return from pod command
         	Toast.makeText(this, "Select button to train", Toast.LENGTH_LONG).show();
         	LEARN_MODE = true;
         	return true;

@@ -30,11 +30,9 @@ public class MyDB {
 			db = dbhelper.getWritableDatabase();
 		} catch(SQLiteException ex) {
 			Log.v("Open database exception caught", ex.getMessage());
-//			db = dbhelper.getReadableDatabase();
 		}
 	}
 	
-	//TODO - content should be a byte[] argument I think
 	// pass in the current-table that we are working with then the button ID and the content
 	// returns the rowID of the addition
 	public long insertButton(String curTable, String buttonID, byte[] content)
@@ -42,7 +40,6 @@ public class MyDB {
 		try {
 		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
 				null, null, null, null);
-//		int test = c.getCount();
 		if (c.getCount() > 0) { // then we already have this entry so call updateButton
 			updateButton(curTable, buttonID, content);
 			return -1;
@@ -52,7 +49,6 @@ public class MyDB {
 				ContentValues newTaskValue = new ContentValues();
 				newTaskValue.put(Constants.BUTTON_ID, buttonID);
 				newTaskValue.put(Constants.BUTTON_DATA, content);
-				// DEBUG
 				db = dbhelper.getWritableDatabase();
 				return db.insertOrThrow(curTable, null, newTaskValue);
 			} catch(SQLiteException ex) {
@@ -75,7 +71,6 @@ public class MyDB {
 	}
 	
 	// This should return one of the buttons of a particular device selection
-	// TODO this should return a byte or byte[] i think
 	public byte[] getKey(String curTable, String buttonID)
 	{
 		byte[] button;
