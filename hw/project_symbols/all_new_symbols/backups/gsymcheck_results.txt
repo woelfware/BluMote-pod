@@ -1,0 +1,10 @@
+This standard symbol design rule check was created by:  Symbol Maker v 3.9.5 - Kiwi PCB
+The Symbol Maker is copyright 2011, www.KiwiPCB.com
+This release is for general use.
+Created on 01/30/11 at 21:13:14   For Kenneth Hutchins  ( kenneth.hutchins@gmail.com ) personal use
+
+This release is for general use.
+
+Checking: /home/ken/bluemote/hw/project_symbols/all_new_symbols/usb_micro_b.sym
+No errors found
+

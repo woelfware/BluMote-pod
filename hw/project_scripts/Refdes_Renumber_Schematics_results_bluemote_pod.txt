@@ -1,0 +1,110 @@
+Results from Refdes Renumber project: bluemote_pod.proj
+This was created by:  Project Manager v 3.9.5 - Kiwi PCB
+The Project Manager is copyright 2011, www.KiwiPCB.com
+This release is for general use.
+Created on 01/21/11 at 07:48:52   For Kenneth Hutchins  < kenneth.hutchins@gmail.com > 
+
+Project name: /home/ken/bluemote/hw/bluemote_pod.proj
+PCB name: bluemote_pod.pcb
+Schematic files in this project:
+"    1      /home/ken/bluemote/hw/schematics/bluemote_pod.sch"
+
+"*** You are working with all of the schematics.***"
+******************************************************************************************
+
+
+Found 1 files to process
+Now processing input file #1: /home/ken/bluemote/hw/schematics/bluemote_pod.sch
+Processing refdes=U1 ....
+Refdes line "refdes=U1" has pre=U suf=1
+Renumbering refdes=U1 to U101
+Processing refdes=U2 ....
+Refdes line "refdes=U2" has pre=U suf=2
+Renumbering refdes=U2 to U102
+Processing refdes=U3 ....
+Refdes line "refdes=U3" has pre=U suf=3
+Renumbering refdes=U3 to U103
+Processing refdes=Q1 ....
+Refdes line "refdes=Q1" has pre=Q suf=1
+Renumbering refdes=Q1 to Q101
+Processing refdes=D2 ....
+Refdes line "refdes=D2" has pre=D suf=2
+Renumbering refdes=D2 to D101
+Processing refdes=D3 ....
+Refdes line "refdes=D3" has pre=D suf=3
+Renumbering refdes=D3 to D102
+Processing refdes=D1 ....
+Refdes line "refdes=D1" has pre=D suf=1
+Renumbering refdes=D1 to D103
+Processing refdes=R1 ....
+Refdes line "refdes=R1" has pre=R suf=1
+Renumbering refdes=R1 to R101
+Processing refdes=R2 ....
+Refdes line "refdes=R2" has pre=R suf=2
+Renumbering refdes=R2 to R102
+Processing refdes=Q1 ....
+Refdes line "refdes=Q1" has pre=Q suf=1
+Renumbering refdes=Q1 to Q102
+Processing refdes=D2 ....
+Refdes line "refdes=D2" has pre=D suf=2
+Renumbering refdes=D2 to D104
+Processing refdes=D3 ....
+Refdes line "refdes=D3" has pre=D suf=3
+Renumbering refdes=D3 to D105
+Processing refdes=D1 ....
+Refdes line "refdes=D1" has pre=D suf=1
+Renumbering refdes=D1 to D106
+Processing refdes=R1 ....
+Refdes line "refdes=R1" has pre=R suf=1
+Renumbering refdes=R1 to R103
+Processing refdes=R2 ....
+Refdes line "refdes=R2" has pre=R suf=2
+Renumbering refdes=R2 to R104
+Processing refdes=D1 ....
+Refdes line "refdes=D1" has pre=D suf=1
+Renumbering refdes=D1 to D107
+Processing refdes=R1 ....
+Refdes line "refdes=R1" has pre=R suf=1
+Renumbering refdes=R1 to R105
+Processing refdes=Q1 ....
+Refdes line "refdes=Q1" has pre=Q suf=1
+Renumbering refdes=Q1 to Q103
+Processing refdes=D2 ....
+Refdes line "refdes=D2" has pre=D suf=2
+Renumbering refdes=D2 to D108
+Processing refdes=D3 ....
+Refdes line "refdes=D3" has pre=D suf=3
+Renumbering refdes=D3 to D109
+Processing refdes=D1 ....
+Refdes line "refdes=D1" has pre=D suf=1
+Renumbering refdes=D1 to D110
+Processing refdes=R1 ....
+Refdes line "refdes=R1" has pre=R suf=1
+Renumbering refdes=R1 to R106
+Processing refdes=R2 ....
+Refdes line "refdes=R2" has pre=R suf=2
+Renumbering refdes=R2 to R107
+Processing refdes=Q? ....
+Refdes line "refdes=Q?" has pre=Q suf=?
+Renumbering refdes=Q? to Q104
+Processing refdes=D1 ....
+Refdes line "refdes=D1" has pre=D suf=1
+Renumbering refdes=D1 to D111
+Processing refdes=D1 ....
+Refdes line "refdes=D1" has pre=D suf=1
+Renumbering refdes=D1 to D112
+Processing refdes=D1 ....
+Refdes line "refdes=D1" has pre=D suf=1
+Renumbering refdes=D1 to D113
+Processing refdes=R2 ....
+Refdes line "refdes=R2" has pre=R suf=2
+Renumbering refdes=R2 to R108
+Processing refdes=R2 ....
+Refdes line "refdes=R2" has pre=R suf=2
+Renumbering refdes=R2 to R109
+Processing refdes=R2 ....
+Refdes line "refdes=R2" has pre=R suf=2
+Renumbering refdes=R2 to R110
+Processing refdes=R2 ....
+Refdes line "refdes=R2" has pre=R suf=2
+Renumbering refdes=R2 to R111

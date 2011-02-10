@@ -1,7 +1,7 @@
-# This Project File was created by:  Project Manager v 3.9.5 - Kiwi PCB
+# This Project File was created by:  Project Manager v 3.9.6 - Kiwi PCB
 # The Project Manager is copyright 2011, www.KiwiPCB.com
 # This release is for general use.
-# Created on 01/24/11 at 23:02:11   For Kenneth Hutchins  < kenneth.hutchins@gmail.com > 
+# Created on 02/06/11 at 04:42:15   For Kenneth Hutchins  < kenneth.hutchins@gmail.com > 
 
 %pcb_name=bluemote_pod.pcb;
 %pcb_style=Double_Sided_PCB.scm;

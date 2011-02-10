@@ -420,16 +420,3 @@ T 51000 54900 5 8 0 0 0 1 1
 symversion=1.1
 }
 N 50800 52200 50800 52500 4
-C 52200 53400 1 0 0 inductor.sym
-{
-T 52525 53600 5 8 1 1 0 4 1
-refdes=L?
-T 52510 55050 5 8 0 0 0 1 1
-device=inductor
-T 52510 55250 5 8 0 0 0 1 1
-value=1K
-T 52510 55650 5 8 0 0 0 1 1
-footprint=we_tpc_type_s.fp
-T 52510 56450 5 8 0 0 0 1 1
-symversion=1.1
-}
