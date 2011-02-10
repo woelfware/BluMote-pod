@@ -11,8 +11,8 @@ import bluemote
 
 gobject.threads_init()
 
-data_dir = sys.path[0] + "/../data"
-scalable_icon_dir = data_dir + "/tango-icon-theme-0.8.90/scalable"
+data_dir = sys.path[0] + "/../data/"
+scalable_icon_dir = data_dir + "tango-icon-theme-0.8.90/scalable/"
 
 class Panel(gtk.Table):
 	def __init__(self, panel_type, rows, columns, homogenous = True):
@@ -38,15 +38,15 @@ class TV_panel(Panel):
 		self.buttons["select"] = gtk.Button("Select")
 		self.buttons["channel-last"] = gtk.Button("Prev Ch")
 		self.buttons["menu"] = gtk.Button("Menu")
-		self.button_with_pic("pwr", scalable_icon_dir + "/actions/system-shutdown.svg")
+		self.button_with_pic("pwr", scalable_icon_dir + "actions/system-shutdown.svg")
 		self.buttons["pwr"].modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse("red"))
 		self.buttons["pwr"].modify_bg(gtk.STATE_ACTIVE, gtk.gdk.Color("#D00000"))
 		self.buttons["pwr"].modify_bg(gtk.STATE_PRELIGHT, gtk.gdk.color_parse("red"))
-		self.button_with_pic("volume-up", scalable_icon_dir + "/status/audio-volume-high.svg")
-		self.button_with_pic("volume-down", scalable_icon_dir + "/status/audio-volume-low.svg")
-		self.button_with_pic("volume-mute", scalable_icon_dir + "/status/audio-volume-muted.svg")
-		self.button_with_pic("channel-up", scalable_icon_dir + "/actions/go-up.svg")
-		self.button_with_pic("channel-down", scalable_icon_dir + "/actions/go-down.svg")
+		self.button_with_pic("volume-up", scalable_icon_dir + "status/audio-volume-high.svg")
+		self.button_with_pic("volume-down", scalable_icon_dir + "status/audio-volume-low.svg")
+		self.button_with_pic("volume-mute", scalable_icon_dir + "status/audio-volume-muted.svg")
+		self.button_with_pic("channel-up", scalable_icon_dir + "actions/go-up.svg")
+		self.button_with_pic("channel-down", scalable_icon_dir + "actions/go-down.svg")
 		#self.pixbufs["pwr"] = gtk.gdk.pixbuf_new_from_file_at_size(scalable_icon_dir + "/actions/system-shutdown.svg", 200, 200)
 		#self.images["pwr"].set_from_pixbuf(self.pixbufs["pwr"].scale_simple(4, 4, gtk.gdk.INTERP_BILINEAR))
 		#self.images["pwr"].set_from_pixbuf(self.pixbufs["pwr"].scale_simple(350, 350, gtk.gdk.INTERP_BILINEAR))
@@ -71,7 +71,7 @@ class VCR_panel(Panel):
 
 		self.buttons["play"] = gtk.Button()
 
-		self.pixbufs["play"] = gtk.gdk.pixbuf_new_from_file(scalable_icon_dir + "/actions/media-playback-start.svg")
+		self.pixbufs["play"] = gtk.gdk.pixbuf_new_from_file(scalable_icon_dir + "actions/media-playback-start.svg")
 		self.images["play"] = gtk.Image()
 		self.images["play"].set_from_pixbuf(self.pixbufs["play"])
 		self.buttons["play"] = gtk.Button()
@@ -251,7 +251,7 @@ class Bluemote_GUI(gtk.Window):
 
 		self.set_resizable(False)
 		self.set_border_width(10)
-		self.set_icon_from_file(data_dir + "/bluemote_Icon72.png")
+		self.set_icon_from_file(data_dir + "bluemote_Icon72.png")
 		self.set_title("Bluemote")
 		self.set_position(gtk.WIN_POS_CENTER)
 
@@ -340,7 +340,7 @@ class Bluemote_GUI(gtk.Window):
 		window.set_position(gtk.WIN_POS_CENTER)
 		window.set_resizable(False)
 		window.set_title("Pod View")
-		window.set_icon_from_file(scalable_icon_dir + "/devices/network-wireless.svg")
+		window.set_icon_from_file(scalable_icon_dir + "devices/network-wireless.svg")
 		window.set_modal(True)
 
 		window.label = gtk.Label("Searching for Bluemote pods")
