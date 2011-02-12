@@ -10,36 +10,119 @@
 		android:layout_height="wrap_content"
 		android:layout_gravity="center">
 	</Spinner>
-	<TableLayout
-		android:id="@+id/TableLayout01" 
+	<LinearLayout
+		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="center">     
-         <TableRow>
- 			<Button
-        		android:id="@+id/btn_volume_up"
+         	<Button
+        		android:id="@+id/power_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:padding="10dp"
+		        android:background="@drawable/power_48_gray" />         	
+         	<Button              
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/spacer" />
+         	<Button
+        		android:id="@+id/media_eject"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/media_eject_gray" />
+ 			<Button              
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/spacer" />
+			<Button
+        		android:id="@+id/record_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/record" />		     
+	</LinearLayout>
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="center"
+		android:paddingTop="10px">    
+			<Button
+        		android:id="@+id/skip_back_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/topleft" />
+		    <Button
+        		android:id="@+id/reverse_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/top_middle" />
+		    <Button
+        		android:id="@+id/forward_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/top_middler" />
+		    <Button
+        		android:id="@+id/skip_forward_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/top_right" />
+	</LinearLayout>
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="center">    
+			<Button
+        		android:id="@+id/stop_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/bottom_left" />
+		    <Button
+        		android:id="@+id/play_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/bottom_center" />
+		    <Button
+        		android:id="@+id/pause_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/bottom_right" />
+	</LinearLayout>
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="center">    
+			<Button
+               	android:id="@+id/btn_volume_up"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
 		        android:background="@drawable/volume_up" />
             <Button
                	android:id="@+id/btn_volume_down"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:padding="10dp"
 		        android:background="@drawable/volume_down" />
             <Button
                	android:id="@+id/btn_channel_up"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:padding="10dp"
 		        android:background="@drawable/channel_up" />
             <Button
                	android:id="@+id/btn_channel_down"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:padding="10dp"
 		        android:background="@drawable/channel_down" />
-         </TableRow>     
-    </TableLayout>
+	</LinearLayout>
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="left">
+			<Button
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/rocker_volume_example" />
+	
+	</LinearLayout>
+	
 </LinearLayout>
