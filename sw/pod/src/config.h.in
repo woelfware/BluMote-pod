@@ -1,0 +1,15 @@
+/*
+ * The configured options and settings for the Bluemote pod.
+ *
+ * Copyright (c) 2011 Woelfware
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define VERSION_MAJOR		@BLUEMOTE_POD_VERSION_MAJOR@
+#define VERSION_MINOR		@BLUEMOTE_POD_VERSION_MINOR@
+#define VERSION_REVISION	@BLUEMOTE_POD_VERSION_REVISION@
+
+#endif
+
