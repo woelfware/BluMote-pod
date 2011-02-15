@@ -13,7 +13,7 @@ class Bluemote_Client(bluemote.Services):
 
 	def find_bluemote_pods(self, pod_name = None):
 		if pod_name is None:
-			pod_name = self.service_name
+			pod_name = self.service["name"]
 		print "Searching for \"%s\" service..." % (pod_name)
 		return find_service(name = pod_name)
 
