@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 {
 	struct bluemote_server server;
 
-	create_bluemote_server(&server);
+	bm_server_init(&server);
 	bm_allocate_socket(&server);
 	bm_bind_socket(&server);
 	bm_listen(&server);

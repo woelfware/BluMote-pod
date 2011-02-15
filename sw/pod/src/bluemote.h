@@ -48,7 +48,7 @@ struct bluemote_server {
 	       buf[1024];
 };
 
-void create_bluemote_server(struct bluemote_server *server);
+void bm_server_init(struct bluemote_server *server);
 void bm_allocate_socket(struct bluemote_server *server);
 void bm_bind_socket(struct bluemote_server *server);
 void bm_listen(struct bluemote_server *server);

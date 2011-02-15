@@ -16,12 +16,14 @@ static gchar pod_name[] = "Bluemote",
 
 static void set_version(struct version *version)
 {
+	g_assert(version != NULL);
+
 	version->major = VERSION_MAJOR;
 	version->minor = VERSION_MINOR;
 	version->revision = VERSION_REVISION;
 }
 
-void create_bluemote_server(struct bluemote_server *server)
+void bm_server_init(struct bluemote_server *server)
 {
 	g_assert(server != NULL);
 
@@ -45,17 +47,23 @@ void bm_allocate_socket(struct bluemote_server *server)
 
 void bm_bind_socket(struct bluemote_server *server)
 {
-    /*
-     * bind socket to port 1 of the first available local bluetooth adapter
-     */
-    server->loc_addr.rc_family	= AF_BLUETOOTH;
-    server->loc_addr.rc_bdaddr	= *BDADDR_ANY;
-    server->loc_addr.rc_channel	= (guint8)1;
-    bind(server->s, (struct sockaddr *)&server->loc_addr, sizeof(server->loc_addr));
+	gint err;
+
+	g_assert(server != NULL);
+
+	/* bind socket to the first available port on the first available local
+	 * bluetooth adapter
+	 */
+	server->loc_addr.rc_family	= AF_BLUETOOTH;
+	server->loc_addr.rc_bdaddr	= *BDADDR_ANY;
+	server->loc_addr.rc_channel	= (guint8)0;	/* bind to first available port */
+	bind(server->s, (struct sockaddr *)&server->loc_addr, sizeof(server->loc_addr));
 }
 
 void bm_listen(struct bluemote_server *server)
 {
+	g_assert(server != NULL);
+
 	listen(server->s, 1);
 	server->client = accept(server->s, (struct sockaddr *)&server->rem_addr, &server->opt);
 
@@ -66,6 +74,8 @@ void bm_listen(struct bluemote_server *server)
 
 void bm_read_data(struct bluemote_server *server)
 {
+	g_assert(server != NULL);
+
 	server->bytes_read = read(server->client, server->buf, sizeof(server->buf));
 	if (server->bytes_read > 0) {
 		printf("received [%s]\n", server->buf);
@@ -74,6 +84,8 @@ void bm_read_data(struct bluemote_server *server)
 
 void bm_close(struct bluemote_server *server)
 {
+	g_assert(server != NULL);
+
 	close(server->client);
 	close(server->s);
 }
