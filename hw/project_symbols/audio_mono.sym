@@ -41,7 +41,7 @@ value=none
 T 1100 4100 4 8 0 0 0 1 1
 description=3.5mm Audio Jack - Mono
 T 1100 4300 4 8 0 0 0 1 1
-footprint=mj_3536ng.fp
+footprint=mj-3536ng.fp
 T 1100 4500 4 8 0 0 0 1 1
 documentation=pdf_name
 T 1100 4700 4 8 0 0 0 1 1
