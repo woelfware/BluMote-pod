@@ -78,6 +78,14 @@ void bm_read_data(struct bluemote_server *server)
 	server->bytes_read = read(server->client, server->buf, sizeof(server->buf));
 }
 
+gssize bm_write_data(struct bluemote_server *server, gpointer buf, gsize len)
+{
+	g_assert(server != NULL);
+	g_assert(buf != NULL);
+
+	return write(server->client, buf, buf);
+}
+
 void bm_close(struct bluemote_server *server)
 {
 	g_assert(server != NULL);

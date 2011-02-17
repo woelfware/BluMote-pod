@@ -55,6 +55,7 @@ void bm_allocate_socket(struct bluemote_server *server);
 gint bm_bind_socket(struct bluemote_server *server);
 void bm_listen(struct bluemote_server *server);
 void bm_read_data(struct bluemote_server *server);
+gssize bm_write_data(struct bluemote_server *server, gpointer buf, gsize len);
 void bm_close(struct bluemote_server *server);
 sdp_session_t *bm_register_service(guint8 rfcomm_channel);
 
