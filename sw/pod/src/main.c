@@ -18,13 +18,13 @@ int main(int argc, char *argv[])
 	extern int errno;
 
 	bm_server_init(&server);
-	bm_allocate_socket(&server);
-	if (bm_bind_socket(&server)) {
-		g_printerr("Failed to bind to a socket.\n");
-		exit(EXIT_FAILURE);
-	}
-	session = bm_register_service(server.loc_addr.rc_channel);
 	while (1) {
+		bm_allocate_socket(&server);
+		if (bm_bind_socket(&server)) {
+			g_printerr("Failed to bind to a socket.\n");
+			exit(EXIT_FAILURE);
+		}
+		session = bm_register_service(server.loc_addr.rc_channel);
 		g_print("listening for client connection\n");
 		bm_listen(&server);
 		if (server.client < 0) {
