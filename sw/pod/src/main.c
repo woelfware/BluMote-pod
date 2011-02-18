@@ -35,21 +35,35 @@ int main(int argc, char *argv[])
 		memset(server.buf, 0, sizeof(server.buf));
 
 		while (1) {
-			bm_read_data(&server);
-			if (server.bytes_read < 0) {
-				break;
-			} else {
-				gint i = 0;
+			enum COMMAND_CODES cmd_code;
 
-				g_print("received [0x");
-				while (server.bytes_read) {
-					g_print("%c%c",
-						hex[(server.buf[i] >> 4) & 0x0F],
-						hex[server.buf[i] & 0x0F]);
-					server.bytes_read--;
-					i++;
-				}
-				g_print("]\n");
+			bm_read_data(&server);
+			cmd_code = bm_get_command(&server);
+			switch (cmd_code) {
+			case BM_INIT :
+				break;
+
+			case BM_RENAME_DEVICE :
+				break;
+
+			case BM_LEARN :
+				break;
+
+			case BM_GET_VERSION :
+				bm_get_version(&server);
+				break;
+
+			case BM_IR_TRANSMIT :
+				break;
+
+			case BM_DEBUG :
+				break;
+
+			case BM_NONE :
+				break;
+
+			default :
+				g_printerr("Unhandled command code: %d\n", cmd_code);
 			}
 		}
 

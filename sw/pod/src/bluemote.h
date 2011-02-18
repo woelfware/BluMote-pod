@@ -17,13 +17,14 @@ enum COMMAND_CODES {
 	BM_LEARN,
 	BM_GET_VERSION,
 	BM_IR_TRANSMIT,
-	BM_DEBUG = 0x7F
+	BM_DEBUG = 0x7F,
+	BM_NONE = -1
 };
 
 enum COMMAND_RETURN_CODES {
 	BM_NOT_INITTED	= 0x00,
 	BM_ACK		= 0x06,
-	BM_NACK		= 0x15
+	BM_NAK		= 0x15
 };
 
 enum COMPONENT_CODES {
@@ -45,9 +46,11 @@ struct bluemote_server {
 	socklen_t opt;
 	gint s,
 	     client,
-	     bytes_read;
+	     bytes_read,
+	     bytes_written;
 	guint8 pkt_cnt,
-	       buf[1024];
+	       buf[1024],
+	       out_buf[1024];
 };
 
 void bm_server_init(struct bluemote_server *server);
@@ -55,9 +58,10 @@ void bm_allocate_socket(struct bluemote_server *server);
 gint bm_bind_socket(struct bluemote_server *server);
 void bm_listen(struct bluemote_server *server);
 void bm_read_data(struct bluemote_server *server);
-gssize bm_write_data(struct bluemote_server *server, gpointer buf, gsize len);
+gssize bm_write_data(struct bluemote_server *server);
 void bm_close(struct bluemote_server *server);
 sdp_session_t *bm_register_service(guint8 rfcomm_channel);
+enum COMMAND_CODES bm_get_command(struct bluemote_server *server);
 
 #endif
 
