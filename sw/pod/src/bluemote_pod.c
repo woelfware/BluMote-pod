@@ -29,6 +29,9 @@ void bm_server_init(struct bluemote_server *server)
 
 	set_version(&server->version);
 	server->opt = (socklen_t)sizeof(server->rem_addr);
+	g_strlcpy(server->sdp.name, SERVICE_NAME, sizeof(server->sdp.name));
+	g_strlcpy(server->sdp.dsc, SERVICE_DSC, sizeof(server->sdp.dsc));
+	g_strlcpy(server->sdp.prov, SERVICE_PROV, sizeof(server->sdp.prov));
 }
 
 void bm_allocate_socket(struct bluemote_server *server)
@@ -84,8 +87,7 @@ void bm_read_data(struct bluemote_server *server)
 	if (select(server->client + 1, &rfds, NULL, NULL, NULL)) {
 		server->bytes_read = read(server->client, server->buf, sizeof(server->buf));
 	} else {
-		server->buf[0] = (((guint8)BM_DISCONNECT << 1) & 0xFE)
-			| (server->pkt_cnt & 0x01);
+		server->buf[0] = (guint8)BM_DISCONNECT;
 		server->bytes_read = 1;
 	}
 }
@@ -105,11 +107,8 @@ void bm_close(struct bluemote_server *server)
 	close(server->s);
 }
 
-sdp_session_t *bm_register_service(guint8 rfcomm_channel)
+sdp_session_t *bm_register_service(struct bluemote_server *server)
 {
-	gchar const *service_name = SERVICE_NAME,
-	      *service_dsc = SERVICE_DSC,
-	      *service_prov = SERVICE_PROV;
 	uuid_t root_uuid,
 	       l2cap_uuid,
 	       rfcomm_uuid,
@@ -134,7 +133,7 @@ sdp_session_t *bm_register_service(guint8 rfcomm_channel)
 
 	/* set rfcomm information */
 	sdp_uuid16_create(&rfcomm_uuid, RFCOMM_UUID);
-	channel = sdp_data_alloc(SDP_UINT8, &rfcomm_channel);
+	channel = sdp_data_alloc(SDP_UINT8, &server->loc_addr.rc_channel);
 	rfcomm_list = sdp_list_append(0, &rfcomm_uuid);
 	sdp_list_append(rfcomm_list, channel);
 	sdp_list_append(proto_list, rfcomm_list);
@@ -144,7 +143,10 @@ sdp_session_t *bm_register_service(guint8 rfcomm_channel)
 	sdp_set_access_protos(record, access_proto_list);
 
 	/* set the name, provider, and description */
-	sdp_set_info_attr(record, service_name, service_prov, service_dsc);
+	sdp_set_info_attr(record,
+			server->sdp.name,
+			server->sdp.prov,
+			server->sdp.dsc);
 	gint err = 0;
 	sdp_session_t *session = 0;
 
@@ -176,17 +178,8 @@ enum COMMAND_CODES bm_get_command(struct bluemote_server *server)
 		return BM_NONE;
 	}
 
-	if (server->pkt_cnt & 0x01 != server->buf[0] & 0x01) {
-		/* duplicate packet detected - resend last packet */
-		bm_write_data(server);
-		return BM_NONE;
-	}
-
-	server->pkt_cnt = (server->pkt_cnt + 1) & 0x01;
-
-	cmd_code = (server->buf[0] >> 1) & 0x7F;
+	cmd_code = server->buf[0];
 	switch (cmd_code) {
-	case BM_INIT :
 	case BM_RENAME_DEVICE :
 	case BM_LEARN :
 	case BM_GET_VERSION :
@@ -197,8 +190,7 @@ enum COMMAND_CODES bm_get_command(struct bluemote_server *server)
 
 	default :
 	{
-		server->out_buf[0] = (((guint8)BM_NAK << 1) & 0xFE)
-			| (server->pkt_cnt & 0x01);
+		server->out_buf[0] = (guint8)BM_NAK;
 		server->bytes_written = 1;
 		bm_write_data(server);
 		return BM_NONE;
@@ -212,13 +204,19 @@ void bm_get_version(struct bluemote_server *server)
 
 	server->bytes_written = 0;
 
-	server->out_buf[server->bytes_written] = (((guint8)BM_ACK << 1) & 0xFE)
-		| (server->pkt_cnt & 0x01);
+	server->out_buf[server->bytes_written] = (guint8)BM_ACK;
 	server->bytes_written++;
 	server->out_buf[server->bytes_written] = (guint8)BM_FIRMWARE;
 	server->bytes_written++;
 	memcpy(&server->out_buf[server->bytes_written], &server->version, sizeof(server->version));
 	server->bytes_written += sizeof(server->version);
 	write(server->client, server->out_buf, server->bytes_written);
+}
+
+void bm_rename(struct bluemote_server *server)
+{
+	g_assert(server != NULL);
+
+	g_strlcpy(server->sdp.name, &server->buf[1], sizeof(server->sdp.name));
 }
 

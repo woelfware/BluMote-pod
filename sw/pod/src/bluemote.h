@@ -12,12 +12,11 @@
 #include <bluetooth/sdp_lib.h>
 
 enum COMMAND_CODES {
-	BM_INIT,
+	BM_DISCONNECT,
 	BM_RENAME_DEVICE,
 	BM_LEARN,
 	BM_GET_VERSION,
 	BM_IR_TRANSMIT,
-	BM_DISCONNECT,
 	BM_DEBUG = 0x7F,
 	BM_NONE = -1
 };
@@ -40,17 +39,23 @@ struct version {
 		revision;
 };
 
+struct sdp_description {
+	gchar name[16],
+	      dsc[16],
+	      prov[16];
+};
+
 struct bluemote_server {
 	struct version version;
 	struct sockaddr_rc loc_addr,
 			   rem_addr;
+	struct sdp_description sdp; 
 	socklen_t opt;
 	gint s,
 	     client,
 	     bytes_read,
 	     bytes_written;
-	guint8 pkt_cnt,
-	       buf[1024],
+	guint8 buf[1024],
 	       out_buf[1024];
 };
 
@@ -61,8 +66,9 @@ void bm_listen(struct bluemote_server *server);
 void bm_read_data(struct bluemote_server *server);
 gssize bm_write_data(struct bluemote_server *server);
 void bm_close(struct bluemote_server *server);
-sdp_session_t *bm_register_service(guint8 rfcomm_channel);
+sdp_session_t *bm_register_service(struct bluemote_server *server);
 enum COMMAND_CODES bm_get_command(struct bluemote_server *server);
+void bm_rename(struct bluemote_server *server);
 
 #endif
 

@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 			g_printerr("Failed to bind to a socket.\n");
 			exit(EXIT_FAILURE);
 		}
-		session = bm_register_service(server.loc_addr.rc_channel);
+		session = bm_register_service(&server);
 		g_print("listening for client connection\n");
 		bm_listen(&server);
 		if (server.client < 0) {
@@ -43,10 +43,8 @@ int main(int argc, char *argv[])
 				break;
 			}
 			switch (cmd_code) {
-			case BM_INIT :
-				break;
-
 			case BM_RENAME_DEVICE :
+				bm_rename(&server);
 				break;
 
 			case BM_LEARN :
