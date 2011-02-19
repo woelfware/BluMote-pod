@@ -6,6 +6,7 @@
 #include "config.h"
 #include <glib.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 #include <bluetooth/sdp.h>
@@ -73,9 +74,20 @@ void bm_listen(struct bluemote_server *server)
 
 void bm_read_data(struct bluemote_server *server)
 {
+	fd_set rfds;
+
 	g_assert(server != NULL);
 
-	server->bytes_read = read(server->client, server->buf, sizeof(server->buf));
+	FD_ZERO(&rfds);
+	FD_SET(server->client, &rfds);
+
+	if (select(server->client + 1, &rfds, NULL, NULL, NULL)) {
+		server->bytes_read = read(server->client, server->buf, sizeof(server->buf));
+	} else {
+		server->buf[0] = (((guint8)BM_DISCONNECT << 1) & 0xFE)
+			| (server->pkt_cnt & 0x01);
+		server->bytes_read = 1;
+	}
 }
 
 gssize bm_write_data(struct bluemote_server *server)
@@ -158,7 +170,9 @@ enum COMMAND_CODES bm_get_command(struct bluemote_server *server)
 
 	g_assert(server != NULL);
 
-	if (server->bytes_read < 1) {
+	if (server->bytes_read < 0) {
+		return BM_DISCONNECT;
+	} else if (server->bytes_read == 0) {
 		return BM_NONE;
 	}
 
@@ -177,6 +191,7 @@ enum COMMAND_CODES bm_get_command(struct bluemote_server *server)
 	case BM_LEARN :
 	case BM_GET_VERSION :
 	case BM_IR_TRANSMIT :
+	case BM_DISCONNECT :
 	case BM_DEBUG :
 		return cmd_code;
 
@@ -195,12 +210,14 @@ void bm_get_version(struct bluemote_server *server)
 {
 	g_assert(server != NULL);
 
-	server->out_buf[0] = (((guint8)BM_ACK << 1) & 0xFE)
+	server->bytes_written = 0;
+
+	server->out_buf[server->bytes_written] = (((guint8)BM_ACK << 1) & 0xFE)
 		| (server->pkt_cnt & 0x01);
-	server->bytes_written = 1;
-	server->out_buf[1] = (guint8)BM_FIRMWARE;
 	server->bytes_written++;
-	memcpy(&server->out_buf[1], &server->version, sizeof(server->version));
+	server->out_buf[server->bytes_written] = (guint8)BM_FIRMWARE;
+	server->bytes_written++;
+	memcpy(&server->out_buf[server->bytes_written], &server->version, sizeof(server->version));
 	server->bytes_written += sizeof(server->version);
 	write(server->client, server->out_buf, server->bytes_written);
 }

@@ -39,6 +39,9 @@ int main(int argc, char *argv[])
 
 			bm_read_data(&server);
 			cmd_code = bm_get_command(&server);
+			if (cmd_code == BM_DISCONNECT) {
+				break;
+			}
 			switch (cmd_code) {
 			case BM_INIT :
 				break;
