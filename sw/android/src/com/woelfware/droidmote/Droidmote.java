@@ -77,6 +77,8 @@ public class Droidmote extends Activity {
     private Button btn_channel_up;
     private Button btn_channel_down;
     private Spinner device_spinner;
+    private Button btn_numbers;
+    private Button btn_numbers2;
     
     // Name of the connected device
     private String mConnectedDeviceName = null;
@@ -179,7 +181,7 @@ public class Droidmote extends Activity {
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
         // Otherwise, setup the chat session
         } else {
-            if (mChatService == null) setupChat();
+            if (mChatService == null) setupButtons();
         }
     }
 
@@ -344,14 +346,29 @@ public class Droidmote extends Activity {
     	    		msg.arg1 = BUTTON_ID;
     	    		buttonSend((String)payload[1]);
     	    	}
-	    	
+    	    	
+    	    	// check if the numbers key was pressed and if so open a new button view
+    	    	if (btn_numbers == (Button)payload[0]) {
+    	    		//TODO see if we can change button loadout
+    	    		LOOP_KEY = false;
+    	            setContentView(R.layout.number_screen);
+    	            setupNumbers();
+    	    	}
+    	    	// if we are in numbers screen then this button switches us back
+    	    	if (btn_numbers2 == (Button)payload[0]) {
+    	    		//TODO see if we can change button loadout
+    	    		LOOP_KEY = false;
+    	            setContentView(R.layout.main);
+    	            setupButtons();
+    	    	}
+    	    	
 				NUM_MESSAGES++;
         		mHandler.sendMessageDelayed(msg, DELAY_TIME);      		
         	}
         }
     };
     
-    
+    // this function iterates through buttons and sets them to default un-pushed graphic view
     private void resetButtons() {
     	Object[] payload;    	
     	Button btn;
@@ -367,13 +384,15 @@ public class Droidmote extends Activity {
     	payload = button_map.get(BUTTON_ID);
     }
     
-    private void setupChat() {
+    // called to setup the buttons on the screen
+    private void setupButtons() {
         
         // Initialize the buttons with a listener for click and touch events
         btn_volume_up = (Button) findViewById(R.id.btn_volume_up);
         btn_volume_down = (Button) findViewById(R.id.btn_volume_down);
         btn_channel_up = (Button) findViewById(R.id.btn_channel_up);
         btn_channel_down = (Button) findViewById(R.id.btn_channel_down);
+        btn_numbers = (Button) findViewById(R.id.btn_numbers);
         
         //btn_volume_up.setOnLongClickListener(l);
         btn_volume_up.setOnTouchListener(buttonTouch);
@@ -384,22 +403,38 @@ public class Droidmote extends Activity {
         btn_channel_up.setOnClickListener(buttonClick);
         btn_channel_down.setOnTouchListener(buttonTouch);
         btn_channel_down.setOnClickListener(buttonClick);
+        btn_numbers.setOnClickListener(buttonClick);
+        btn_numbers.setOnTouchListener(buttonTouch);
         
         //set bundle of associated button properties
-        Object[] btn_1 = {btn_volume_up, Constants.VOLUME_UP, R.drawable.arrow_up_volume, R.drawable.arrow_up_volume_pressed};
-        Object[] btn_2 = {btn_volume_down, Constants.VOLUME_DOWN, R.drawable.arrow_down_volume, R.drawable.arrow_down_volume_pressed};
-        Object[] btn_3 = {btn_channel_up, Constants.CHANNEL_UP, R.drawable.arrow_up_ch, R.drawable.arrow_up_ch_pressed};
-        Object[] btn_4 = {btn_channel_down, Constants.CHANNEL_DOWN, R.drawable.arrow_down_ch, R.drawable.arrow_down_ch_pressed};
+        // order is : Button name, Constant that represents btn, graphic for unpressed, graphic for pushed 
+        Object[] btn_1 = {btn_volume_up, Constants.VOLUME_UP, R.drawable.vol_up, R.drawable.vol_up};
+        Object[] btn_2 = {btn_volume_down, Constants.VOLUME_DOWN, R.drawable.vol_down, R.drawable.vol_down};
+        Object[] btn_3 = {btn_channel_up, Constants.CHANNEL_UP, R.drawable.ch_up, R.drawable.ch_up};
+        Object[] btn_4 = {btn_channel_down, Constants.CHANNEL_DOWN, R.drawable.ch_down, R.drawable.ch_down};
+        Object[] btn_5 = {btn_numbers, null, R.drawable.numbers, R.drawable.numbers_pressed};
         // bundle all the button data into a big hashtable
         button_map = new HashMap<Integer,Object[]>();
         button_map.put(R.id.btn_volume_up, btn_1);
         button_map.put(R.id.btn_volume_down, btn_2);
         button_map.put(R.id.btn_channel_up, btn_3);
         button_map.put(R.id.btn_channel_down, btn_4);
+        button_map.put(R.id.btn_numbers, btn_5);
         
         // Initialize the BluetoothChatService to perform bluetooth connections
         mChatService = new BluetoothChatService(this, mHandler);
                 
+    }
+    
+    // Same as SetupButtons but called when user goes into number selection view
+    private void setupNumbers() {
+        btn_numbers2 = (Button) findViewById(R.id.btn_numbers2);
+        Object[] btn_1 = {btn_numbers2, null, R.drawable.numbers2, R.drawable.numbers_pressed};
+        button_map.put(R.id.btn_numbers2, btn_1);
+        
+        btn_numbers2.setOnClickListener(buttonClick);
+        btn_numbers2.setOnTouchListener(buttonTouch);
+
     }
 
     private void ensureDiscoverable() {
@@ -426,7 +461,7 @@ public class Droidmote extends Activity {
         }
     }
     
-    // The Handler that gets information back
+    // The Handler that gets information back from other activities/classes
     private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -480,6 +515,7 @@ public class Droidmote extends Activity {
         }
     };
 
+    // called when activities finish running and return to this activity
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
         case REQUEST_CONNECT_DEVICE:
@@ -505,7 +541,7 @@ public class Droidmote extends Activity {
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
                 // Bluetooth is now enabled, so set up a chat session
-                setupChat();
+                setupButtons();
             } else {
                 // User did not enable Bluetooth or an error occured
                 Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
@@ -577,6 +613,10 @@ public class Droidmote extends Activity {
         	// reset all images to unpressed state
         	resetButtons();
         	return true;
+        case R.id.exit_menu:                	        	
+        	finish();
+        	return true;
+        		
         }
         return false;
     }

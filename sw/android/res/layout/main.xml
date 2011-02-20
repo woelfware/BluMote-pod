@@ -25,19 +25,18 @@
 		        android:layout_height="wrap_content"
 		        android:background="@drawable/spacer" />
          	<Button
-        		android:id="@+id/media_eject"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/media_eject_gray" />
+		        android:background="@drawable/input" />
  			<Button              
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
 		        android:background="@drawable/spacer" />
 			<Button
-        		android:id="@+id/record_btn"
+        		android:id="@+id/power2_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/record" />		     
+		        android:background="@drawable/power_green" />		     
 	</LinearLayout>
 	<LinearLayout
 		android:orientation="horizontal"
@@ -46,25 +45,30 @@
 		android:layout_gravity="center"
 		android:paddingTop="10px">    
 			<Button
-        		android:id="@+id/skip_back_btn"
+        		android:id="@+id/back_skip_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/topleft" />
+		        android:background="@drawable/back_skip" />
 		    <Button
-        		android:id="@+id/reverse_btn"
+        		android:id="@+id/back_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/top_middle" />
+		        android:background="@drawable/back" />
 		    <Button
         		android:id="@+id/forward_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/top_middler" />
+		        android:background="@drawable/forward" />
 		    <Button
         		android:id="@+id/skip_forward_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/top_right" />
+		        android:background="@drawable/forward_skip" />
+		   	<Button
+        		android:id="@+id/record_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/record_square" />
 	</LinearLayout>
 	<LinearLayout
 		android:orientation="horizontal"
@@ -75,54 +79,140 @@
         		android:id="@+id/stop_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/bottom_left" />
+		        android:background="@drawable/stop" />
 		    <Button
         		android:id="@+id/play_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/bottom_center" />
+		        android:background="@drawable/play" />
 		    <Button
         		android:id="@+id/pause_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/bottom_right" />
-	</LinearLayout>
-	<LinearLayout
-		android:orientation="horizontal"
-		android:layout_width="wrap_content" 
-		android:layout_height="wrap_content"
-		android:layout_gravity="center">    
-			<Button
-               	android:id="@+id/btn_volume_up"
+		        android:background="@drawable/pause" />
+		    <Button
+        		android:id="@+id/eject_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/volume_up" />
-            <Button
-               	android:id="@+id/btn_volume_down"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/volume_down" />
-            <Button
-               	android:id="@+id/btn_channel_up"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/channel_up" />
-            <Button
-               	android:id="@+id/btn_channel_down"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/channel_down" />
-	</LinearLayout>
+		        android:background="@drawable/eject_square" />
+	</LinearLayout>	
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="left">
+			<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="wrap_content" 
+				android:layout_height="wrap_content"
+				android:layout_gravity="left">
+				    <Button
+						android:id="@+id/btn_channel_up"
+				        android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+				        android:background="@drawable/ch_up" />
+				    <Button
+		    			android:id="@+id/btn_channel_down"
+		    		 	android:layout_width="wrap_content"
+		       			android:layout_height="wrap_content"
+		       			android:background="@drawable/ch_down" />		        							    
+			</LinearLayout>	    
+		    <LinearLayout
+				android:orientation="vertical"
+				android:layout_width="wrap_content" 
+				android:layout_height="wrap_content"
+				android:layout_gravity="left">
+				    <Button
+				        android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+				        android:background="@drawable/disc_menu" />
+				    <Button
+		    		 	android:layout_width="wrap_content"
+		       			android:layout_height="wrap_content"
+		       			android:background="@drawable/left" />
+		       		<Button
+				        android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+				        android:background="@drawable/return_back" />					    
+			</LinearLayout>
+			<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="wrap_content" 
+				android:layout_height="wrap_content"
+				android:layout_gravity="left">	
+					<Button
+		       			android:layout_width="wrap_content"
+		       			android:layout_height="wrap_content"
+		       			android:background="@drawable/up" />											
+				    <Button
+				        android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+				        android:background="@drawable/enter" />
+				    <Button
+		       			android:layout_width="wrap_content"
+		       			android:layout_height="wrap_content"
+		       			android:background="@drawable/down" />					    					    
+			</LinearLayout>
+			<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="wrap_content" 
+				android:layout_height="wrap_content"
+				android:layout_gravity="left">
+					<Button
+				        android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+				        android:background="@drawable/info_display" />
+		    		<Button
+		       			android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+		    		    android:background="@drawable/right" />	
+		    		<Button
+				        android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+				        android:background="@drawable/mute" />				    					    
+			</LinearLayout>
+			<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="wrap_content" 
+				android:layout_height="wrap_content"
+				android:layout_gravity="left">
+				    <Button
+				    	android:id="@+id/btn_volume_up"				   
+				        android:layout_width="wrap_content"
+				        android:layout_height="wrap_content"
+				        android:background="@drawable/vol_up" />
+				    <Button
+		    			android:id="@+id/btn_volume_down"
+		    		 	android:layout_width="wrap_content"
+		       			android:layout_height="wrap_content"
+		       			android:background="@drawable/vol_down" />		
+			</LinearLayout>
+		</LinearLayout>
+		<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="center"> 			
+		    <Button
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:background="@drawable/pgup" />
 			<Button
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:background="@drawable/pgdn" />	
+			<Button
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:background="@drawable/guide" />							    
+		    <Button
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:background="@drawable/exit" />	    
+			<Button
+		    	android:id="@+id/btn_numbers"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/rocker_volume_example" />
-	
-	</LinearLayout>
-	
+		        android:background="@drawable/numbers" />
+		</LinearLayout>
 </LinearLayout>
