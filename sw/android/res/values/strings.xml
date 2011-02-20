@@ -38,13 +38,13 @@
     <string name="connect">Connect a device</string>
     <string name="discoverable">Make discoverable</string>
 <string name="spinner_prompt">Choose device</string>
-<string name="title_devices_list">List of devices</string>
-<string name="menu_add">New Device</string>
+<string name="title_devices_list">List of Button Configurations</string>
+<string name="menu_add">New Button Config</string>
 <string name="add_device_text">Enter device name:</string>
 <string name="enter_device_title">Enter device name</string>
-<string name="manage_devices">Manage Devices</string>
+<string name="manage_devices">Manage Buttons</string>
 <string name="rename_pod">Rename Pod</string>
 <string name="get_pod_info">Pod Information</string>
-<string name="learn_button">Learn</string>
+<string name="learn_button">Button Learn</string>
 
 </resources>

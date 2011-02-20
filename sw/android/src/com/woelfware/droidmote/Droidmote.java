@@ -139,26 +139,7 @@ public class Droidmote extends Activity {
         // get SQL database class 
         device_data = new MyDB(this);
         device_data.open();
-        
-        // setup spinner
-        device_spinner = (Spinner) findViewById(R.id.device_spinner);
-        mAdapter = new ArrayAdapter<String>(this, R.layout.spinner_entry);
-        mAdapter.setDropDownViewResource(R.layout.spinner_entry);
-        device_spinner.setAdapter(mAdapter);
-        device_spinner.setOnItemSelectedListener(new MyOnItemSelectedListener(this));
-        populateDropDown();
-        
-        // set spinner to default from last session if possible
-        prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
-        String prefs_table = prefs.getString("lastDevice", null);
-        if (prefs_table != null) {
-        	for(int i=0; i<device_spinner.getCount(); i++) {
-        		if (prefs_table.equals(device_spinner.getItemAtPosition(i))) {
-        			device_spinner.setSelection(i);
-        		}
-        	}        
-        }
-                
+                        
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -181,7 +162,7 @@ public class Droidmote extends Activity {
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
         // Otherwise, setup the chat session
         } else {
-            if (mChatService == null) setupButtons();
+            if (mChatService == null) setupDefaultButtons();
         }
     }
 
@@ -271,6 +252,8 @@ public class Droidmote extends Activity {
     		} while (cursor1.moveToNext());
     	}
     }
+    
+    // Called when a user pushes a button down for the first time
     private void touchButton(int rbutton) {
     	Button button = null; // if we can't find one in button_map, set to null
     	Object[] payload = null;    	
@@ -281,6 +264,24 @@ public class Droidmote extends Activity {
     		button = (Button)payload[0];
     		
     		button.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+    		
+	    	// check if the numbers key was pressed and if so open a new button view
+	    	if (button == btn_numbers) {
+	    		LOOP_KEY = false;
+	            setContentView(R.layout.number_screen);
+	            setupNumbers();
+	            return;
+	    	}
+	    	// if we are in numbers screen then this button switches us back
+	    	if (button == btn_numbers2) {
+	    		LOOP_KEY = false;
+	            setContentView(R.layout.main);
+	            setupDefaultButtons();
+	            return;
+	    	}
+	    	
+	    	// if we got here it means we are a regular button
+	    	
     		LOOP_KEY = true; // start looping until we lift finger off key
     		Message msg = new Message();            
     		msg.what = MESSAGE_KEY_PRESSED;
@@ -310,7 +311,7 @@ public class Droidmote extends Activity {
     			else if (e.getAction() == MotionEvent.ACTION_UP) {
     				LOOP_KEY = false;	// reset loop key global
     				// is this heavy to reset all buttons? 
-    				// otherwise to switch/case
+    				// otherwise do switch/case
     				resetButtons();
     			}
     		}
@@ -345,22 +346,7 @@ public class Droidmote extends Activity {
     	    	if (payload != null) {
     	    		msg.arg1 = BUTTON_ID;
     	    		buttonSend((String)payload[1]);
-    	    	}
-    	    	
-    	    	// check if the numbers key was pressed and if so open a new button view
-    	    	if (btn_numbers == (Button)payload[0]) {
-    	    		//TODO see if we can change button loadout
-    	    		LOOP_KEY = false;
-    	            setContentView(R.layout.number_screen);
-    	            setupNumbers();
-    	    	}
-    	    	// if we are in numbers screen then this button switches us back
-    	    	if (btn_numbers2 == (Button)payload[0]) {
-    	    		//TODO see if we can change button loadout
-    	    		LOOP_KEY = false;
-    	            setContentView(R.layout.main);
-    	            setupButtons();
-    	    	}
+    	    	}    	    	
     	    	
 				NUM_MESSAGES++;
         		mHandler.sendMessageDelayed(msg, DELAY_TIME);      		
@@ -385,7 +371,9 @@ public class Droidmote extends Activity {
     }
     
     // called to setup the buttons on the screen
-    private void setupButtons() {
+    private void setupDefaultButtons() {
+    	
+    	setupSpinner();
         
         // Initialize the buttons with a listener for click and touch events
         btn_volume_up = (Button) findViewById(R.id.btn_volume_up);
@@ -428,13 +416,37 @@ public class Droidmote extends Activity {
     
     // Same as SetupButtons but called when user goes into number selection view
     private void setupNumbers() {
+        
         btn_numbers2 = (Button) findViewById(R.id.btn_numbers2);
-        Object[] btn_1 = {btn_numbers2, null, R.drawable.numbers2, R.drawable.numbers_pressed};
+        Object[] btn_1 = {btn_numbers2, null, R.drawable.go_back, R.drawable.go_back};
         button_map.put(R.id.btn_numbers2, btn_1);
         
         btn_numbers2.setOnClickListener(buttonClick);
         btn_numbers2.setOnTouchListener(buttonTouch);
 
+    }
+    
+    // sets up the spinner at the top of each screen
+    // populates it with the last used device view
+    private void setupSpinner() {
+    	// setup spinner
+    	device_spinner = (Spinner) findViewById(R.id.device_spinner);
+    	mAdapter = new ArrayAdapter<String>(this, R.layout.spinner_entry);
+    	mAdapter.setDropDownViewResource(R.layout.spinner_entry);
+    	device_spinner.setAdapter(mAdapter);
+    	device_spinner.setOnItemSelectedListener(new MyOnItemSelectedListener(this));
+    	populateDropDown();
+
+    	// set spinner to default from last session if possible
+    	prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
+    	String prefs_table = prefs.getString("lastDevice", null);
+    	if (prefs_table != null) {
+    		for(int i=0; i<device_spinner.getCount(); i++) {
+    			if (prefs_table.equals(device_spinner.getItemAtPosition(i))) {
+    				device_spinner.setSelection(i);
+    			}
+    		}        
+    	}
     }
 
     private void ensureDiscoverable() {
@@ -533,15 +545,13 @@ public class Droidmote extends Activity {
                 // Attempt to connect to the device
                 mChatService.connect(device);
                 //device.getName(); // grab the friendly name, a rename command can change this
-                // reset PKT_COUNT
-                Codes.PKT_COUNT = 0;
             }
             break;
         case REQUEST_ENABLE_BT:
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
                 // Bluetooth is now enabled, so set up a chat session
-                setupButtons();
+                setupDefaultButtons();
             } else {
                 // User did not enable Bluetooth or an error occured
                 Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
@@ -590,6 +600,7 @@ public class Droidmote extends Activity {
             // Ensure this device is discoverable by others
             ensureDiscoverable();
             return true;
+        // this is to manage the button configurations in database
         case R.id.manage_devices:
         	// need to launch the manage devices view now
     		Intent i = new Intent(this, ManageDevices.class);
@@ -663,15 +674,12 @@ public class Droidmote extends Activity {
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenuInfo menuInfo) {
-		if (v.getId() == R.id.btn_volume_up) {
-			menu.setHeaderTitle("Menu");
-			menu.add(v.getId(), ID_TRAIN, 0, "Train");
-			menu.add(v.getId(), ID_UNTRAIN, 0, "Stop Training");
-		}
+
 		super.onCreateContextMenu(menu, v, menuInfo);
 	}
 	
-    // this function populates on-screen buttons from database, also sends init sequence to pod
+    // this function updates the current table with what is selected in drop-down
+	// it then grabs the button keys from that table into local devices Cursor
     public void fetchButtons() {
     	// first update the cur_table from spinner
     	if (device_spinner.getCount() > 0) {
@@ -681,22 +689,17 @@ public class Droidmote extends Activity {
     			devices = device_data.getKeys(cur_table);
     		}
     	}
-//    	sendCode(Codes.Commands.INIT);
     }
     
-    // this function just sends the code to the pod based on the button that was selected
+    // this function sends the code to the pod based on the button that was selected
     public void buttonSend(String buttonCode) {
     	String column;    	
     	devices.moveToFirst();
     	for (int i=0; i< devices.getCount(); i++) {
     		column = devices.getString(1);
     		if (column.equals(buttonCode)) {
-    			//short temp = devices.getShort(2); // we store a short to the database
-    			byte[] code = devices.getBlob(2);
-    			//byte code = (byte)(0x00FF & temp); // convert to a byte
-    			//code = (byte)((code << 1) | Codes.PKT_COUNT); 
-    			byte command = (byte)((Codes.Commands.IR_TRANSMIT << 1) | Codes.PKT_COUNT);
-    			Codes.PKT_COUNT = (byte)((Codes.PKT_COUNT + 1) % 2);
+    			byte[] code = devices.getBlob(2);    			
+    			byte command = (byte)(Codes.Commands.IR_TRANSMIT);
     			byte[] toSend = new byte[code.length+2]; // 2 extra bytes for command byte and 0x00
     			toSend[0] = command;
     			toSend[1] = 0x00;
@@ -719,8 +722,7 @@ public class Droidmote extends Activity {
     	case Codes.Commands.LEARN:
     		toSend = new byte[2];
     		toSend[0] = Codes.Commands.DEBUG; // DEBUG , should be LEARN
-    		toSend[0] = (byte)((toSend[0] << 1) | Codes.PKT_COUNT);
-    		Codes.PKT_COUNT = (byte)((Codes.PKT_COUNT + 1) % 2);
+    		toSend[0] = (byte)toSend[0];
     		toSend[1] = 0x00; // Reserved
     		STATE = Codes.Commands.LEARN;
     		sendMessage(toSend); 
@@ -728,8 +730,7 @@ public class Droidmote extends Activity {
     	case Codes.Commands.ABORT_LEARN:
     		toSend = new byte[2];
     		toSend[0] = Codes.Commands.ABORT_LEARN;
-    		toSend[0] = (byte)((toSend[0] << 1) | Codes.PKT_COUNT);
-    		Codes.PKT_COUNT = (byte)((Codes.PKT_COUNT + 1) % 2);
+    		toSend[0] = (byte)toSend[0];
     		toSend[1] = 0x00; // Reserved
     		STATE = Codes.Commands.ABORT_LEARN;
     		sendMessage(toSend);
@@ -738,8 +739,7 @@ public class Droidmote extends Activity {
     		STATE = Codes.Commands.GET_VERSION;
     		toSend = new byte[2];
     		toSend[0] = Codes.Commands.GET_VERSION;
-    		toSend[0] = (byte)((toSend[0] << 1) | Codes.PKT_COUNT);
-    		Codes.PKT_COUNT = (byte)((Codes.PKT_COUNT + 1) % 2);
+    		toSend[0] = (byte)toSend[0];
     		toSend[1] = 0x00; // Reserved
     		sendMessage(toSend);
     		break;
@@ -747,8 +747,7 @@ public class Droidmote extends Activity {
     		STATE = Codes.Commands.RENAME_DEVICE;
     		toSend = new byte[Codes.new_name.length()+2];
     		toSend[0] = Codes.Commands.RENAME_DEVICE;
-    		toSend[0] = (byte)((toSend[0] << 1) | Codes.PKT_COUNT);
-    		Codes.PKT_COUNT = (byte)((Codes.PKT_COUNT + 1) % 2);
+    		toSend[0] = (byte)toSend[0];
     		toSend[1] = 0x00; // Reserved
     		// load new names to the toSend byte[]
     		byte[] new_name = Codes.new_name.getBytes();
@@ -759,11 +758,12 @@ public class Droidmote extends Activity {
     	}
     }
     
+    // 	this method should be called whenever we receive a byte[] from the pod
     public void interpretResponse(byte[] response, int bytes) {
-    	// this method should be called whenever we receive a byte[] from the pod
+    	
     	switch (STATE) {
     	case Codes.Commands.LEARN:
-    		if (response[0] == ((Codes.Return.ACK << 1) | Codes.PKT_COUNT)) {
+    		if (response[0] == Codes.Return.ACK) {
     			byte[] content = new byte[bytes];
     			for (int i=0; i< bytes; i++) {
     				content[i] = response[i];
@@ -786,7 +786,7 @@ public class Droidmote extends Activity {
     		}
     		break;
     	case Codes.Commands.GET_VERSION:
-    		if (response[0] == ((Codes.Return.ACK << 1) | Codes.PKT_COUNT)) {
+    		if (response[0] == Codes.Return.ACK) {
     			STATE = 0x00; // reset state
     			// convert data into a String
     			Codes.pod_data = response;
@@ -795,17 +795,17 @@ public class Droidmote extends Activity {
     		}
     		break;
     	case Codes.Commands.ABORT_LEARN:
-    		if (response[0] == ((Codes.Return.ACK << 1) | Codes.PKT_COUNT)) {
+    		if (response[0] == Codes.Return.ACK) {
     			STATE = 0x00; // reset state
     		}
     		break;
     	case Codes.Commands.RENAME_DEVICE:
-    		if (response[0] == ((Codes.Return.ACK << 1) | Codes.PKT_COUNT)) {
+    		if (response[0] == Codes.Return.ACK) {
     			STATE = 0x00; // reset state
     		}
     		break;
     	case Codes.Commands.IR_TRANSMIT:
-    		if (response[0] == ((Codes.Return.ACK << 1) | Codes.PKT_COUNT)) {
+    		if (response[0] == Codes.Return.ACK) {
     			STATE = 0x00; // reset state
     		}
     		break;
