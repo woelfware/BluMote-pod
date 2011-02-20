@@ -25,7 +25,6 @@ class Bluemote_Server(bluemote.Services):
 	def __init__(self):
 		bluemote.Services.__init__(self)
 		self.version = ((self.component_codes.software, 0, 1, 0),)
-		self.pkt_cnt = 0
 		self.zero = None
 		self.one = None
 		self.header = None
@@ -51,34 +50,18 @@ class Bluemote_Server(bluemote.Services):
 		print "Accepted connection from ", self.client_info
 
 	def transport_tx(self, cmd, msg):
-		full_msg = struct.pack("B", (cmd << 1) | (self.pkt_cnt & 0x01))
+		full_msg = struct.pack("B", cmd)
 		full_msg += msg
 		self.client_sock.send(full_msg)
 		self.last_msg = full_msg
 
 	def get_command(self):
 		full_msg = None
-		new_data = False
 
-		while new_data == False:
-			full_msg = self.client_sock.recv(1024)
+		full_msg = self.client_sock.recv(1024)
 
-			# duplicate packet detection
-			flags = struct.unpack(">B", full_msg[0])[0]
-			pkt_cnt = flags & 0x01
-			if pkt_cnt == self.pkt_cnt:
-				new_data = True
-				self.pkt_cnt = (self.pkt_cnt + 1) % 2
-			else:
-				try:
-					sys.stdout.write("Duplicate packet detected.\n")
-					self.client_sock.send(self.last_msg)
-					sys.stdout.write("Resent last packet.\n")
-				except AttributeError:
-					sys.stderr.write("First packet received; Contains pkt_cnt mismatch.")
-				return (None, None)
+		cmd_code = struct.unpack("B", full_msg[0])[0]
 
-		cmd_code = flags >> 1
 		try:
 			msg = struct.unpack_from(len(full_msg[1:]) * "B", full_msg, 1)
 		except:
@@ -89,37 +72,6 @@ class Bluemote_Server(bluemote.Services):
 			if getattr(self.cmd_codes, cc) == cmd_code:
 				return (cc, msg) 
 		return (None, None)
-
-	def _init_unpack_msg(self, msg):
-		self.zero = {}
-		self.one = {}
-		self.header = {}
-		self.tailer = {}
-
-		flags, self.zero["duration"] = struct.unpack_from(">BH", msg, 0)
-		if flags & 0x01 == 1:
-			self.zero["pulse"] = True
-		else:
-			self.zero["pulse"] = False
-		flags, one["duration"] = struct.unpack_from(">BH", msg, 6)
-		if flags & 0x01 == 1:
-			self.one["pulse"] = True
-		else:
-			self.one["pulse"] = False
-		flags, header["duration"] = struct.unpack_from(">BH", msg, 12)
-		if flags & 0x01 == 1:
-			self.header["pulse"] = True
-		else:
-			self.header["pulse"] = False
-		flags, tailer["duration"] = struct.unpack_from(">BH", msg, 18)
-		if flags & 0x01 == 1:
-			self.tailer["pulse"] = True
-		else:
-			self.tailer["pulse"] = False
-
-	def init(self, msg):
-		self._init_unpack_msg(msg)
-		self.transport_tx(self.cmd_rc.ack, "")
 
 	def rename_device(self, msg):
 		name = ""
@@ -186,7 +138,6 @@ class Bluemote_Server(bluemote.Services):
 	def reset(self):
 		self.client_sock.close()
 		self.server_sock.close()
-		self.pkt_cnt = 0
 
 class ir():
 	def __init__(self):

@@ -9,11 +9,10 @@ class Bluemote_Client(bluemote.Services):
 	def __init__(self):
 		bluemote.Services.__init__(self)
 		self.addr = None
-		self.pkt_cnt = 0
 
 	def find_bluemote_pods(self, pod_name = None):
 		if pod_name is None:
-			pod_name = self.service_name
+			pod_name = self.service["name"]
 		print "Searching for \"%s\" service..." % (pod_name)
 		return find_service(name = pod_name)
 
@@ -27,15 +26,9 @@ class Bluemote_Client(bluemote.Services):
 		self.client_sock.connect((host, port))
 
 	def transport_tx(self, cmd, msg):
-		full_msg = struct.pack("B", (cmd << 1) | (self.pkt_cnt & 0x01))
-		self.pkt_cnt = (self.pkt_cnt + 1) % 2
+		full_msg = struct.pack("B", cmd)
 		full_msg += msg
 		self.client_sock.send(full_msg)
-
-	def init(self):
-		# have to learn the codes first or load a config from a database
-		#self.transport_tx(self.cmd_codes.init, "")
-		pass
 
 	def rename_device(self, name):
 		self.transport_tx(self.cmd_codes.rename_device, name)
@@ -107,6 +100,7 @@ if __name__ == "__main__":
 		for component in version:
 			print "%s version: %s" % component
 
+		"""
 		print "Please push key \"1\" on your remote."
 		key_code = bm_remote.learn()
 		print key_code
@@ -116,13 +110,13 @@ if __name__ == "__main__":
 			print "Requesting button \"%d\"." % (i)
 			key_code = bm_remote.debug(struct.pack('B', i))
 			print key_code
+		"""
 
 		new_pod_name = "indigomote"
 		print "Renaming pod to \"%s\"." % (new_pod_name)
 		bm_remote.rename_device(new_pod_name)
 
 		bm_remote.client_sock.close()
-		bm_remote.pkt_cnt = 0
 
 		bm_pods = bm_remote.find_bluemote_pods(new_pod_name)
 		bm_remote.connect_to_bluemote_pod(bm_pods[0])
