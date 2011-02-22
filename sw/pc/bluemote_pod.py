@@ -84,7 +84,6 @@ class Bluemote_Server(bluemote.Services):
 	def learn(self, msg):
 		(GET_PKT_1, GET_PKT_1_TAILER, GET_PKT_2) = range(3)
 		state = GET_PKT_1
-		key_code = {"old": "", "new": ""}
 		return_msg = ""
 
 		ir_scanner = ir()
