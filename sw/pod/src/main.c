@@ -2,74 +2,69 @@
  * Copyright (c) 2011 Woelfware
  */
 
-#include "config.h"
 #include "bluemote.h"
+#include "config.h"
+#include <stdio.h>
 #include <stdlib.h>
-#include <glib.h>
-#include <glib/gprintf.h>
-#include <errno.h>
-
-guint8 hex[] = "0123456789ABCDEF";
 
 int main(int argc, char *argv[])
 {
-	struct bluemote_server server;
-	sdp_session_t *session;
-	extern int errno;
+	struct bserver *server;
 
-	bm_server_init(&server);
+	if (!(server = bserver_create())) {
+		printf("Failed to create a Bluemote server.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	brename(server, SERVICE_NAME, SERVICE_DSC, SERVICE_PROV);
+
 	while (1) {
-		bm_allocate_socket(&server);
-		if (bm_bind_socket(&server)) {
-			g_printerr("Failed to bind to a socket.\n");
-			exit(EXIT_FAILURE);
-		}
-		session = bm_register_service(&server);
-		g_print("listening for client connection\n");
-		bm_listen(&server);
-		if (server.client < 0) {
-			g_printerr("Failure in accepting client connection. (errno: %i)\n", errno);
-			exit(EXIT_FAILURE);
-		}
-		g_print("accepted connection from %s\n", server.buf);
-		memset(server.buf, 0, sizeof(server.buf));
+		bool connected = true;
 
-		while (1) {
+		printf("Listening for incoming bluetooth connections.\n");
+		if (!blisten(server)) {
+			printf("Failure in accepting client connection.\n");
+			exit(EXIT_FAILURE);
+		}
+		printf("Accepted bluetooth connection.\n");
+
+		while (connected) {
 			enum COMMAND_CODES cmd_code;
+			uint8_t *rdbuf;
+			uint16_t bytes_read;
 
-			bm_read_data(&server);
-			cmd_code = bm_get_command(&server);
-			if (cmd_code == BM_DISCONNECT) {
-				break;
-			}
+			bytes_read = bread(server, &rdbuf);
+			cmd_code = bget_command(server, rdbuf, bytes_read);
 			switch (cmd_code) {
-			case BM_RENAME_DEVICE :
-				bm_rename(&server);
+			case B_RENAME_DEVICE :
+				brename(server, rdbuf + 1, NULL, NULL);
+				connected = false;
 				break;
 
-			case BM_LEARN :
+			case B_LEARN :
 				break;
 
-			case BM_GET_VERSION :
-				bm_get_version(&server);
+			case B_GET_VERSION :
+				bget_version(server);
 				break;
 
-			case BM_IR_TRANSMIT :
+			case B_IR_TRANSMIT :
 				break;
 
-			case BM_DEBUG :
+			case B_DEBUG :
 				break;
 
-			case BM_NONE :
+			case B_NONE :
+				printf("Received invalid packet.\n");
 				break;
 
 			default :
-				g_printerr("Unhandled command code: %d\n", cmd_code);
+				printf("Unhandled command code: %d\n", cmd_code);
 			}
 		}
 
-		g_print("disconnect\n");
-		bm_close(&server);
+		printf("disconnect\n");
+		bclose(server);
 	}
 
 	return EXIT_SUCCESS;

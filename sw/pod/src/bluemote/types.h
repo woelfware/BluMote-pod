@@ -1,0 +1,30 @@
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
+#ifndef BM_TYPES_H
+#define BM_TYPES_H
+
+enum COMMAND_CODES {
+	B_DISCONNECT,
+	B_RENAME_DEVICE,
+	B_LEARN,
+	B_GET_VERSION,
+	B_IR_TRANSMIT,
+	B_DEBUG = 0x7F,
+	B_NONE = -1
+};
+
+enum COMMAND_RETURN_CODES {
+	B_NOT_INITTED	= 0x00,
+	B_ACK		= 0x06,
+	B_NAK		= 0x15
+};
+
+enum COMPONENT_CODES {
+	B_HARDWARE,
+	B_FIRMWARE,
+	B_SOFTWARE
+};
+
+#endif
