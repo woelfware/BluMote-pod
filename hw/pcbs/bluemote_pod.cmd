@@ -1,5 +1,17 @@
 # Pin name action command file
 
+# Start of element JP203
+ChangePinName(JP203, 2, 2)
+ChangePinName(JP203, 1, 1)
+
+# Start of element JP202
+ChangePinName(JP202, 2, 2)
+ChangePinName(JP202, 1, 1)
+
+# Start of element JP201
+ChangePinName(JP201, 2, 2)
+ChangePinName(JP201, 1, 1)
+
 # Start of element J202
 ChangePinName(J202, 6, GND)
 ChangePinName(J202, 5, PWR)
@@ -97,6 +109,19 @@ ChangePinName(U201, 4, DVSS)
 ChangePinName(U201, 3, P2.5)
 ChangePinName(U201, 2, DVCC)
 ChangePinName(U201, 1, SBWTCK)
+
+# Start of element J112
+ChangePinName(J112, 2, 2)
+ChangePinName(J112, 1, 1)
+
+# Start of element J111
+ChangePinName(J111, 2, 2)
+ChangePinName(J111, 1, 1)
+
+# Start of element Q101
+ChangePinName(Q101, 3, D)
+ChangePinName(Q101, 2, S)
+ChangePinName(Q101, 1, G)
 
 # Start of element J110
 ChangePinName(J110, 8, 8)
@@ -237,11 +262,6 @@ ChangePinName(R101, 1, 1)
 # Start of element D101
 ChangePinName(D101, 2, Cathode)
 ChangePinName(D101, 1, Anode)
-
-# Start of element Q101
-ChangePinName(Q101, 3, C)
-ChangePinName(Q101, 2, E)
-ChangePinName(Q101, 1, B)
 
 # Start of element U101
 ChangePinName(U101, 3, VCC)

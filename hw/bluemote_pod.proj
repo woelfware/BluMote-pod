@@ -1,7 +1,7 @@
 # This Project File was created by:  Project Manager v 4.0.0 - Circuit Dashboard
 # The Project Manager is copyright 2011, www.CircuitDashboard.com
 # This release is for general use.
-# Created on 02/21/11 at 23:30:00   For Kenneth Hutchins  < kenneth.hutchins@gmail.com > 
+# Created on 02/26/11 at 23:18:47   For Kenneth Hutchins  < kenneth.hutchins@gmail.com > 
 
 %pcb_name=bluemote_pod.pcb;
 %pcb_style=Double_Sided_PCB.scm;

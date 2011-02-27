@@ -21,19 +21,6 @@ N 48500 44900 50500 44900 4
 T 49700 44900 5 8 1 1 0 0 1
 netname=IR_IN
 }
-C 61100 42900 1 0 0 mmbta42.sym
-{
-T 62600 44700 5 8 1 1 0 4 1
-refdes=Q101
-T 62200 46200 5 8 0 0 0 1 1
-device=NPN
-T 62200 46400 5 8 0 0 0 1 1
-value=none
-T 62200 46800 5 8 0 0 0 1 1
-footprint=sot_23.fp
-T 62200 47600 5 8 0 0 0 1 1
-symversion=1.1
-}
 C 62200 46300 1 0 0 led3.sym
 {
 T 62700 46500 5 8 1 1 0 4 1
@@ -54,7 +41,7 @@ refdes=R101
 T 61100 46200 5 8 0 0 0 1 1
 device=resistor
 T 61500 44800 5 8 1 1 0 1 1
-value=1K
+value=33
 T 61100 46800 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 61100 47600 5 8 0 0 0 1 1
@@ -87,7 +74,7 @@ refdes=R103
 T 58000 50100 5 8 0 0 0 1 1
 device=resistor
 T 58400 48700 5 8 1 1 0 1 1
-value=1K
+value=33
 T 58000 50700 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 58000 51500 5 8 0 0 0 1 1
@@ -346,7 +333,7 @@ refdes=C101
 T 52400 46400 5 8 0 0 0 1 1
 device=device
 T 52900 44200 5 8 1 1 0 1 1
-value=4.7nF
+value=0.1uF
 T 52400 47000 5 8 0 0 0 1 1
 footprint=cap_0805.fp
 T 52400 47800 5 8 0 0 0 1 1
@@ -361,7 +348,7 @@ refdes=C102
 T 57000 46400 5 8 0 0 0 1 1
 device=device
 T 57500 44200 5 8 1 1 0 1 1
-value=4.7nF
+value=0.1uF
 T 57000 47000 5 8 0 0 0 1 1
 footprint=cap_0805.fp
 T 57000 47800 5 8 0 0 0 1 1
@@ -771,4 +758,71 @@ footprint=header_1x8_pitch_0.100.fp
 T 51900 56300 5 8 0 0 0 1 1
 symversion=1.2
 }
+C 61900 44200 1 0 0 2N7002.sym
+{
+T 62525 44825 5 8 1 1 0 4 1
+refdes=Q101
+T 62200 46200 5 8 0 0 0 1 1
+device=NMOS
+T 62200 46400 5 8 0 0 0 1 1
+value=none
+T 62200 46800 5 8 0 0 0 1 1
+footprint=sot_23.fp
+T 62200 47600 5 8 0 0 0 1 1
+symversion=1.1
+}
+C 48300 50200 1 0 0 header_2pin.sym
+{
+T 48500 50700 5 8 1 1 0 7 1
+refdes=J111
+T 48400 52100 5 8 0 0 0 1 1
+device=generic_header
+T 48400 52300 5 8 0 0 0 1 1
+value=none
+T 48400 52700 5 8 0 0 0 1 1
+footprint=header_1x2_pitch_0.100.fp
+T 48400 53500 5 8 0 0 0 1 1
+symversion=1.3
+}
+C 48300 49200 1 0 0 header_2pin.sym
+{
+T 48500 49700 5 8 1 1 0 7 1
+refdes=J112
+T 48400 51100 5 8 0 0 0 1 1
+device=generic_header
+T 48400 51300 5 8 0 0 0 1 1
+value=none
+T 48400 51700 5 8 0 0 0 1 1
+footprint=header_1x2_pitch_0.100.fp
+T 48400 52500 5 8 0 0 0 1 1
+symversion=1.3
+}
+C 49000 50800 1 0 0 3_3V.sym
+{
+T 49300 52500 5 8 0 0 0 1 1
+device=net_symbol
+T 49300 52900 5 8 0 0 0 1 1
+footprint=none
+T 49300 53700 5 8 0 0 0 1 1
+symversion=1.1
+T 49000 50800 5 8 0 1 0 0 1
+netname=3.3V
+}
+C 49000 48900 1 0 0 gnd.sym
+{
+T 49300 50600 5 8 0 0 0 1 1
+device=net_symbol
+T 49300 51000 5 8 0 0 0 1 1
+footprint=none
+T 49300 51800 5 8 0 0 0 1 1
+symversion=1.1
+T 49000 48900 5 8 0 0 0 0 1
+netname=GND
+}
+N 48700 49300 49100 49300 4
+N 49100 49100 49100 49500 4
+N 48700 49500 49100 49500 4
+N 48700 50300 49100 50300 4
+N 49100 50300 49100 50800 4
+N 48700 50500 49100 50500 4
 
