@@ -1,5 +1,9 @@
 # Pin name action command file
 
+# Start of element R201
+ChangePinName(R201, 2, 2)
+ChangePinName(R201, 1, 1)
+
 # Start of element JP203
 ChangePinName(JP203, 2, 2)
 ChangePinName(JP203, 1, 1)

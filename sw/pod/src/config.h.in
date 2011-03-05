@@ -15,5 +15,9 @@
 #define SERVICE_DSC	"@BLUEMOTE_POD_DESCRIPTION@"
 #define SERVICE_PROV	"@BLUEMOTE_POD_PROVIDER@"
 
+#if defined(MSP430)
+#	include <io.h>
+#endif
+
 #endif
 
