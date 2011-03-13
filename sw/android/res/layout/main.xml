@@ -18,6 +18,15 @@
 		android:layout_height="wrap_content"
 		android:layout_gravity="center">     
          	<Button
+        		android:id="@+id/move_left_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/move_left" />
+		    <Button                  	     
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/spacer" />
+         	<Button
         		android:id="@+id/power_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
@@ -39,7 +48,16 @@
         		android:id="@+id/power2_btn"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content"
-		        android:background="@drawable/power_green" />		     
+		        android:background="@drawable/power_green" />
+		    <Button                  	     
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/spacer" />
+		    <Button
+        		android:id="@+id/move_right_btn"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="@drawable/move_right" />			     
 	</LinearLayout>
 	<LinearLayout
 		android:orientation="horizontal"
@@ -147,7 +165,7 @@
 				android:layout_height="wrap_content"
 				android:layout_gravity="left">	
 					<Button
-						android:id="@+id/up_btn"
+						android:id="@+id/btn_up"
 		       			android:layout_width="wrap_content"
 		       			android:layout_height="wrap_content"
 		       			android:background="@drawable/up" />											
