@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
 #ifndef SCHEDULER_H_
 #define SCHEDULER_H_
 
