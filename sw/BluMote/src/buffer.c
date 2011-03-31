@@ -5,14 +5,10 @@
 
 #include "buffer.h"
 
-struct circular_buffer uart_rx_buf,
-	uart_tx_buf,
-	ir_rx_buf;
-
 void buf_init(struct circular_buffer *pQue, volatile uint8_t *buf, uint8_t size)
 {
-	pQue->buf	= buf;
-	pQue->size	= size;
+	pQue->buf		= buf;
+	pQue->size		= size;
 	pQue->writePointer	= 0;
 	pQue->readPointer	= 0;
 }
@@ -20,8 +16,7 @@ void buf_init(struct circular_buffer *pQue, volatile uint8_t *buf, uint8_t size)
 bool buf_enque(struct circular_buffer *que, uint8_t k)
 {
 	bool isFull = buf_full(que);
-	if(!isFull) 
-	{
+	if (!isFull) {
 		que->buf[que->writePointer] = k;
 		que->writePointer = (que->writePointer + 1) % que->size;
 	}
@@ -31,8 +26,7 @@ bool buf_enque(struct circular_buffer *que, uint8_t k)
 bool buf_deque(struct circular_buffer *que, uint8_t *pK)
 {
 	bool isEmpty = buf_empty(que);
-	if(!isEmpty) 
-	{
+	if (!isEmpty) {
 		*pK = que->buf[que->readPointer];
 		que->readPointer = (que->readPointer + 1) % que->size;
 	}
