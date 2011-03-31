@@ -2,8 +2,6 @@ package com.woelfware.droidmote;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -18,6 +16,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.ContextMenu;
+import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -26,6 +25,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -77,8 +77,35 @@ public class Droidmote extends Activity {
     private Button btn_channel_up;
     private Button btn_channel_down;
     private Spinner device_spinner;
-    private Button btn_numbers;
-    private Button btn_numbers2;
+    private Button btn_input;
+    private Button led_btn;
+    private Button btn_pwr;
+    private Button power2_btn;
+    private Button back_skip_btn;
+    private Button back_btn;
+    private Button forward_btn;
+    private Button skip_forward_btn;
+    private Button record_btn;
+    private Button stop_btn;
+    private Button play_btn;
+    private Button pause_btn;
+    private Button eject_btn;
+    private Button disc_btn;
+    private Button left_btn;
+    private Button mute_btn;
+    private Button enter_btn;
+    private Button down_btn;
+    private Button info_btn;
+    private Button right_btn;
+    private Button return_btn;
+    private Button pgup_btn;
+    private Button pgdn_btn;
+    private Button guide_btn;
+    private Button exit_btn;
+    private Button up_btn;
+    
+    // Gesture for fling event
+    private GestureDetector gestureDetector;
     
     // Name of the connected device
     private String mConnectedDeviceName = null;
@@ -114,6 +141,10 @@ public class Droidmote extends Activity {
     private static boolean LOOP_KEY = false;
     // sets mode to learn mode for button action handerls
     private static boolean LEARN_MODE = false;
+    
+    // for fling gesture recognition
+    private static final int LARGE_MOVE = 60;
+    
     // keeps track of # of times the MESSAGE_PRESSED has been called, creator/consumer idea
     // prevents user from double tapping a button and creating double messages in queue
     private int NUM_MESSAGES = 0;
@@ -136,6 +167,28 @@ public class Droidmote extends Activity {
         mTitle.setText(R.string.app_name);
         mTitle = (TextView) findViewById(R.id.title_right_text);
         
+        gestureDetector = new GestureDetector(this, new SimpleOnGestureListener() {
+        	@Override
+        	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+        		if (e1.getY() - e2.getY() > LARGE_MOVE) {
+        			Toast.makeText(getApplicationContext(), "Flight detected!", Toast.LENGTH_SHORT).show();
+        			return true;
+        		}
+        		else if (e2.getY() - e1.getY() > LARGE_MOVE) {
+        			Toast.makeText(getApplicationContext(), "Flight detected!", Toast.LENGTH_LONG).show();
+        			return true;
+        		}
+        		else if (e1.getX() - e2.getX() > LARGE_MOVE) {
+        			Toast.makeText(getApplicationContext(), "Flight detected!", Toast.LENGTH_LONG).show();
+        			return true;
+        		}
+        		else if (e2.getX() - e1.getX() > LARGE_MOVE) {
+        			Toast.makeText(getApplicationContext(), "Flight detected!", Toast.LENGTH_LONG).show();
+        			return true;
+        		}
+        		return false;
+        	}        	
+        });
         // get SQL database class 
         device_data = new MyDB(this);
         device_data.open();
@@ -234,6 +287,12 @@ public class Droidmote extends Activity {
 		device_data.open();
 	}
 
+    // for the fling event
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+    	return gestureDetector.onTouchEvent(event);
+    }
+    
     // sets up the drop-down list, pulls rows from DB to populate
     private void populateDropDown() {
     	String str1;
@@ -265,20 +324,20 @@ public class Droidmote extends Activity {
     		
     		button.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
     		
-	    	// check if the numbers key was pressed and if so open a new button view
-	    	if (button == btn_numbers) {
-	    		LOOP_KEY = false;
-	            setContentView(R.layout.number_screen);
-	            setupNumbers();
-	            return;
-	    	}
-	    	// if we are in numbers screen then this button switches us back
-	    	if (button == btn_numbers2) {
-	    		LOOP_KEY = false;
-	            setContentView(R.layout.main);
-	            setupDefaultButtons();
-	            return;
-	    	}
+//	    	// check if the numbers key was pressed and if so open a new button view
+//	    	if (button == btn_numbers) {
+//	    		LOOP_KEY = false;
+//	            setContentView(R.layout.number_screen);
+//	            setupNumbers();
+//	            return;
+//	    	}
+//	    	// if we are in numbers screen then this button switches us back
+//	    	if (button == btn_numbers2) {
+//	    		LOOP_KEY = false;
+//	            setContentView(R.layout.main);
+//	            setupDefaultButtons();
+//	            return;
+//	    	}
 	    	
 	    	// if we got here it means we are a regular button
 	    	
@@ -302,13 +361,19 @@ public class Droidmote extends Activity {
     		// if we don't have !LOOP_KEY you can hit button multiple times
     		// and hold finger on button and you'll get duplicates
     		if (!LEARN_MODE) { 
-    			if (e.getAction() == MotionEvent.ACTION_DOWN) {    				
+    			if (e.getAction() == MotionEvent.ACTION_DOWN) {  
+    				// turn on LED!
+    				led_btn.setBackgroundDrawable(getResources().getDrawable(R.drawable.led));
+    				// if our up/down counter is at 0, then fire a new key press
     				if (NUM_MESSAGES == 0) {
     					touchButton(v.getId());
     				}
     				return true;  // because we consumed the event
     			}   
     			else if (e.getAction() == MotionEvent.ACTION_UP) {
+    				// turn off LED
+    				led_btn.setBackgroundDrawable(getResources().getDrawable(R.drawable.led_off));
+    				
     				LOOP_KEY = false;	// reset loop key global
     				// is this heavy to reset all buttons? 
     				// otherwise do switch/case
@@ -365,7 +430,7 @@ public class Droidmote extends Activity {
     		Integer key = (Integer)itr.next();
     		payload = button_map.get(key);
     		btn = (Button)payload[0];
-    		btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[2]));    		
+    		btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[2]));    		    
     	}
     	payload = button_map.get(BUTTON_ID);
     }
@@ -380,8 +445,31 @@ public class Droidmote extends Activity {
         btn_volume_down = (Button) findViewById(R.id.btn_volume_down);
         btn_channel_up = (Button) findViewById(R.id.btn_channel_up);
         btn_channel_down = (Button) findViewById(R.id.btn_channel_down);
-        btn_numbers = (Button) findViewById(R.id.btn_numbers);
-        
+        btn_input = (Button) findViewById(R.id.btn_input);
+        led_btn = (Button) findViewById(R.id.led_btn);
+        btn_pwr = (Button) findViewById(R.id.power_btn);
+        power2_btn = (Button) findViewById(R.id.power2_btn);
+        back_skip_btn = (Button) findViewById(R.id.back_skip_btn);
+        back_btn = (Button) findViewById(R.id.back_btn);
+        forward_btn = (Button) findViewById(R.id.forward_btn);
+        skip_forward_btn = (Button) findViewById(R.id.skip_forward_btn); 
+        record_btn = (Button) findViewById(R.id.record_btn);
+        stop_btn = (Button) findViewById(R.id.stop_btn);
+    	play_btn = (Button) findViewById(R.id.play_btn);
+    	eject_btn = (Button) findViewById(R.id.eject_btn);
+    	disc_btn = (Button) findViewById(R.id.disc_btn);
+    	left_btn = (Button) findViewById(R.id.left_btn);
+    	mute_btn = (Button) findViewById(R.id.mute_btn);
+    	enter_btn = (Button) findViewById(R.id.enter_btn);
+    	down_btn = (Button) findViewById(R.id.down_btn);
+    	info_btn = (Button) findViewById(R.id.info_btn);
+    	right_btn = (Button) findViewById(R.id.right_btn);
+    	return_btn = (Button) findViewById(R.id.return_btn);
+    	pgup_btn = (Button) findViewById(R.id.pgup_btn);
+    	pgdn_btn = (Button) findViewById(R.id.pgdn_btn);
+    	guide_btn = (Button) findViewById(R.id.guide_btn);
+    	exit_btn = (Button) findViewById(R.id.exit_btn);
+        	
         //btn_volume_up.setOnLongClickListener(l);
         btn_volume_up.setOnTouchListener(buttonTouch);
         btn_volume_up.setOnClickListener(buttonClick);
@@ -391,8 +479,54 @@ public class Droidmote extends Activity {
         btn_channel_up.setOnClickListener(buttonClick);
         btn_channel_down.setOnTouchListener(buttonTouch);
         btn_channel_down.setOnClickListener(buttonClick);
-        btn_numbers.setOnClickListener(buttonClick);
-        btn_numbers.setOnTouchListener(buttonTouch);
+        btn_input.setOnClickListener(buttonClick);
+        btn_input.setOnTouchListener(buttonTouch);
+        btn_pwr.setOnClickListener(buttonClick);
+        btn_pwr.setOnTouchListener(buttonTouch);
+        power2_btn.setOnClickListener(buttonClick);
+        power2_btn.setOnTouchListener(buttonTouch);
+        back_skip_btn.setOnClickListener(buttonClick);
+        back_skip_btn.setOnTouchListener(buttonTouch);
+        back_btn.setOnClickListener(buttonClick);
+        back_btn.setOnTouchListener(buttonTouch);
+        forward_btn.setOnClickListener(buttonClick);
+        forward_btn.setOnTouchListener(buttonTouch);
+        skip_forward_btn.setOnClickListener(buttonClick);
+        skip_forward_btn.setOnTouchListener(buttonTouch);
+        record_btn.setOnClickListener(buttonClick);
+        record_btn.setOnTouchListener(buttonTouch);
+        stop_btn.setOnClickListener(buttonClick);
+        stop_btn.setOnTouchListener(buttonTouch);
+        play_btn.setOnClickListener(buttonClick);
+        play_btn.setOnTouchListener(buttonTouch);
+        eject_btn.setOnClickListener(buttonClick);
+        eject_btn.setOnTouchListener(buttonTouch);
+        disc_btn.setOnClickListener(buttonClick);
+        disc_btn.setOnTouchListener(buttonTouch);
+        left_btn.setOnClickListener(buttonClick);
+        left_btn.setOnTouchListener(buttonTouch);
+        mute_btn.setOnClickListener(buttonClick);
+        mute_btn.setOnTouchListener(buttonTouch);
+        up_btn.setOnClickListener(buttonClick);
+        up_btn.setOnTouchListener(buttonTouch);
+        enter_btn.setOnClickListener(buttonClick);
+        enter_btn.setOnTouchListener(buttonTouch);
+        down_btn.setOnClickListener(buttonClick);
+        down_btn.setOnTouchListener(buttonTouch);
+        info_btn.setOnClickListener(buttonClick);
+        info_btn.setOnTouchListener(buttonTouch);
+        right_btn.setOnClickListener(buttonClick);
+        right_btn.setOnTouchListener(buttonTouch);
+        return_btn.setOnClickListener(buttonClick);
+        return_btn.setOnTouchListener(buttonTouch);
+        pgup_btn.setOnClickListener(buttonClick);
+        pgup_btn.setOnTouchListener(buttonTouch);
+        pgdn_btn.setOnClickListener(buttonClick);
+        pgdn_btn.setOnTouchListener(buttonTouch);
+        guide_btn.setOnClickListener(buttonClick);
+        guide_btn.setOnTouchListener(buttonTouch);
+        exit_btn.setOnClickListener(buttonClick);
+        exit_btn.setOnTouchListener(buttonTouch);
         
         //set bundle of associated button properties
         // order is : Button name, Constant that represents btn, graphic for unpressed, graphic for pushed 
@@ -400,14 +534,64 @@ public class Droidmote extends Activity {
         Object[] btn_2 = {btn_volume_down, Constants.VOLUME_DOWN, R.drawable.vol_down, R.drawable.vol_down};
         Object[] btn_3 = {btn_channel_up, Constants.CHANNEL_UP, R.drawable.ch_up, R.drawable.ch_up};
         Object[] btn_4 = {btn_channel_down, Constants.CHANNEL_DOWN, R.drawable.ch_down, R.drawable.ch_down};
-        Object[] btn_5 = {btn_numbers, null, R.drawable.numbers, R.drawable.numbers_pressed};
+        Object[] btn_5 = {btn_input, null, R.drawable.av_input, R.drawable.av_input};
+        Object[] btn_6 = {btn_pwr, null, R.drawable.power_48_gray, R.drawable.power_48_gray};
+        Object[] btn_7 = {power2_btn, null, R.drawable.power_green, R.drawable.power_green};
+        Object[] btn_8 = {back_skip_btn, null, R.drawable.back_skip, R.drawable.back_skip};
+        Object[] btn_9 = {back_btn, null, R.drawable.back, R.drawable.back};
+        Object[] btn_10 = {forward_btn, null, R.drawable.forward, R.drawable.forward};
+        Object[] btn_11 = {skip_forward_btn, null, R.drawable.forward_skip, R.drawable.forward_skip};
+        Object[] btn_12 = {record_btn, null, R.drawable.record_square, R.drawable.record_square};
+        Object[] btn_13 = {stop_btn, null, R.drawable.stop, R.drawable.stop};
+        Object[] btn_14 = {play_btn, null, R.drawable.play, R.drawable.play};
+        Object[] btn_15 = {pause_btn, null, R.drawable.pause, R.drawable.pause};
+        Object[] btn_16 = {eject_btn, null, R.drawable.eject_square, R.drawable.eject_square};
+        Object[] btn_17 = {disc_btn, null, R.drawable.disc_menu, R.drawable.disc_menu};
+        Object[] btn_18 = {left_btn, null, R.drawable.left, R.drawable.left};
+        Object[] btn_19 = {mute_btn, null, R.drawable.mute, R.drawable.mute};
+        Object[] btn_20 = {up_btn, null, R.drawable.up, R.drawable.up};
+        Object[] btn_21 = {enter_btn, null, R.drawable.enter, R.drawable.enter};
+        Object[] btn_22 = {down_btn, null, R.drawable.down, R.drawable.down};
+        Object[] btn_23 = {info_btn, null, R.drawable.info_display, R.drawable.info_display};
+        Object[] btn_24 = {right_btn, null, R.drawable.right, R.drawable.right};
+        Object[] btn_25 = {return_btn, null, R.drawable.return_back, R.drawable.return_back};
+        Object[] btn_26 = {pgup_btn, null, R.drawable.pgup, R.drawable.pgup};
+        Object[] btn_27 = {pgdn_btn, null, R.drawable.pgdn, R.drawable.pgdn};
+        Object[] btn_28 = {guide_btn, null, R.drawable.guide, R.drawable.guide};
+        Object[] btn_29 = {exit_btn, null, R.drawable.exit, R.drawable.exit};
+        
+        
         // bundle all the button data into a big hashtable
         button_map = new HashMap<Integer,Object[]>();
         button_map.put(R.id.btn_volume_up, btn_1);
         button_map.put(R.id.btn_volume_down, btn_2);
         button_map.put(R.id.btn_channel_up, btn_3);
         button_map.put(R.id.btn_channel_down, btn_4);
-        button_map.put(R.id.btn_numbers, btn_5);
+        button_map.put(R.id.btn_input, btn_5);
+        button_map.put(R.id.power_btn, btn_6);
+        button_map.put(R.id.power2_btn, btn_7);
+        button_map.put(R.id.back_skip_btn, btn_8);
+        button_map.put(R.id.back_btn, btn_9);
+        button_map.put(R.id.forward_btn, btn_10);
+        button_map.put(R.id.skip_forward_btn, btn_11);
+        button_map.put(R.id.record_btn, btn_12);
+        button_map.put(R.id.stop_btn, btn_13);
+        button_map.put(R.id.play_btn, btn_14);
+        button_map.put(R.id.pause_btn, btn_15);
+        button_map.put(R.id.eject_btn, btn_16);
+        button_map.put(R.id.disc_btn, btn_17);
+        button_map.put(R.id.left_btn, btn_18);
+        button_map.put(R.id.mute_btn,btn_19);
+        button_map.put(R.id.up_btn,btn_20);
+        button_map.put(R.id.enter_btn,btn_21);
+        button_map.put(R.id.down_btn,btn_22);
+        button_map.put(R.id.info_btn,btn_23);
+        button_map.put(R.id.right_btn,btn_24);
+        button_map.put(R.id.return_btn,btn_25);
+        button_map.put(R.id.pgup_btn,btn_26);
+        button_map.put(R.id.pgdn_btn,btn_27);
+        button_map.put(R.id.guide_btn,btn_28);
+        button_map.put(R.id.exit_btn,btn_29);
         
         // Initialize the BluetoothChatService to perform bluetooth connections
         mChatService = new BluetoothChatService(this, mHandler);
@@ -416,13 +600,8 @@ public class Droidmote extends Activity {
     
     // Same as SetupButtons but called when user goes into number selection view
     private void setupNumbers() {
-        
-        btn_numbers2 = (Button) findViewById(R.id.btn_numbers2);
-        Object[] btn_1 = {btn_numbers2, null, R.drawable.go_back, R.drawable.go_back};
-        button_map.put(R.id.btn_numbers2, btn_1);
-        
-        btn_numbers2.setOnClickListener(buttonClick);
-        btn_numbers2.setOnTouchListener(buttonTouch);
+
+
 
     }
     
