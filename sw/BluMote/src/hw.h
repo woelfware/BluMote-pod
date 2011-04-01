@@ -2,10 +2,7 @@
 #define HW_H_
 
 #include "buffer.h"
-
-extern struct circular_buffer uart_rx,
-	uart_tx,
-	ir_rx;
+#include <msp430.h>
 
 /**
  * return bool
