@@ -22,7 +22,9 @@ enum component_codes {
 };
 
 #define BLUMOTE_NAME		"Bluemote"
-#define BLUMATE_PROVIDER	"Woelfware"
-#define BLUMATE_DELCRIPTION	"IR XPDR"
+#define BLUMOTE_PROVIDER	"Woelfware"
+#define BLUMOTE_DELCRIPTION	"IR XPDR"
+
+int blumote_main();
 
 #endif /*BLUMOTE_H_*/

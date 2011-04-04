@@ -43,7 +43,7 @@
 <listOptionValue builtIn="false" value="&quot;${CG_TOOL_ROOT}/include&quot;"/>
 </option>
 </tool>
-<macros/>
+<macros expandEnvironmentMacros="true"/>
 </toolChain>
 </configuration>
 <configuration artifactExtension="out" artifactName="BluMote" description="" id="com.ti.ccstudio.buildDefinitions.MSP430.Release.2015843461" name="Release" parent="com.ti.ccstudio.buildDefinitions.MSP430.Release">
@@ -86,6 +86,7 @@
 <listOptionValue builtIn="false" value="&quot;${CG_TOOL_ROOT}/include&quot;"/>
 </option>
 </tool>
+<macros expandEnvironmentMacros="true"/>
 </toolChain>
 </configuration>
 </project>
