@@ -26,22 +26,24 @@ static void init_clocks()
 	UCA0BR1		= 0;			/* 16MHz 115200 */
 	UCA0MCTL	= UCBRS2 + UCBRS0;	/* Modulation UCBRSx = 5 */
 	UCA0CTL1	&= ~UCSWRST;		/* **Initialize USCI state machine** */
-
-	__bis_SR_register(LPM4_bits + GIE);	/* Enter LPM4, interrupts enabled */
 }
 
 static void init_ports()
 {
-	P1DIR	= 0xFF;		/* All P1.x outputs */
-	P1OUT	= 0;		/* All P1.x reset */
-	P2SEL	= BIT1;		/* P2.1 = SMCLK, others GPIO */
-	P2DIR	= 0xFF;		/* All P2.x outputs */
-	P2OUT	= 0;		/* All P2.x reset */
+	/* TODO for the final board spin:
+	 * 8.2.8   Configuring Unused Port Pins
+	 * Unused I/O pins should be configured as I/O function, output
+	 * direction, and left unconnected on the PC board, to prevent a 
+	 * floating input and reduce power consumption. The value of the PxOUT
+	 * bit is irrelevant, since the pin is unconnected. Alternatively, the
+	 * integrated pullup/pulldown resistor can be enabled by setting the
+	 * PxREN bit of the unused pin to prevent the floating input. See the
+	 * System Resets, Interrupts, and Operating Modes chapter for
+	 * termination of unused pins. 
+	 */ 
 	P3SEL	= BIT4 | BIT5 | BIT6;	/* P3.4,5 = USCI_A0 TXD/RXD, P3.6 = PIO */
-	P3DIR	= 0xFF;		/* All P3.x outputs */
-	P3OUT	= 0;		/* All P3.x reset */
-	P4DIR	= 0xFF;		/* All P4.x outputs */
-	P4OUT	= 0;		/* All P4.x reset */
+	P3DIR	= BIT4 | BIT6;		/* P3.4,6 outputs */
+	P3OUT	= 0;			/* All P3.x reset */
 }
 
 static void init_bufs()
