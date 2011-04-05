@@ -1,6 +1,6 @@
 #include "bluetooth.h"
 
-int bluetooth_main()
+bool bluetooth_main()
 {
-	return 0;
+	return false;
 }

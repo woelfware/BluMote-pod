@@ -1,6 +1,12 @@
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
 #ifndef BLUETOOTH_H_
 #define BLUETOOTH_H_
 
-int bluetooth_main();
+#include <stdbool.h>
+
+bool bluetooth_main();
 
 #endif /*BLUETOOTH_H_*/

@@ -5,7 +5,9 @@
 #ifndef SCHEDULER_H_
 #define SCHEDULER_H_
 
-typedef int (*task)(void);
+#include <stdbool.h>
+
+typedef bool (*task)(void);
 
 /*
  * Add a task to the task list.  Returns the number of allocated tasks.

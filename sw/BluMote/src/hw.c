@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2011 Woelfware
  */
- 
+
+#include "config.h" 
 #include "hw.h"
 #include "msp430.h"
 

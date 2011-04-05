@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
 #ifndef HW_H_
 #define HW_H_
 

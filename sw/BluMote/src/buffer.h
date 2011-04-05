@@ -1,13 +1,12 @@
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
 #ifndef BUFFER_H_
 #define BUFFER_H_
 
-#include <stdint.h>
 #include <stdbool.h>
-
-/* Buffer Size */
-#define UART_RX_BUF_SIZE	(32 + 1)
-#define UART_TX_BUF_SIZE	(128 + 1)
-#define IR_RX_BUF_SIZE		(32 + 1)
+#include <stdint.h>
 
 struct circular_buffer {
 	uint8_t writePointer,

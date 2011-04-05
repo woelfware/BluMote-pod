@@ -1,6 +1,6 @@
 #include "ir.h"
 
-int ir_main()
+bool ir_main()
 {
-	return 0;
+	return false;
 }

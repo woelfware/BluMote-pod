@@ -17,11 +17,15 @@ static void init_tasks()
 
 void main()
 {
+	bool run_again;
+
 	init_hw();
 	init_tasks();
+	init_blumote();
 
 	while (1) {
-		if (!run_tasks()) {
+		run_again = run_tasks();
+		if (run_again == false) {
 			_BIS_SR(LPM4_bits + GIE);
 		}
 	}
