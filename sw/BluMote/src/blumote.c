@@ -66,8 +66,7 @@ bool blumote_main()
 		current_state = default_state;
 		break;
 
-	default:
-		/* shouldn't get here */
+	default:	/* shouldn't get here */
 		current_state = default_state;
 		break;
 	}
