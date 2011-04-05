@@ -2,6 +2,7 @@
  * Copyright (c) 2011 Woelfware
  */
 
+#include "bluetooth.h"
 #include "blumote.h"
 
 static enum command_codes cmd_code;
@@ -36,9 +37,36 @@ static void blumote_process_cmd()
 
 bool init_blumote()
 {
-	bool initted = false;
-	
-	return initted;
+	enum state {
+		default_state = 0,
+		request_basic_settings = 0,
+		receive_basic_settings
+	};
+	static enum state current_state = default_state;
+	bool run_again = true;
+	static char buf[32];
+	static int i = 0;
+	int c;
+
+	switch (current_state) {
+	case request_basic_settings:
+		if (bluetooth_putchar('D') != EOF) {
+			current_state = receive_basic_settings;
+		}
+		break;
+
+	case receive_basic_settings:
+		if ((c = bluetooth_getchar()) != EOF) {
+			buf[i++] = c;
+		}
+		break;
+
+	default:	/* shouldn't get here */
+		current_state = default_state;
+		break;
+	}
+
+	return run_again;
 }
 
 bool blumote_main()

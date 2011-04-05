@@ -9,14 +9,9 @@
 struct circular_buffer uart_rx,
 	uart_tx,
 	ir_rx;
-volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
+static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
 	buf_ir_rx[IR_RX_BUF_SIZE];
-	
-int rx_head = 0,
-	rx_tail = 0,
-	tx_head = 0,
-	tx_tail = 0;
 
 static void init_clocks()
 {
@@ -42,9 +37,9 @@ static void init_ports()
 	 * System Resets, Interrupts, and Operating Modes chapter for
 	 * termination of unused pins. 
 	 */ 
-	P3SEL	= BIT4 | BIT5 | BIT6;	/* P3.4,5 = USCI_A0 TXD/RXD, P3.6 = PIO */
-	P3DIR	= BIT4 | BIT6;		/* P3.4,6 outputs */
-	P3OUT	= 0;			/* All P3.x reset */
+	P3SEL	= BIT4 | BIT5;	/* P3.4,5 = USCI_A0 TXD/RXD */
+	P3DIR	= BIT6;		/* P3.6 output */
+	P3OUT	= 0;		/* All P3.x reset */
 }
 
 static void init_bufs()
@@ -66,7 +61,6 @@ void init_hw()
 	init_ports();
 	init_bufs();
 	init_interrupts();
-	_BIS_SR(LPM4_bits + GIE);	/* Enter LPM0, interrupts enabled */
 }
 
 #pragma vector = USCIAB0RX_VECTOR

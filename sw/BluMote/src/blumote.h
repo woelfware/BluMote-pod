@@ -25,6 +25,7 @@ enum component_codes {
 };
 
 bool init_blumote();
+
 bool blumote_main();
 
 #endif /*BLUMOTE_H_*/
