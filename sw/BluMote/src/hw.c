@@ -13,35 +13,6 @@ static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
 	buf_ir_rx[IR_RX_BUF_SIZE];
 
-static void init_clocks()
-{
-	BCSCTL1		= CALBC1_16MHZ;		/* Set DCO */
-	DCOCTL		= CALDCO_16MHZ;
-	UCA0CTL1	|= UCSSEL_2;		/* SMCLK */
-	UCA0BR0		= 138;			/* 16MHz 115200 */
-	UCA0BR1		= 0;			/* 16MHz 115200 */
-	UCA0MCTL	= UCBRS2 + UCBRS0;	/* Modulation UCBRSx = 5 */
-	UCA0CTL1	&= ~UCSWRST;		/* **Initialize USCI state machine** */
-}
-
-static void init_ports()
-{
-	/* TODO for the final board spin:
-	 * 8.2.8   Configuring Unused Port Pins
-	 * Unused I/O pins should be configured as I/O function, output
-	 * direction, and left unconnected on the PC board, to prevent a 
-	 * floating input and reduce power consumption. The value of the PxOUT
-	 * bit is irrelevant, since the pin is unconnected. Alternatively, the
-	 * integrated pullup/pulldown resistor can be enabled by setting the
-	 * PxREN bit of the unused pin to prevent the floating input. See the
-	 * System Resets, Interrupts, and Operating Modes chapter for
-	 * termination of unused pins. 
-	 */ 
-	P3SEL	= BIT4 | BIT5;	/* P3.4,5 = USCI_A0 TXD/RXD */
-	P3DIR	= BIT6;		/* P3.6 output */
-	P3OUT	= 0;		/* All P3.x reset */
-}
-
 static void init_bufs()
 {
 	buf_init(&uart_rx, buf_uart_rx, sizeof(buf_uart_rx));
@@ -49,18 +20,23 @@ static void init_bufs()
 	buf_init(&ir_rx, buf_ir_rx, sizeof(buf_ir_rx));
 }
 
-static void init_interrupts()
-{
-	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrupt */
-}
-
 void init_hw()
 {
-	WDTCTL = WDTPW + WDTHOLD;	/* Stop Watchdog Timer */
-	init_clocks();
-	init_ports();
+	WDTCTL = WDTPW + WDTHOLD;	/* Stop WDT */
+	BCSCTL1 = CALBC1_16MHZ;		/* Set DCO */
+	DCOCTL = CALDCO_16MHZ;
+	P3SEL = BIT4 | BIT5;		/* P3.4,5 = USCI_A0 TXD/RXD */
+	P3DIR = BIT0 | BIT1;
+	P3OUT = BIT0;
+	UCA0CTL1 |= UCSSEL_2;		/* SMCLK */
+	UCA0BR0 = 138;			/* 16MHz 115200 */
+	UCA0BR1 = 0;			/* 16MHz 115200 */
+	UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;	/* Modulation UCBRSx = 7 */
+	UCA0CTL1 &= ~UCSWRST;		/* **Initialize USCI state machine** */
+	IE2 |= UCA0RXIE;		/* Enable USCI_A0 RX interrup */
+	__bis_SR_register(GIE);		/* interrupts enabled */
+	
 	init_bufs();
-	init_interrupts();
 }
 
 #pragma vector = USCIAB0RX_VECTOR

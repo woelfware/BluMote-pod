@@ -4,6 +4,7 @@
 
 #include "bluetooth.h"
 #include "blumote.h"
+#include <string.h>
 
 static enum command_codes cmd_code;
 
@@ -39,16 +40,58 @@ bool init_blumote()
 {
 	enum state {
 		default_state = 0,
-		request_basic_settings = 0,
+		request_cmd_mode = 0,
+		receive_cmd_mode,
+		request_exit_cmd_mode,
+		receive_exit_cmd_mode,
+		request_basic_settings,
 		receive_basic_settings
 	};
 	static enum state current_state = default_state;
 	bool run_again = true;
-	static char buf[32];
+	static char buf[32] = {0};
 	static int i = 0;
 	int c;
 
 	switch (current_state) {
+	case request_cmd_mode:
+		if (bluetooth_putchar('$') != EOF
+			&& bluetooth_putchar('$') != EOF
+			&& bluetooth_putchar('$') != EOF) {
+			current_state = receive_cmd_mode;
+		}
+		break;
+
+	case receive_cmd_mode:
+		if ((c = bluetooth_getchar()) != EOF) {
+			buf[i++] = c;
+		}
+		if (memcmp(buf, "CMD", 3) == 0) {
+			i = 0;
+			current_state = request_exit_cmd_mode;
+		}
+		break;
+
+	case request_exit_cmd_mode:
+		if (bluetooth_putchar('-') != EOF
+			&& bluetooth_putchar('-') != EOF
+			&& bluetooth_putchar('-') != EOF
+			&& bluetooth_putchar('\r') != EOF) {
+			current_state = receive_exit_cmd_mode;
+		}
+		break;
+
+	case receive_exit_cmd_mode:
+		if ((c = bluetooth_getchar()) != EOF) {
+			buf[i++] = c;
+		}
+		if (memcmp(buf, "END", 3) == 0) {
+			i = 0;
+			current_state = default_state;
+			run_again = false;
+		}
+		break;
+
 	case request_basic_settings:
 		if (bluetooth_putchar('D') != EOF) {
 			current_state = receive_basic_settings;

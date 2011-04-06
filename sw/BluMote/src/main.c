@@ -10,9 +10,9 @@
 
 static void init_tasks()
 {
-	add_task(bluetooth_main);
-	add_task(ir_main);
-	add_task(blumote_main);
+	(void)add_task(bluetooth_main);
+	(void)add_task(ir_main);
+	(void)add_task(blumote_main);
 }
 
 void main()
