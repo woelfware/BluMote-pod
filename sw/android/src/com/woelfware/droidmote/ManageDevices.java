@@ -108,7 +108,7 @@ public class ManageDevices extends Activity {
     	Bundle return_bundle;
     	
     	if (requestCode == ACTIVITY_ADD && resultCode == RESULT_OK) {
-    		device_data.open();	// onActivityResult() is called BEFORE onResume() so need this!
+    		device_data.open();	
     		// add the new item to the database
     		return_bundle = intent.getExtras();
     		if ( return_bundle != null ) {

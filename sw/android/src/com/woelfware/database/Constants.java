@@ -9,12 +9,13 @@ public class Constants {
 	// Columns in the database
 	public static final String BUTTON_ID = "button_id";
 	public static final String BUTTON_DATA = "button_data"; 
+	public static final String CATEGORY = "button_category"; // for example, TV, DVD, etc
 	
-	// valid button identifiers
-	public static final String VOLUME_UP = "volume_up";
-	public static final String VOLUME_DOWN = "volume_down";
-	public static final String CHANNEL_UP = "channel_up";
-	public static final String CHANNEL_DOWN = "channel_down";
+//	// valid button identifiers -- deprecated function
+//	public static final String VOLUME_UP = "volume_up";
+//	public static final String VOLUME_DOWN = "volume_down";
+//	public static final String CHANNEL_UP = "channel_up";
+//	public static final String CHANNEL_DOWN = "channel_down";
 	
 	// Other constants
 }

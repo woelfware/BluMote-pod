@@ -35,13 +35,13 @@ public class MyDB {
 	
 	// pass in the current-table that we are working with then the button ID and the content
 	// returns the rowID of the addition
-	public long insertButton(String curTable, String buttonID, byte[] content)
+	public long insertButton(String curTable, String buttonID, String buttonCategory, byte[] content)
 	{
 		try {
 		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
 				null, null, null, null);
 		if (c.getCount() > 0) { // then we already have this entry so call updateButton
-			updateButton(curTable, buttonID, content);
+			updateButton(curTable, buttonID, buttonCategory, content);
 			return -1;
 		}
 		else { // this must be a new entry , so try to insert it
@@ -49,6 +49,7 @@ public class MyDB {
 				ContentValues newTaskValue = new ContentValues();
 				newTaskValue.put(Constants.BUTTON_ID, buttonID);
 				newTaskValue.put(Constants.BUTTON_DATA, content);
+				newTaskValue.put(Constants.CATEGORY, buttonCategory);
 				db = dbhelper.getWritableDatabase();
 				return db.insertOrThrow(curTable, null, newTaskValue);
 			} catch(SQLiteException ex) {
@@ -93,7 +94,8 @@ public class MyDB {
 		table+" ("+
 		Constants.KEY_ID+" integer primary key autoincrement, "+
 		Constants.BUTTON_ID+" text not null, "+
-		Constants.BUTTON_DATA+" text not null"+
+		Constants.BUTTON_DATA+" text not null, "+
+		Constants.CATEGORY+" text not null"+
 		");";
 		try {
 			db.execSQL(TABLE);
@@ -143,12 +145,13 @@ public class MyDB {
     
     // updates a button
     // returns true if succeeded, externally should call insertButton
-    private boolean updateButton(String curTable, String buttonID, byte[] content) 
+    private boolean updateButton(String curTable, String buttonID, String buttonCategory, byte[] content) 
     {
     	// DEBUG var
     	boolean debug;
         ContentValues args = new ContentValues();
         args.put(Constants.BUTTON_DATA, content);
+        args.put(Constants.CATEGORY, buttonCategory);
         debug = db.update(curTable, args, 
                   Constants.BUTTON_ID + "='" + buttonID+"'", null) > 0;
         return debug;
