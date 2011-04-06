@@ -1,7 +1,12 @@
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
 #ifndef HW_H_
 #define HW_H_
 
 #include "buffer.h"
+#include <msp430.h>
 
 extern struct circular_buffer uart_rx,
 	uart_tx,

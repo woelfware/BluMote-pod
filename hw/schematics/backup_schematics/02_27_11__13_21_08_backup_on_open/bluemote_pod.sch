@@ -41,7 +41,7 @@ refdes=R101
 T 61100 46200 5 8 0 0 0 1 1
 device=resistor
 T 61500 44800 5 8 1 1 0 1 1
-value=1K
+value=33
 T 61100 46800 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 61100 47600 5 8 0 0 0 1 1
@@ -53,12 +53,14 @@ T 62625 45900 5 8 1 1 0 4 1
 refdes=R102
 T 63900 45900 5 8 0 0 270 1 1
 device=resistor
-T 62400 45700 5 8 1 1 0 1 1
-value=100
+T 64100 45900 5 8 0 0 270 1 1
+value=1K
 T 64500 45900 5 8 0 0 270 1 1
 footprint=0805_resistor.fp
 T 65300 45900 5 8 0 0 270 1 1
 symversion=1.1
+T 62500 45700 5 8 1 1 0 0 1
+value=33
 }
 N 59400 44600 60800 44600 4
 {
@@ -72,7 +74,7 @@ refdes=R103
 T 58000 50100 5 8 0 0 0 1 1
 device=resistor
 T 58400 48700 5 8 1 1 0 1 1
-value=1K
+value=33
 T 58000 50700 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 58000 51500 5 8 0 0 0 1 1
@@ -103,12 +105,14 @@ T 60275 52400 5 8 1 1 180 4 1
 refdes=R104
 T 60300 53600 5 8 0 0 0 1 1
 device=resistor
-T 60100 52200 5 8 1 1 0 1 1
-value=100
+T 60300 53800 5 8 0 0 0 1 1
+value=1K
 T 60300 54200 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 60300 55000 5 8 0 0 0 1 1
 symversion=1.1
+T 60300 52300 5 8 1 1 180 0 1
+value=33
 }
 C 59200 49400 1 0 0 resistor.sym
 {
@@ -116,12 +120,14 @@ T 60325 51500 5 8 1 1 0 4 1
 refdes=R105
 T 60300 52700 5 8 0 0 0 1 1
 device=resistor
-T 60100 51300 5 8 1 1 0 1 1
-value=100
+T 60300 52900 5 8 0 0 0 1 1
+value=1K
 T 60300 53300 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 60300 54100 5 8 0 0 0 1 1
 symversion=1.1
+T 60300 51400 5 8 1 1 180 0 1
+value=33
 }
 C 59200 48500 1 0 0 resistor.sym
 {
@@ -129,12 +135,14 @@ T 60275 50600 5 8 1 1 180 4 1
 refdes=R106
 T 60300 51800 5 8 0 0 0 1 1
 device=resistor
-T 60100 50400 5 8 1 1 0 1 1
-value=100
+T 60300 52000 5 8 0 0 0 1 1
+value=1K
 T 60300 52400 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 60300 53200 5 8 0 0 0 1 1
 symversion=1.1
+T 60300 50500 5 8 1 1 180 0 1
+value=33
 }
 C 59200 47600 1 0 0 resistor.sym
 {
@@ -142,12 +150,14 @@ T 60275 49700 5 8 1 1 180 4 1
 refdes=R107
 T 60300 50900 5 8 0 0 0 1 1
 device=resistor
-T 60100 49500 5 8 1 1 0 1 1
-value=100
+T 60300 51100 5 8 0 0 0 1 1
+value=1K
 T 60300 51500 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 60300 52300 5 8 0 0 0 1 1
 symversion=1.1
+T 60300 49600 5 8 1 1 180 0 1
+value=33
 }
 N 59400 48900 59400 52900 4
 C 7200 2300 0 0 0 title_8_5x11_full.sym
@@ -244,7 +254,7 @@ refdes=R108
 T 60300 54500 5 8 0 0 0 1 1
 device=resistor
 T 60200 53100 5 8 1 1 0 1 1
-value=100
+value=33
 T 60300 55100 5 8 0 0 0 1 1
 footprint=0805_resistor.fp
 T 60300 55900 5 8 0 0 0 1 1
@@ -494,7 +504,7 @@ device=device
 T 52400 44200 5 8 1 1 0 1 1
 value=10uF
 T 51900 47000 5 8 0 0 0 1 1
-footprint=cap_pol_0805.fp
+footprint=cap_0805.fp
 T 51900 47800 5 8 0 0 0 1 1
 symversion=1.0
 }
@@ -520,7 +530,7 @@ device=device
 T 58500 44200 5 8 1 1 0 1 1
 value=10uF
 T 58000 47000 5 8 0 0 0 1 1
-footprint=cap_pol_0805.fp
+footprint=cap_0805.fp
 T 58000 47800 5 8 0 0 0 1 1
 symversion=1.0
 }
@@ -815,23 +825,4 @@ N 48700 49500 49100 49500 4
 N 48700 50300 49100 50300 4
 N 49100 50300 49100 50800 4
 N 48700 50500 49100 50500 4
-T 60000 42800 9 8 1 0 0 0 1
-1 of 2
-T 56600 43100 9 8 1 0 0 0 1
-BluMote
-T 56600 42800 9 8 1 0 0 0 1
-bluemote_pod.sch
-T 56600 42500 9 8 1 0 0 0 1
-KH
-T 61600 42500 9 8 1 0 0 0 1
-2/27/2011
 
-
-
-<<<<<<< HEAD
-=======
-
-
-
-
->>>>>>> 8582e488e14ac13e2871a1e0171f0374ca4bdb0a

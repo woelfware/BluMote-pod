@@ -1,0 +1,4 @@
+InfoKey: Author
+InfoValue: Kenneth Hutchins
+InfoKey: Title
+InfoValue: bluemote_pod project schematics
