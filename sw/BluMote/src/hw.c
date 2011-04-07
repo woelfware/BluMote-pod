@@ -36,9 +36,9 @@ void init_hw()
 	UCA0BR1 = 0;		/* 16MHz 115200 */
 	UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;	/* Modulation UCBRSx = 7 */
 	UCA0CTL1 &= ~UCSWRST;	/* **Initialize USCI state machine** */
-	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrup */
+	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrupt */
 	__bis_SR_register(GIE);	/* interrupts enabled */
-	
+
 	init_bufs();
 }
 

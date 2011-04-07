@@ -17,14 +17,14 @@ static void init_tasks()
 
 void main()
 {
-	bool run_again = true;
+	bool run_again;
 
 	init_hw();
 	init_tasks();
-	while (run_again == true) {
+	do {
 		run_again = init_blumote(sys_tick);
 		while (bluetooth_main(sys_tick) == true);
-	}
+	} while (run_again == true);
 
 	while (1) {
 		run_again = run_tasks(sys_tick);
