@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 
-typedef bool (*task)(void);
+typedef bool (*task)(int ms);
 
 /*
  * Add a task to the task list.  Returns the number of allocated tasks.
@@ -15,6 +15,6 @@ typedef bool (*task)(void);
  */ 
 int add_task(task task);
 
-int run_tasks();
+int run_tasks(int ms);
 
 #endif /*SCHEDULER_H_*/

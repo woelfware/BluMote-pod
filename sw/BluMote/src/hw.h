@@ -12,6 +12,9 @@ extern struct circular_buffer uart_rx,
 	uart_tx,
 	ir_rx;
 
+/* 0.5ms system timer */
+extern volatile int sys_tick;
+
 /**
  * return bool
  * retval true if successful

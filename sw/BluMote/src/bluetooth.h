@@ -23,6 +23,6 @@ int bluetooth_getchar();
  */
 int bluetooth_putchar(int character);
 
-bool bluetooth_main();
+bool bluetooth_main(int ms);
 
 #endif /*BLUETOOTH_H_*/

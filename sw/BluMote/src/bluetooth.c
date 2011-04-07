@@ -24,7 +24,7 @@ int bluetooth_putchar(int character)
 	return rc;
 }
 
-bool bluetooth_main()
+bool bluetooth_main(int ms)
 {
 	enum state {
 		default_state = 0,

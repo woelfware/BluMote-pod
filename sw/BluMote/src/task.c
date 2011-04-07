@@ -15,13 +15,13 @@ int add_task(task task)
 	return nbr_tasks;
 }
 
-int run_tasks()
+int run_tasks(int ms)
 {
 	int run_again = 0,
 		i = 0;
 
 	while (task_list[i]) {
-		if ((*task_list[i])()) { 
+		if ((*task_list[i])(ms)) { 
 			run_again = 1;
 		}
 		i++;

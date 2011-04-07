@@ -36,7 +36,7 @@ static void blumote_process_cmd()
 	}
 }
 
-bool init_blumote()
+bool init_blumote(int ms)
 {
 	enum state {
 		default_state = 0,

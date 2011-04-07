@@ -3,6 +3,6 @@
 
 #include <stdbool.h>
 
-bool ir_main();
+bool ir_main(int ms);
 
 #endif /*IR_H_*/

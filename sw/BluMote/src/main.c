@@ -22,12 +22,12 @@ void main()
 	init_hw();
 	init_tasks();
 	while (run_again == true) {
-		run_again = init_blumote();
-		while (bluetooth_main() == true);
+		run_again = init_blumote(sys_tick);
+		while (bluetooth_main(sys_tick) == true);
 	}
 
 	while (1) {
-		run_again = run_tasks();
+		run_again = run_tasks(sys_tick);
 		if (run_again == false) {
 			_BIS_SR(LPM4_bits + GIE);
 		}
