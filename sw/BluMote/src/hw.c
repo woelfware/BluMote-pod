@@ -13,7 +13,7 @@ static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
 	buf_ir_rx[IR_RX_BUF_SIZE];
 
-volatile int sys_tick;
+static volatile int sys_tick = 0;
 
 static void init_bufs()
 {
@@ -24,7 +24,7 @@ static void init_bufs()
 
 void init_hw()
 {
-	WDTCTL = WDT_MDLY_8;	/* Set Watchdog interval to 0.5ms @ 16MHz */
+	WDTCTL = WDT_MDLY_32;	/* Set Watchdog interval to 2ms @ 16MHz */
 	IE1 |= WDTIE;		/* Enable WDT interrupt */
 	BCSCTL1 = CALBC1_16MHZ;	/* Set DCO */
 	DCOCTL = CALDCO_16MHZ;
@@ -40,6 +40,13 @@ void init_hw()
 	__bis_SR_register(GIE);	/* interrupts enabled */
 
 	init_bufs();
+}
+
+int get_ms()
+{
+	int elapsed_time = sys_tick << 1;
+	sys_tick = 0;
+	return elapsed_time;
 }
 
 #pragma vector = USCIAB0RX_VECTOR

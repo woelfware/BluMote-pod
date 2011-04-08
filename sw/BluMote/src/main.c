@@ -6,30 +6,41 @@
 #include "blumote.h"
 #include "ir.h"
 #include "hw.h"
-#include "task.h"
 
-static void init_tasks()
-{
-	(void)add_task(bluetooth_main);
-	(void)add_task(ir_main);
-	(void)add_task(blumote_main);
-}
+#define N_ELEMENTS(arr)	(sizeof(arr)/sizeof((arr)[0]))
+
+typedef bool (*task)(int ms);
+
+task tasks[] = {bluetooth_main,
+	ir_main,
+	blumote_main};
 
 void main()
 {
+	int ms,
+		i;
 	bool run_again;
 
 	init_hw();
-	init_tasks();
+	(void)get_ms();
+
 	do {
-		run_again = init_blumote(sys_tick);
-		while (bluetooth_main(sys_tick) == true);
+		ms = get_ms();
+		run_again = init_blumote(ms);
+		while (bluetooth_main(ms) == true);
 	} while (run_again == true);
 
-	while (1) {
-		run_again = run_tasks(sys_tick);
+	(void)get_ms();
+	do {
+		ms = get_ms();
+		run_again = false;
+		for (i = 0; i < N_ELEMENTS(tasks); i++) {
+			if ((*tasks[i])(ms)) {
+				run_again = true;
+			}
+		}
 		if (run_again == false) {
 			_BIS_SR(LPM4_bits + GIE);
 		}
-	}
+	} while (1);
 }

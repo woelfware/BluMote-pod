@@ -42,8 +42,10 @@ static void blumote_process_cmd()
 bool init_blumote(int ms)
 {
 	enum state {
+		default_state = 0,
+		wait_one_sec1 = 0,
+		wait_one_sec2,
 		request_cmd_mode,
-		default_state = request_cmd_mode,
 		receive_cmd_mode,
 		request_exit_cmd_mode,
 		receive_exit_cmd_mode,
@@ -51,33 +53,47 @@ bool init_blumote(int ms)
 		receive_basic_settings
 	};
 	static enum state current_state = default_state;
-	bool run_again = true;
+	static int ttl;	/* time to live */
 	int c;
-	static int start_time;
+	bool run_again = true;
 
 	switch (current_state) {
+	case wait_one_sec1:
+		ttl = 1000;
+		current_state = wait_one_sec2;
+		memset(buf, 0, sizeof(buf));
+		break;
+
+	case wait_one_sec2:
+		ttl -= ms;
+		if (ttl < 0) {
+			current_state = request_cmd_mode;
+		} 
+		break;
+
 	case request_cmd_mode:
 		if (bluetooth_putchar('$') != EOF
 				&& bluetooth_putchar('$') != EOF
 				&& bluetooth_putchar('$') != EOF) {
 			current_state = receive_cmd_mode;
-			start_time = ms;
+			ttl = 1000;
 		}
 		break;
 
 	case receive_cmd_mode:
+		ttl -= ms;
+
 		while ((c = bluetooth_getchar()) != EOF) {
 			buf[i++] = c;
 			i %= sizeof(buf);
-			start_time = ms;
+			ttl = 1000;
 		}
-		if (ms < start_time + 2) {	/* try for at least one full tick */
-			int j;
-			for (j = 0; j + 2 < i; j++) {
-				if (memcmp(&buf[j], "CMD", 3) == 0) {
-					i = 0;
-					current_state = request_exit_cmd_mode;
-				}
+		
+		if (ttl >= 0) {
+			if (memcmp(buf, "CMD\r\n", 5) == 0) {
+				i = 0;
+				memset(buf, 0, 5);
+				current_state = request_exit_cmd_mode;
 			}
 		} else {	/* no response; already in CMD mode? */
 			current_state = request_exit_cmd_mode;
@@ -91,24 +107,25 @@ bool init_blumote(int ms)
 				&& bluetooth_putchar('-') != EOF
 				&& bluetooth_putchar('\r') != EOF) {
 			current_state = receive_exit_cmd_mode;
-			start_time = ms;
+			ttl = 1000;
 		}
 		break;
 
 	case receive_exit_cmd_mode:
+		ttl -= ms;
+
 		while ((c = bluetooth_getchar()) != EOF) {
 			buf[i++] = c;
 			i %= sizeof(buf);
-			start_time = ms;
+			ttl = 1000;
 		}
 
-		if (ms < start_time + 2) {	/* try for at least one full tick */
-			int j = 0;
-			for ( ; j + 2 < i; j++) {
-				if (memcmp(buf, "END", 3) == 0) {
-					current_state = default_state;
-					run_again = false;
-				}
+		if (ttl >= 0) {
+			if (memcmp(buf, "END\r\n", 5) == 0) {
+				i = 0;
+				memset(buf, 0, 5);
+				current_state = default_state;
+				run_again = false;
 			}
 		} else {	/* no response... there's a comm failure */
 			current_state = default_state;
