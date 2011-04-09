@@ -24,6 +24,17 @@ int bluetooth_putchar(int character)
 	return rc;
 }
 
+int bluetooth_puts(char const *str, int nbr_chars)
+{
+	while (nbr_chars-- > 0) {
+		if (bluetooth_putchar(*str++) == EOF) {
+			return EOF;
+		}
+	}
+
+	return 1;
+}
+
 bool bluetooth_main(int ms)
 {
 	bool run_again = true;

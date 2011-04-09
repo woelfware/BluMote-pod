@@ -11,7 +11,8 @@
 
 typedef bool (*task)(int ms);
 
-task tasks[] = {bluetooth_main,
+static task const tasks[] = {
+	bluetooth_main,
 	ir_main,
 	blumote_main};
 

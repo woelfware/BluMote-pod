@@ -7,10 +7,9 @@
 
 void buf_init(struct circular_buffer *pQue, volatile uint8_t *buf, uint8_t size)
 {
-	pQue->buf		= buf;
-	pQue->size		= size;
-	pQue->writePointer	= 0;
-	pQue->readPointer	= 0;
+	pQue->buf = buf;
+	pQue->size = size;
+	pQue->writePointer = pQue->readPointer = 0;
 }
 
 bool buf_enque(struct circular_buffer *que, uint8_t k)

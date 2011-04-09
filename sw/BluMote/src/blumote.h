@@ -24,8 +24,8 @@ enum component_codes {
 	BLUMOTE_SW
 };
 
-bool init_blumote();
+bool init_blumote(int ms);
 
-bool blumote_main();
+bool blumote_main(int ms);
 
 #endif /*BLUMOTE_H_*/
