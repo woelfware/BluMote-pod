@@ -47,6 +47,8 @@ bool init_blumote(int ms)
 		wait_one_sec2,
 		request_cmd_mode,
 		receive_cmd_mode,
+		request_set_command,
+		receive_set_command,
 		request_exit_cmd_mode,
 		receive_exit_cmd_mode,
 		request_basic_settings,
@@ -71,12 +73,12 @@ bool init_blumote(int ms)
 		} 
 		break;
 
-	case request_cmd_mode:
-		if (bluetooth_putchar('$') != EOF
-				&& bluetooth_putchar('$') != EOF
-				&& bluetooth_putchar('$') != EOF) {
+	case request_cmd_mode: {
+		char const *str = "$$$";
+		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = receive_cmd_mode;
 			ttl = 1000;
+		}
 		}
 		break;
 
@@ -90,7 +92,8 @@ bool init_blumote(int ms)
 		}
 		
 		if (ttl >= 0) {
-			if (memcmp(buf, "CMD\r\n", 5) == 0) {
+			char const *str = "CMD\r\n";
+			if (memcmp(buf, str, strlen(str)) == 0) {
 				i = 0;
 				memset(buf, 0, 5);
 				current_state = request_exit_cmd_mode;
@@ -100,14 +103,52 @@ bool init_blumote(int ms)
 		}
 		break;
 
-	case request_exit_cmd_mode:
-		i = 0;
-		if (bluetooth_putchar('-') != EOF
-				&& bluetooth_putchar('-') != EOF
-				&& bluetooth_putchar('-') != EOF
-				&& bluetooth_putchar('\r') != EOF) {
+	case request_set_command: {
+		char const *str = "SS,BluMote\r\n";
+		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = receive_exit_cmd_mode;
 			ttl = 1000;
+		}
+		}
+		break;
+
+	case receive_set_command:
+		ttl -= ms;
+		
+		while ((c = bluetooth_getchar()) != EOF) {
+			buf[i++] = c;
+			i %= sizeof(buf);
+			ttl = 1000;
+		}
+
+		if (ttl >= 0) {
+			char const *str[] = {
+				"AOK\r\n",
+				"ERR\r\n",
+				"?\r\n"
+			};
+			if (memcmp(buf, str[0], strlen(str[0])) == 0) {
+				i = 0;
+				memset(buf, 0, 5);
+				current_state = request_exit_cmd_mode;
+				run_again = false;
+			} else if (memcmp(buf, str[1], strlen(str[1])) == 0
+					|| memcmp(buf, str[2], strlen(str[2])) == 0) {
+				i = 0;
+				memset(buf, 0, 5);
+				current_state = request_set_command;
+			}
+		} else {	/* no response... there's a comm failure */
+			current_state = default_state;
+		}
+		break;
+
+	case request_exit_cmd_mode: {
+		char const *str = "---\r";
+		if (bluetooth_puts(str, strlen(str)) != EOF) {
+			current_state = receive_exit_cmd_mode;
+			ttl = 1000;
+		}
 		}
 		break;
 
@@ -121,7 +162,8 @@ bool init_blumote(int ms)
 		}
 
 		if (ttl >= 0) {
-			if (memcmp(buf, "END\r\n", 5) == 0) {
+			char const *str = "END\r\n";
+			if (memcmp(buf, str, strlen(str)) == 0) {
 				i = 0;
 				memset(buf, 0, 5);
 				current_state = default_state;
@@ -152,7 +194,7 @@ bool init_blumote(int ms)
 	return run_again;
 }
 
-bool blumote_main()
+bool blumote_main(int ms)
 {
 	enum state {
 		default_state = 0,

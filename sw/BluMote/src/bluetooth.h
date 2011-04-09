@@ -23,6 +23,12 @@ int bluetooth_getchar();
  */
 int bluetooth_putchar(int character);
 
+/*
+ * Convenience function for bluetooth_putchar.
+ * Return 1 for success, EOF for error.
+ */
+int bluetooth_puts(char const *str, int nbr_chars);
+
 bool bluetooth_main(int ms);
 
 #endif /*BLUETOOTH_H_*/
