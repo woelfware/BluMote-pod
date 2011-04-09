@@ -774,12 +774,15 @@ public class Droidmote extends Activity {
             Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Check that there's actually something to send
-        if (message.length > 0) {
-            // Get the message bytes and tell the BluetoothChatService to write
-            byte[] send = message;
-            mChatService.write(send);
+        // check that we have a context selected and available
+        // TODO make sure this check works with no activity selected
+        if (devices != null) {
+        	// Check that there's actually something to send
+        	if (message.length > 0) {
+        		// Get the message bytes and tell the BluetoothChatService to write
+        		byte[] send = message;
+        		mChatService.write(send);
+        	}
         }
     }
     
