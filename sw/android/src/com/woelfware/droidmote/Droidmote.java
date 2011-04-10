@@ -249,6 +249,9 @@ public class Droidmote extends Activity {
             }
         }
         
+        // setup spinner (need this in case we removed the spinner item from a call to managedevices)
+        setupSpinner();
+        
         // populate Buttons from DB
 		fetchButtons();
 		
