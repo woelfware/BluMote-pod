@@ -1,5 +1,5 @@
-#usr/bin/env python
-  Copyright (c) 2011 Woelfware
+#!/usr/bin/env python
+# Copyright (c) 2011 Woelfware
 
 class Command_Codes():
 	def __init__(self):
