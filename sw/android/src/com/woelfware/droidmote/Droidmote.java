@@ -181,6 +181,24 @@ public class Droidmote extends Activity {
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
   
+    	// Get local Bluetooth adapter
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        // If the adapter is null, then Bluetooth is not supported
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        
+     // If BT is not on, request that it be enabled.
+        // setupChat() will then be called during onActivityResult
+        if (!mBluetoothAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+        // Otherwise, setup the session
+        } 
+        
         // Set up the window layout
         requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
         setContentView(R.layout.main);
@@ -193,18 +211,7 @@ public class Droidmote extends Activity {
         
         // get SQL database class 
         device_data = new MyDB(this);
-        device_data.open();
-                        
-        // Get local Bluetooth adapter
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        // If the adapter is null, then Bluetooth is not supported
-        if (mBluetoothAdapter == null) {
-            Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-                
+        device_data.open();                
     }
         
     @Override
@@ -213,17 +220,18 @@ public class Droidmote extends Activity {
 
         // If BT is not on, request that it be enabled.
         // setupChat() will then be called during onActivityResult
-        if (!mBluetoothAdapter.isEnabled()) {
-            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-        // Otherwise, setup the session
-        } else {
+//        if (!mBluetoothAdapter.isEnabled()) {
+//            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+//            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+//        // Otherwise, setup the session
+//        } 
+//        else {
             if (mChatService == null) {
             	// Initialize the BluetoothChatService to perform bluetooth connections
                 mChatService = new BluetoothChatService(this, mHandler);
             	setupDefaultButtons();
             }
-        }
+ //       }
     }
 
     @Override
@@ -766,12 +774,15 @@ public class Droidmote extends Activity {
             Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Check that there's actually something to send
-        if (message.length > 0) {
-            // Get the message bytes and tell the BluetoothChatService to write
-            byte[] send = message;
-            mChatService.write(send);
+        // check that we have a context selected and available
+        // TODO make sure this check works with no activity selected
+        if (devices != null) {
+        	// Check that there's actually something to send
+        	if (message.length > 0) {
+        		// Get the message bytes and tell the BluetoothChatService to write
+        		byte[] send = message;
+        		mChatService.write(send);
+        	}
         }
     }
     
