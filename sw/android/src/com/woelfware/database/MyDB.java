@@ -127,7 +127,7 @@ public class MyDB {
 	public Cursor getTables() {
 		Cursor c;
 		try {
-			c = db.rawQuery("SELECT name FROM sqlite_master", null);
+			c = db.rawQuery("SELECT name FROM sqlite_master", null);			
 			return c;
 		} catch (SQLiteException ex) {
 			Log.v("List tables exception", ex.getMessage());

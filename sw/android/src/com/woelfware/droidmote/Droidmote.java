@@ -191,7 +191,7 @@ public class Droidmote extends Activity {
             return;
         }
         
-     // If BT is not on, request that it be enabled.
+        // If BT is not on, request that it be enabled.
         // setupChat() will then be called during onActivityResult
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -316,6 +316,9 @@ public class Droidmote extends Activity {
     			str1 = cursor1.getString(0);
     			if (!(str1.equals("android_metadata")) 
     					&& !(str1.equals("sqlite_sequence"))) {
+    				// spaces are removed from table names, converted to underscores,
+    				// so convert them back here
+    				str1 = str1.replace("_", " ");
     				mAdapter.add(str1);
     			}
     		} while (cursor1.moveToNext());
@@ -939,11 +942,7 @@ public class Droidmote extends Activity {
         	LEARN_MODE = false;
         	// reset all images to unpressed state
         	resetButtons();
-        	return true;
-        case R.id.exit_menu:                	        	
-        	finish();
-        	return true;
-        		
+        	return true;        		
         }
         return false;
     }
@@ -998,7 +997,8 @@ public class Droidmote extends Activity {
     	if (device_spinner.getCount() > 0) {
     		Object table = device_spinner.getSelectedItem();
     		if (table != null) {
-    			cur_table = table.toString();
+    			// replace spaces with underscores and then set cur_table to that
+    			cur_table = table.toString().replace(" ", "_");
     			devices = device_data.getKeys(cur_table);
     		}
     	}

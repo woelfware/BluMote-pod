@@ -65,6 +65,8 @@ public class ManageDevices extends Activity {
         		str1 = cursor1.getString(0);
         		if (!(str1.equals("android_metadata")) 
         				&& !(str1.equals("sqlite_sequence"))) {
+        			// convert underscores to spaces
+        			str1 = str1.replace("_", " ");
         			mDevicesArrayAdapter.add(str1);
         		}
         	} while (cursor1.moveToNext());
@@ -113,6 +115,8 @@ public class ManageDevices extends Activity {
     		return_bundle = intent.getExtras();
     		if ( return_bundle != null ) {
     			return_string = return_bundle.getString("returnStr");
+    			// spaces don't work for table names, so replace with underscore
+    			return_string = return_string.replace(" ", "_");
         		device_data.createTable(return_string);
     		}
         	// refresh the display of items
@@ -140,6 +144,8 @@ public class ManageDevices extends Activity {
 		case ID_DELETE:
 			// need to remove this table and repopulate list
 			table_name = mDevicesArrayAdapter.getItem((int)(info.id));
+			// replace spaces with underscores
+			table_name = table_name.replace(" ", "_");
 			device_data.removeTable(table_name);
 			populateDisplay();
 			return true;
