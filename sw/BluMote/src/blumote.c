@@ -7,6 +7,7 @@
 #include <string.h>
 
 static enum command_codes cmd_code;
+bool learning_ir_code = false;
 
 static char buf[128];
 static int i = 0;

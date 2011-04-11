@@ -9,5 +9,6 @@
 #define UART_RX_BUF_SIZE	(32)
 #define UART_TX_BUF_SIZE	(64)
 #define IR_RX_BUF_SIZE		(32)
+#define IR_TX_BUF_SIZE		(32)
 
 #endif /*CONFIG_H_*/

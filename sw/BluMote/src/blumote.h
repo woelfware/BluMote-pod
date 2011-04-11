@@ -24,6 +24,8 @@ enum component_codes {
 	BLUMOTE_SW
 };
 
+extern bool learning_ir_code;
+
 bool init_blumote(int ms);
 
 bool blumote_main(int ms);

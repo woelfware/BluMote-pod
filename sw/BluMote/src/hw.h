@@ -11,6 +11,8 @@
 extern struct circular_buffer uart_rx,
 	uart_tx,
 	ir_rx;
+	
+extern volatile bool got_pulse;
 
 /**
  * return bool
@@ -23,5 +25,11 @@ void init_hw();
  * The number of milliseconds elapsed since the last call to get_ms.
  */
 int get_ms();
+
+/*
+ * The number of microseconds elapsed since the last call to get_us.
+ * Don't use while in rx mode.
+ */
+uint_fast16_t get_us();
 
 #endif /*HW_H_*/
