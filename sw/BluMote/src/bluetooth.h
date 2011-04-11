@@ -29,6 +29,13 @@ int bluetooth_putchar(int character);
  */
 int bluetooth_puts(char const *str, int nbr_chars);
 
+/**
+ * return bool
+ * retval true run again
+ * retval false done
+ */
+bool issue_bluetooth_reset(int ms);
+
 bool bluetooth_main(int ms);
 
 #endif /*BLUETOOTH_H_*/
