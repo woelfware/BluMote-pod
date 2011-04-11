@@ -15,7 +15,7 @@
 -->
 
 <resources>
-    <string name="app_name">BlueMote</string>
+    <string name="app_name">BluMote</string>
 
     <!--  BluetoothChat -->
     <string name="send">Send</string>
@@ -37,7 +37,7 @@
     <!-- Options Menu -->
     <string name="connect">Connect a device</string>
     <string name="discoverable">Make discoverable</string>
-<string name="spinner_prompt">Choose device</string>
+<string name="spinner_prompt">Choose Activity</string>
 <string name="title_devices_list">List of Button Configurations</string>
 <string name="menu_add">New Button Config</string>
 <string name="add_device_text">Enter device name:</string>

@@ -9,8 +9,8 @@
 static enum command_codes cmd_code;
 bool learning_ir_code = false;
 
-static char buf[128];
-static int i = 0;
+static char buf[256];
+static int nbr_bytes;
 
 static enum command_codes blumote_get_cmd()
 {
@@ -48,12 +48,13 @@ bool init_blumote(int ms)
 		wait_one_sec2,
 		request_cmd_mode,
 		receive_cmd_mode,
+		request_basic_settings,
+		receive_basic_settings,
 		request_set_command,
 		receive_set_command,
 		request_exit_cmd_mode,
 		receive_exit_cmd_mode,
-		request_basic_settings,
-		receive_basic_settings
+		reset_bluetooth
 	};
 	static enum state current_state = default_state;
 	static int ttl;	/* time to live */
@@ -64,7 +65,11 @@ bool init_blumote(int ms)
 	case wait_one_sec1:
 		ttl = 1000;
 		current_state = wait_one_sec2;
+		
+		/* clear out the rx buffers */
+		while (bluetooth_getchar() != EOF);
 		memset(buf, 0, sizeof(buf));
+		nbr_bytes = 0;
 		break;
 
 	case wait_one_sec2:
@@ -87,27 +92,68 @@ bool init_blumote(int ms)
 		ttl -= ms;
 
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[i++] = c;
-			i %= sizeof(buf);
+			buf[nbr_bytes++] = c;
+			nbr_bytes %= sizeof(buf);
 			ttl = 1000;
 		}
 		
 		if (ttl >= 0) {
 			char const *str = "CMD\r\n";
 			if (memcmp(buf, str, strlen(str)) == 0) {
-				i = 0;
-				memset(buf, 0, 5);
-				current_state = request_exit_cmd_mode;
+				current_state = request_basic_settings;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
 			}
 		} else {	/* no response; already in CMD mode? */
-			current_state = request_exit_cmd_mode;
+			current_state = request_basic_settings;
+			memset(buf, 0, nbr_bytes);
+			nbr_bytes = 0;
+		}
+		break;
+
+	case request_basic_settings:
+		if (bluetooth_puts("D\r", 2) != EOF) {
+			current_state = receive_basic_settings;
+			ttl = 1000;
+		}
+		break;
+
+	case receive_basic_settings:
+		ttl -= ms;
+
+		while ((c = bluetooth_getchar()) != EOF) {
+			buf[nbr_bytes++] = c;
+			nbr_bytes %= sizeof(buf);
+			ttl = 1000;
+		}
+
+		if (ttl >= 0) {
+			char const *str[] = {
+				"ERR\r\n",
+				"?\r\n"
+			};
+			if (memcmp(buf, str[0], strlen(str[0])) == 0
+					|| memcmp(buf, str[1], strlen(str[1])) == 0) {
+				/* the rn-42 is in a weird state so reset it */
+				current_state = reset_bluetooth;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
+			}
+		} else {	/* got all the data */
+			if (nbr_bytes) {
+				current_state = request_exit_cmd_mode;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
+			} else {	/* didn't get any data */
+				current_state = reset_bluetooth;
+			}
 		}
 		break;
 
 	case request_set_command: {
-		char const *str = "SS,BluMote\r\n";
+		char const *str = "S-,BluMote\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = receive_exit_cmd_mode;
+			current_state = receive_set_command;
 			ttl = 1000;
 		}
 		}
@@ -117,8 +163,8 @@ bool init_blumote(int ms)
 		ttl -= ms;
 		
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[i++] = c;
-			i %= sizeof(buf);
+			buf[nbr_bytes++] = c;
+			nbr_bytes %= sizeof(buf);
 			ttl = 1000;
 		}
 
@@ -129,23 +175,25 @@ bool init_blumote(int ms)
 				"?\r\n"
 			};
 			if (memcmp(buf, str[0], strlen(str[0])) == 0) {
-				i = 0;
-				memset(buf, 0, 5);
 				current_state = request_exit_cmd_mode;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
 				run_again = false;
 			} else if (memcmp(buf, str[1], strlen(str[1])) == 0
 					|| memcmp(buf, str[2], strlen(str[2])) == 0) {
-				i = 0;
-				memset(buf, 0, 5);
 				current_state = request_set_command;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
 			}
 		} else {	/* no response... there's a comm failure */
-			current_state = default_state;
+			current_state = request_exit_cmd_mode;
+			memset(buf, 0, nbr_bytes);
+			nbr_bytes = 0;
 		}
 		break;
 
 	case request_exit_cmd_mode: {
-		char const *str = "---\r";
+		char const *str = "---\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = receive_exit_cmd_mode;
 			ttl = 1000;
@@ -157,38 +205,36 @@ bool init_blumote(int ms)
 		ttl -= ms;
 
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[i++] = c;
-			i %= sizeof(buf);
+			buf[nbr_bytes++] = c;
+			nbr_bytes %= sizeof(buf);
 			ttl = 1000;
 		}
 
 		if (ttl >= 0) {
-			char const *str = "END\r\n";
+			char const *str = "END\r";
 			if (memcmp(buf, str, strlen(str)) == 0) {
-				i = 0;
-				memset(buf, 0, 5);
 				current_state = default_state;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
 				run_again = false;
 			}
 		} else {	/* no response... there's a comm failure */
 			current_state = default_state;
+			memset(buf, 0, nbr_bytes);
+			nbr_bytes = 0;
 		}
 		break;
 
-	case request_basic_settings:
-		if (bluetooth_putchar('D') != EOF) {
-			current_state = receive_basic_settings;
-		}
-		break;
-
-	case receive_basic_settings:
-		if ((c = bluetooth_getchar()) != EOF) {
-			buf[i++] = c;
+	case reset_bluetooth:
+		if (issue_bluetooth_reset(ms) == false) {
+			current_state = default_state;
 		}
 		break;
 
 	default:	/* shouldn't get here */
 		current_state = default_state;
+		memset(buf, 0, nbr_bytes);
+		nbr_bytes = 0;
 		break;
 	}
 
