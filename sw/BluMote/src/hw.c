@@ -43,10 +43,12 @@ void init_hw()
 	UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;	/* Modulation UCBRSx = 7 */
 	UCA0CTL1 &= ~UCSWRST;	/* **Initialize USCI state machine** */
 	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrupt */
+#if 0
 	//P1IE = BIT3;	/* Enable IR_IN interrupt */
 	CCTL0 = CCIE;	/* CCR0 interrupt enabled */
  	CCR0 = 159;     /*10us*/
 	TACTL = TASSEL_2 +  MC_1; /* SMCLK, upmode */
+#endif
 	__bis_SR_register(GIE);	/* interrupts enabled */
 
 	init_bufs();

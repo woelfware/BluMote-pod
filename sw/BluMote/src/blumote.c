@@ -4,12 +4,13 @@
 
 #include "bluetooth.h"
 #include "blumote.h"
+#include "config.h"
 #include <string.h>
 
 static enum command_codes cmd_code;
 bool learning_ir_code = false;
 
-static char buf[256];
+static char buf[64];	/* must be a power of 2 */
 static int nbr_bytes;
 
 static enum command_codes blumote_get_cmd()
@@ -58,6 +59,7 @@ bool init_blumote(int ms)
 	};
 	static enum state current_state = default_state;
 	static int ttl;	/* time to live */
+	static bool bt_configured = false;
 	int c;
 	bool run_again = true;
 
@@ -83,7 +85,7 @@ bool init_blumote(int ms)
 		char const *str = "$$$";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = receive_cmd_mode;
-			ttl = 1000;
+			ttl = 100;
 		}
 		}
 		break;
@@ -93,8 +95,8 @@ bool init_blumote(int ms)
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			buf[nbr_bytes++] = c;
-			nbr_bytes %= sizeof(buf);
-			ttl = 1000;
+			nbr_bytes &= sizeof(buf) - 1;
+			ttl = 10;
 		}
 		
 		if (ttl >= 0) {
@@ -114,39 +116,59 @@ bool init_blumote(int ms)
 	case request_basic_settings:
 		if (bluetooth_puts("D\r", 2) != EOF) {
 			current_state = receive_basic_settings;
-			ttl = 1000;
+			ttl = 100;
 		}
 		break;
 
 	case receive_basic_settings:
 		ttl -= ms;
 
+get_bs_field:
 		while ((c = bluetooth_getchar()) != EOF) {
 			buf[nbr_bytes++] = c;
-			nbr_bytes %= sizeof(buf);
-			ttl = 1000;
+			nbr_bytes &= sizeof(buf) - 1;
+			ttl = 10;
+			if (buf[nbr_bytes - 1] == '\n') {
+				break;	/* got a value */
+			}
 		}
 
 		if (ttl >= 0) {
-			char const *str[] = {
+			char const *err[] = {
 				"ERR\r\n",
 				"?\r\n"
 			};
-			if (memcmp(buf, str[0], strlen(str[0])) == 0
-					|| memcmp(buf, str[1], strlen(str[1])) == 0) {
+			char const *bt_name = "BTName";
+
+			if (!nbr_bytes || buf[nbr_bytes - 1] != '\n') {
+				/* didn't get a full value; try again next time */
+				break;
+			}
+
+			if (memcmp(buf, err[0], strlen(err[0])) == 0
+					|| memcmp(buf, err[1], strlen(err[1])) == 0) {
 				/* the rn-42 is in a weird state so reset it */
 				current_state = reset_bluetooth;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
+			} else if (memcmp(buf, bt_name, strlen(bt_name)) == 0) {
+				if (memcmp(&buf[strlen(bt_name) + 1],
+						BLUMOTE_NAME,
+						strlen(BLUMOTE_NAME)) == 0) {
+					bt_configured = true;
+				} else {
+					bt_configured = false;
+				}
 			}
-		} else {	/* got all the data */
-			if (nbr_bytes) {
+			memset(buf, 0, nbr_bytes);
+			nbr_bytes = 0;
+			goto get_bs_field;
+		} else {
+			if (bt_configured) {
 				current_state = request_exit_cmd_mode;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
-			} else {	/* didn't get any data */
-				current_state = reset_bluetooth;
+			} else {
+				current_state = request_set_command;
 			}
+			memset(buf, 0, nbr_bytes);
+			nbr_bytes = 0;
 		}
 		break;
 
@@ -154,7 +176,7 @@ bool init_blumote(int ms)
 		char const *str = "S-,BluMote\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = receive_set_command;
-			ttl = 1000;
+			ttl = 100;
 		}
 		}
 		break;
@@ -164,8 +186,8 @@ bool init_blumote(int ms)
 		
 		while ((c = bluetooth_getchar()) != EOF) {
 			buf[nbr_bytes++] = c;
-			nbr_bytes %= sizeof(buf);
-			ttl = 1000;
+			nbr_bytes &= sizeof(buf) - 1;
+			ttl = 100;
 		}
 
 		if (ttl >= 0) {
@@ -196,7 +218,7 @@ bool init_blumote(int ms)
 		char const *str = "---\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = receive_exit_cmd_mode;
-			ttl = 1000;
+			ttl = 100;
 		}
 		}
 		break;
@@ -206,8 +228,8 @@ bool init_blumote(int ms)
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			buf[nbr_bytes++] = c;
-			nbr_bytes %= sizeof(buf);
-			ttl = 1000;
+			nbr_bytes &= sizeof(buf) - 1;
+			ttl = 10;
 		}
 
 		if (ttl >= 0) {
@@ -219,7 +241,7 @@ bool init_blumote(int ms)
 				run_again = false;
 			}
 		} else {	/* no response... there's a comm failure */
-			current_state = default_state;
+			current_state = reset_bluetooth;
 			memset(buf, 0, nbr_bytes);
 			nbr_bytes = 0;
 		}
