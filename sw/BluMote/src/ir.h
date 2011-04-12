@@ -6,5 +6,6 @@
 #define MAX_SPACE_WAIT_TIME		20000
 
 bool ir_main(int ms);
+bool ir_learn(int us);
 
 #endif /*IR_H_*/

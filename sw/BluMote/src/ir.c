@@ -1,7 +1,7 @@
 #include "ir.h"
 #include "hw.h"
 
-#if 0
+#if (0)
 void ir_learn(void)
 {
 	enum state {
@@ -65,8 +65,9 @@ bool ir_learn(int us)
     };
     static enum state current_state = default_state;
     static int duration = 0;
-    static bool found_pkt = false,
-                found_pkt1 = false;
+//    static bool found_pkt = false,
+//                found_pkt1 = false;
+    static bool found_pkt1 = false;
     bool run_again = true;
 
     if (!us) {
@@ -103,7 +104,7 @@ bool ir_learn(int us)
         if (!got_pulse) {
             duration += us;
             if (duration > MAX_SPACE_WAIT_TIME) {
-                found_pkt = true;
+//                found_pkt = true;
             }
         } else {
             duration = 0;
@@ -129,7 +130,7 @@ bool ir_learn(int us)
             if (duration > MAX_SPACE_WAIT_TIME) {
                 run_again = false;
                 duration = 0;
-                found_pkt = false;
+//                found_pkt = false;
 				found_pkt1 = false;
                 current_state = default_state;
             }
@@ -144,7 +145,7 @@ bool ir_learn(int us)
     default:
         current_state = default_state;
         duration = 0;
-        found_pkt = false;
+//        found_pkt = false;
 		found_pkt1 = false;
         run_again = false;
         break;
