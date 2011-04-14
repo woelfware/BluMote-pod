@@ -93,27 +93,28 @@ public final class R {
         public static final int vol_up=0x7f02004f;
     }
     public static final class id {
+        public static final int add_config_btn=0x7f07002c;
         public static final int advanced=0x7f070040;
         public static final int back_btn=0x7f070010;
         public static final int back_skip_btn=0x7f07000f;
         public static final int btn_channel_down=0x7f070024;
         public static final int btn_channel_up=0x7f070023;
-        public static final int btn_dash=0x7f070035;
-        public static final int btn_enter=0x7f070037;
-        public static final int btn_exit=0x7f070038;
-        public static final int btn_home=0x7f07003a;
+        public static final int btn_dash=0x7f070036;
+        public static final int btn_enter=0x7f070038;
+        public static final int btn_exit=0x7f070039;
+        public static final int btn_home=0x7f07003b;
         public static final int btn_input=0x7f070029;
-        public static final int btn_last=0x7f070039;
-        public static final int btn_n0=0x7f070036;
-        public static final int btn_n1=0x7f07002c;
-        public static final int btn_n2=0x7f07002d;
-        public static final int btn_n3=0x7f07002e;
-        public static final int btn_n4=0x7f07002f;
-        public static final int btn_n5=0x7f070030;
-        public static final int btn_n6=0x7f070031;
-        public static final int btn_n7=0x7f070032;
-        public static final int btn_n8=0x7f070033;
-        public static final int btn_n9=0x7f070034;
+        public static final int btn_last=0x7f07003a;
+        public static final int btn_n0=0x7f070037;
+        public static final int btn_n1=0x7f07002d;
+        public static final int btn_n2=0x7f07002e;
+        public static final int btn_n3=0x7f07002f;
+        public static final int btn_n4=0x7f070030;
+        public static final int btn_n5=0x7f070031;
+        public static final int btn_n6=0x7f070032;
+        public static final int btn_n7=0x7f070033;
+        public static final int btn_n8=0x7f070034;
+        public static final int btn_n9=0x7f070035;
         public static final int btn_up=0x7f07001d;
         public static final int btn_volume_down=0x7f070019;
         public static final int btn_volume_up=0x7f070018;
@@ -137,7 +138,6 @@ public final class R {
         public static final int led_btn=0x7f07000c;
         public static final int left_btn=0x7f07001b;
         public static final int manage_devices=0x7f07003d;
-        public static final int menu_add_item=0x7f07003b;
         public static final int move_left_btn=0x7f07000a;
         public static final int move_right_btn=0x7f07000e;
         public static final int mute_btn=0x7f07001c;
@@ -174,8 +174,7 @@ public final class R {
         public static final int spinner_entry=0x7f030008;
     }
     public static final class menu {
-        public static final int md_options_menu=0x7f060000;
-        public static final int options_menu=0x7f060001;
+        public static final int options_menu=0x7f060000;
     }
     public static final class string {
         public static final int add_device_text=0x7f050013;

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.Message;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -11,11 +12,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.woelfware.database.MyDB;
+import com.woelfware.droidmote.Codes.Commands;
 
 
 public class ManageDevices extends Activity {
@@ -25,6 +29,8 @@ public class ManageDevices extends Activity {
     private static final int ACTIVITY_RENAME=1;
     private static final int ID_DELETE = 0;
     private static final int ID_RENAME = 1;
+    private Button add_config_btn;
+    
     ListView pairedListView;
 	String table_name; // holds table that we were working on (like when rename is called)
 
@@ -44,13 +50,22 @@ public class ManageDevices extends Activity {
         pairedListView.setAdapter(mDevicesArrayAdapter);
 //        pairedListView.setOnItemClickListener(mDeviceClickListener);
         
+        add_config_btn = (Button) findViewById(R.id.add_config_btn);
+        add_config_btn.setOnClickListener( new OnClickListener() {
+            public void onClick(View v) {
+            	// Launch the function to ask for a name for device
+            	Intent i = new Intent(getApplicationContext(), EnterDevice.class);
+                startActivityForResult(i, ACTIVITY_ADD);
+            }
+        });
+        
         device_data = new MyDB(this);
         device_data.open();
         populateDisplay();
         
         registerForContextMenu(findViewById(R.id.devices_list));
         Intent i = getIntent();
-        setResult(RESULT_OK,i);
+        setResult(RESULT_OK,i);       
 	}
 
 	private void populateDisplay() {
@@ -85,24 +100,24 @@ public class ManageDevices extends Activity {
         device_data.open();
 	}
 	
-	@Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.md_options_menu, menu);
-        return true;
-    }
+//	@Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        MenuInflater inflater = getMenuInflater();
+//        inflater.inflate(R.menu.md_options_menu, menu);
+//        return true;
+//    }
 	
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-        case R.id.menu_add_item:
-            // Launch the function to ask for a name for device
-        	Intent i = new Intent(this, EnterDevice.class);
-            startActivityForResult(i, ACTIVITY_ADD);
-            return true;
-        }
-        return false;
-    }
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        switch (item.getItemId()) {
+//        case R.id.menu_add_item:
+//            // Launch the function to ask for a name for device
+//        	Intent i = new Intent(this, EnterDevice.class);
+//            startActivityForResult(i, ACTIVITY_ADD);
+//            return true;
+//        }
+//        return false;
+//    }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
