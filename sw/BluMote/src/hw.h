@@ -26,10 +26,4 @@ void init_hw();
  */
 int get_ms();
 
-/*
- * The number of microseconds elapsed since the last call to get_us.
- * Don't use while in rx mode.
- */
-uint_fast16_t get_us();
-
 #endif /*HW_H_*/

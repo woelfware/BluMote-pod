@@ -5,7 +5,6 @@
 #include "config.h" 
 #include "hw.h"
 #include "msp430.h"
-//#include <stdint.h>
 
 struct circular_buffer uart_rx,
 	uart_tx,
@@ -61,13 +60,6 @@ int get_ms()
 	return elapsed_time;
 }
 
-uint_fast16_t get_us()
-{
-	int elapsed_time = ir_tick;
-	ir_tick = 0;
-	return elapsed_time;
-}
-
 #pragma vector = USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void)
 {
@@ -75,35 +67,6 @@ __interrupt void USCI0RX_ISR(void)
 	_BIC_SR(LPM4_EXIT);	/* wake up from low power mode */
 }
 
-#pragma vector = PORT1_VECTOR
-__interrupt void PORT1_ISR(void)
-{
-#if(0)
-	/*P1.3 Interrupt */
-	if (P1IFG & BIT3) {
-		uint16_t c = get_us();
-		if (c <= 35){
-			duration += c;	
-		} else {
-			(void)buf_enque(&ir_rx, *(uint8_t *)(&duration));  /*On Time*/
-			(void)buf_enque(&ir_rx, *(uint8_t *)(&duration + 1));  /*On Time*/
-			(void)buf_enque(&ir_rx, *(uint8_t *)(&c));	/*Off Time*/
-			(void)buf_enque(&ir_rx, *(uint8_t *)(&c + 1));  /*Off Time*/
-			duration = 0;
-		}
-	}
-	P1IFG = 0;
-#endif
-got_pulse = true;
-}
-
-#pragma vector = TIMERA0_VECTOR
-__interrupt void TIMERA0_ISR(void)
-{
-	ir_tick++;
-}
-
-/* WDT ISR */
 #pragma vector = WDT_VECTOR
 __interrupt void watchdog_timer(void)
 {

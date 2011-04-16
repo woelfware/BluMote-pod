@@ -23,8 +23,8 @@ void main()
 	bool run_again;
 
 	init_hw();
-	(void)get_ms();
 
+	(void)get_ms();
 	do {
 		ms = get_ms();
 		run_again = init_blumote(ms);
@@ -33,23 +33,15 @@ void main()
 
 	(void)get_ms();
 	do {
-		if (!learning_ir_code){
-			ms = get_ms();
-			run_again = false;
-			for (i = 0; i < N_ELEMENTS(tasks); i++) {
-				if ((*tasks[i])(ms)) {
-					run_again = true;
-				}
-			}
-			if (run_again == false) {
-				_BIS_SR(LPM4_bits + GIE);
-			}
-		} else {
-			ms = get_us();
-			if (ir_learn(ms)) {
-				learning_ir_code = false;
+		ms = get_ms();
+		run_again = false;
+		for (i = 0; i < N_ELEMENTS(tasks); i++) {
+			if ((*tasks[i])(ms)) {
+				run_again = true;
 			}
 		}
-		
+		if (run_again == false) {
+			_BIS_SR(LPM4_bits + GIE);
+		}
 	} while (1);
 }

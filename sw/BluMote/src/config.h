@@ -1,9 +1,10 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define BLUMOTE_NAME		"BluMote"
-#define BLUMOTE_PROVIDER	"Woelfware"
-#define BLUMOTE_DESCRIPTION	"IR XPDR"
+#define BLUMOTE_NAME	"BluMote"
+#define VERSION_MAJOR	0
+#define VERSION_MINOR	1
+#define VERSION_REV		0
 
 /* Buffer Size */
 #define UART_RX_BUF_SIZE	(32)
