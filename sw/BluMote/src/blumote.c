@@ -7,7 +7,7 @@
 #include "config.h"
 #include <string.h>
 
-bool learning_ir_code = false;
+bool learn_ir_code = false;
 
 static char buf[64];	/* must be a power of 2 */
 static int nbr_bytes;
@@ -16,6 +16,7 @@ static void blumote_process_cmd()
 {
 	switch (buf[0]) {
 	case BLUMOTE_LEARN:
+		learn_ir_code = true;
 		break;
 
 	case BLUMOTE_GET_VERSION: {
@@ -50,6 +51,8 @@ bool init_blumote(int ms)
 		rx_set_name,
 		tx_set_low_latency,
 		rx_set_low_latency,
+		tx_set_low_power,
+		rx_set_low_power,
 		tx_exit_cmd_mode,
 		rx_exit_cmd_mode,
 		reset_bluetooth
@@ -201,6 +204,48 @@ bool init_blumote(int ms)
 	case rx_set_low_latency:
 		ttl -= ms;
 		
+		while ((c = bluetooth_getchar()) != EOF) {
+			buf[nbr_bytes++] = c;
+			nbr_bytes &= sizeof(buf) - 1;
+			ttl = 20;
+		}
+
+		if (ttl >= 0) {
+			char const *str[] = {
+				"AOK\r\n",
+				"ERR\r\n",
+				"?\r\n"
+			};
+			if (memcmp(buf, str[0], strlen(str[0])) == 0) {
+				current_state = reset_bluetooth;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
+				run_again = false;
+			} else if (memcmp(buf, str[1], strlen(str[1])) == 0
+					|| memcmp(buf, str[2], strlen(str[2])) == 0) {
+				current_state = tx_set_low_latency;
+				memset(buf, 0, nbr_bytes);
+				nbr_bytes = 0;
+			}
+		} else {	/* no response... there's a comm failure */
+			current_state = reset_bluetooth;
+			memset(buf, 0, nbr_bytes);
+			nbr_bytes = 0;
+		}
+		break;
+
+	case tx_set_low_power: {
+		char const *str = "SW,0050\r\n";
+		if (bluetooth_puts(str, strlen(str)) != EOF) {
+			current_state = rx_set_name;
+			ttl = 50;
+		}
+		}
+		break;
+
+	case rx_set_low_power:
+		ttl -= ms;
+
 		while ((c = bluetooth_getchar()) != EOF) {
 			buf[nbr_bytes++] = c;
 			nbr_bytes &= sizeof(buf) - 1;

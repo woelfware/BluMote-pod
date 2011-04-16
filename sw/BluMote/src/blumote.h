@@ -9,8 +9,7 @@ enum command_codes {
 	BLUMOTE_LEARN,
 	BLUMOTE_GET_VERSION,
 	BLUMOTE_IR_TRANSMIT,
-	BLUMOTE_DEBUG = 0xFF,	/* specialized debug command whose functionality may change any time */
-	BLUMOTE_NONE = -1
+	BLUMOTE_DEBUG = 0xFF	/* specialized debug command whose functionality may change any time */
 };
 
 enum command_return_codes {
@@ -24,7 +23,7 @@ enum component_codes {
 	BLUMOTE_SW
 };
 
-extern bool learning_ir_code;
+extern bool learn_ir_code;
 
 bool init_blumote(int ms);
 
