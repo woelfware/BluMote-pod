@@ -21,7 +21,6 @@ void main()
 {
 	int ms,
 		i;
-	int * const us = &ms;	/* sane label when using us tick time */
 	bool run_again;
 
 	init_hw();
@@ -44,11 +43,12 @@ void main()
 		}
 		if (learn_ir_code) {
 			(void)get_us();
-			while (ir_learn(*us)) {
-				*us = get_us();
-			}
-			(void)get_us();
+			while (ir_learn(get_us()));
 			learn_ir_code = false;
+			(void)get_ms();
+			while (run_again = tx_learned_code()) {
+				(void)bluetooth_main(get_ms());
+			}
 			run_again = true;
 		}
 

@@ -29,4 +29,11 @@ bool init_blumote(int ms);
 
 bool blumote_main(int ms);
 
+/*
+ * \return bool
+ * \retval true		run again
+ * \retval false	done
+ */
+bool tx_learned_code();
+
 #endif /*BLUMOTE_H_*/

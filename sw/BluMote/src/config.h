@@ -4,14 +4,14 @@
 #define BLUMOTE_NAME	"BluMote"
 #define VERSION_MAJOR	0
 #define VERSION_MINOR	1
-#define VERSION_REV		0
+#define VERSION_REV	0
 
 #define SYS_CLK	(16)	/* MHz */
 
 /* IR */
-#define US_PER_IR_TICK		(16)
+#define US_PER_IR_TICK		(8)
 #define MAX_SPACE_WAIT_TIME	(20000)	/* us */
-#define MAX_SPACE_WAIT_TICKS	((MAX_SPACE_WAIT_TIME) / (US_PER_IR_TICK)) 
+#define IR_LEARN_CODE_TIMEOUT	(10000000)	/* us */
 
 /* Buffer Sizes
  * Note: must be powers of 2

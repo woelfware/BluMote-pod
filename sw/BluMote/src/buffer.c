@@ -17,7 +17,7 @@ bool buf_enque(struct circular_buffer *que, uint8_t k)
 	bool isFull = buf_full(que);
 	if (!isFull) {
 		que->buf[que->writePointer] = k;
-		que->writePointer = (que->writePointer + 1) % que->size;
+		que->writePointer = (que->writePointer + 1) & (que->size - 1);
 	}
 	return isFull;
 }
@@ -26,8 +26,10 @@ bool buf_deque(struct circular_buffer *que, uint8_t *pK)
 {
 	bool isEmpty = buf_empty(que);
 	if (!isEmpty) {
-		*pK = que->buf[que->readPointer];
-		que->readPointer = (que->readPointer + 1) % que->size;
+		if (pK) {
+			*pK = que->buf[que->readPointer];
+		}
+		que->readPointer = (que->readPointer + 1) & (que->size - 1);
 	}
 	return isEmpty;
 }

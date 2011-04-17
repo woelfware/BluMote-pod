@@ -62,7 +62,7 @@ int get_ms()
 
 int get_us()
 {
-	int elapsed_time = ir_tick;
+	int elapsed_time = ir_tick * US_PER_IR_TICK;
 	ir_tick = 0;
 	return elapsed_time;
 }

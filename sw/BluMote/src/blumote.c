@@ -5,6 +5,7 @@
 #include "bluetooth.h"
 #include "blumote.h"
 #include "config.h"
+#include "hw.h"
 #include <string.h>
 
 bool learn_ir_code = false;
@@ -381,5 +382,58 @@ bool blumote_main(int ms)
 	}
 
 	return run_again;
+}
+
+bool tx_learned_code()
+{
+	enum state {
+		default_state = 0,
+		tx_status = 0,
+		tx_code,
+		wait_for_bt_buf
+	};
+	static enum state current_state = default_state;
+	bool run_again = true;
+	static uint8_t c; 
+
+	switch (current_state) {
+	case tx_status:
+		if (!buf_deque(&ir_rx, &c)) {
+			char str[2] = {BLUMOTE_ACK};
+			str[1] = c; 
+			bluetooth_puts(str, sizeof(str));
+			current_state = tx_code;
+		} else {
+			bluetooth_putchar(BLUMOTE_NAK);
+			run_again = false;
+		}
+		break;
+
+	case tx_code:
+		while (!buf_deque(&ir_rx, &c)) {
+			if (bluetooth_putchar((int)c) == EOF) {
+				current_state = wait_for_bt_buf;
+				break;
+			}
+		}
+		if (current_state == tx_code) {
+			current_state = default_state;
+			run_again = false;
+		}
+		break;
+
+	case wait_for_bt_buf:
+		if (bluetooth_putchar((int)c) != EOF) {
+			current_state = tx_code;
+		}
+		break;
+
+	default:
+		current_state = default_state;
+		run_again = false;
+		break;
+	}
+
+	return run_again; 
 }
 

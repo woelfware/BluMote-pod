@@ -17,7 +17,7 @@ struct circular_buffer {
 
 inline bool buf_full(struct circular_buffer *que)
 {
-	return (((que->writePointer + 1) % que->size) == que->readPointer); 
+	return (((que->writePointer + 1) & (que->size - 1)) == que->readPointer); 
 }
  
 inline bool buf_empty(struct circular_buffer *que)
@@ -26,7 +26,19 @@ inline bool buf_empty(struct circular_buffer *que)
 }
 
 void buf_init(struct circular_buffer *pQue, volatile uint8_t *buf, uint8_t size);
+
+/*
+ * \return bool
+ * \retval true		buffer was full
+ * \retval false	buffer was not full
+ */
 bool buf_enque(struct circular_buffer *que, uint8_t k);
+
+/*
+ * \return bool
+ * \retval true		buffer was empty
+ * \retval false	buffer was not empty
+ */
 bool buf_deque(struct circular_buffer *que, uint8_t *pK);
 
 #endif /*BUFFER_H_*/
