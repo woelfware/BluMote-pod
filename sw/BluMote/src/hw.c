@@ -55,15 +55,23 @@ void init_hw()
 
 int get_ms()
 {
-	int elapsed_time = sys_tick << 1;
+	int elapsed_time;
+	__disable_interrupt();
+	elapsed_time = sys_tick << 1;
+	/* could get an interrupt here and get missing sys_ticks */
 	sys_tick = 0;
+	__enable_interrupt();
 	return elapsed_time;
 }
 
 int get_us()
 {
-	int elapsed_time = ir_tick * US_PER_IR_TICK;
+	int elapsed_time;
+	__disable_interrupt();
+	elapsed_time = ir_tick * US_PER_IR_TICK;
+	/* could get an interrupt here and get missing ir_ticks */
 	ir_tick = 0;
+	__enable_interrupt();
 	return elapsed_time;
 }
 
