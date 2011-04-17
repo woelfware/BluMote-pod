@@ -3,9 +3,16 @@
 
 #include <stdbool.h>
 
-#define MAX_SPACE_WAIT_TIME		20000
-
-bool ir_main(int ms);
+/*
+ * \return bool
+ * \retval true		running learn mode
+ * \retval false	done running learn mode
+ */
 bool ir_learn(int us);
 
+/*
+ */
+bool ir_main(int ms);
+
 #endif /*IR_H_*/
+

@@ -50,7 +50,7 @@ bool issue_bluetooth_reset(int ms)
 	switch (current_state) {
 	case issue_reset:
 		P3OUT |= BIT0;
-		ttl = 50;
+		ttl = 10;
 		current_state = remove_reset;
 		break;
 
@@ -58,7 +58,7 @@ bool issue_bluetooth_reset(int ms)
 		ttl -= ms;
 		if (ttl < 0) {
 			P3OUT &= ~BIT0;
-			ttl = 50;
+			ttl = 10;
 			current_state = wait_for_power_up;
 		}
 		break;
