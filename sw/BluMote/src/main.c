@@ -14,12 +14,14 @@ typedef bool (*task)(int ms);
 static task const tasks[] = {
 	bluetooth_main,
 	ir_main,
-	blumote_main};
+	blumote_main
+};
 
 void main()
 {
 	int ms,
 		i;
+	int * const us = &ms;	/* sane label when using us tick time */
 	bool run_again;
 
 	init_hw();
@@ -40,6 +42,16 @@ void main()
 				run_again = true;
 			}
 		}
+		if (learn_ir_code) {
+			(void)get_us();
+			while (ir_learn(*us)) {
+				*us = get_us();
+			}
+			(void)get_us();
+			learn_ir_code = false;
+			run_again = true;
+		}
+
 		if (run_again == false) {
 			_BIS_SR(LPM4_bits + GIE);
 		}

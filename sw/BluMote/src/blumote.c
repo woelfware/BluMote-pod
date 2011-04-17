@@ -9,7 +9,7 @@
 
 bool learn_ir_code = false;
 
-static char buf[64];	/* must be a power of 2 */
+static char buf[BLUMOTE_RX_BUF_SIZE];
 static int nbr_bytes;
 
 static void blumote_process_cmd()
@@ -132,9 +132,18 @@ bool init_blumote(int ms)
 
 		if (ttl >= 0) {
 			if (buf[nbr_bytes - 1] == '\n') {
-				char const *str = "BluMote";
-				if (memcmp(buf, str, strlen(str)) == 0) {
+				char const *str[] = {
+					"BluMote",
+					"ERR\r\n",
+					"?\r\n"
+				};
+				if (memcmp(buf, str[0], strlen(str[0])) == 0) {
 					current_state = tx_exit_cmd_mode;
+					memset(buf, 0, nbr_bytes);
+					nbr_bytes = 0;
+				} else if (memcmp(buf, str[1], strlen(str[1])) == 0
+						|| memcmp(buf, str[2], strlen(str[2])) == 0) {
+					current_state = reset_bluetooth;
 					memset(buf, 0, nbr_bytes);
 					nbr_bytes = 0;
 				} else {
@@ -195,7 +204,7 @@ bool init_blumote(int ms)
 	case tx_set_low_latency: {
 		char const *str = "SQ,16\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_set_name;
+			current_state = rx_set_low_latency;
 			ttl = 50;
 		}
 		}
@@ -237,7 +246,7 @@ bool init_blumote(int ms)
 	case tx_set_low_power: {
 		char const *str = "SW,0050\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_set_name;
+			current_state = rx_set_low_power;
 			ttl = 50;
 		}
 		}

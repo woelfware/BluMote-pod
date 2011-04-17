@@ -11,7 +11,7 @@ struct circular_buffer uart_rx,
 	ir_rx;
 static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
-	buf_ir_rx[IR_RX_BUF_SIZE];
+	buf_ir[IR_BUF_SIZE];
 
 static volatile int ir_tick = 0;
 static volatile int sys_tick = 0;
@@ -23,7 +23,7 @@ static void init_bufs()
 {
 	buf_init(&uart_rx, buf_uart_rx, sizeof(buf_uart_rx));
 	buf_init(&uart_tx, buf_uart_tx, sizeof(buf_uart_tx));
-	buf_init(&ir_rx, buf_ir_rx, sizeof(buf_ir_rx));
+	buf_init(&ir_rx, buf_ir, sizeof(buf_ir));
 }
 
 void init_hw()
@@ -42,12 +42,12 @@ void init_hw()
 	UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;	/* Modulation UCBRSx = 7 */
 	UCA0CTL1 &= ~UCSWRST;	/* **Initialize USCI state machine** */
 	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrupt */
-#if 0
-	//P1IE = BIT3;	/* Enable IR_IN interrupt */
+
+	/* IR configs */
 	CCTL0 = CCIE;	/* CCR0 interrupt enabled */
- 	CCR0 = 159;     /*10us*/
+ 	CCR0 = (SYS_CLK * US_PER_IR_TICK) - 1;
 	TACTL = TASSEL_2 +  MC_1; /* SMCLK, upmode */
-#endif
+
 	__bis_SR_register(GIE);	/* interrupts enabled */
 
 	init_bufs();
@@ -60,6 +60,13 @@ int get_ms()
 	return elapsed_time;
 }
 
+int get_us()
+{
+	int elapsed_time = ir_tick;
+	ir_tick = 0;
+	return elapsed_time;
+}
+
 #pragma vector = USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void)
 {
@@ -67,6 +74,13 @@ __interrupt void USCI0RX_ISR(void)
 	_BIC_SR(LPM4_EXIT);	/* wake up from low power mode */
 }
 
+#pragma vector = TIMERA0_VECTOR
+__interrupt void TIMERA0_ISR(void)
+{
+	ir_tick++;
+}
+
+/* WDT ISR */
 #pragma vector = WDT_VECTOR
 __interrupt void watchdog_timer(void)
 {
