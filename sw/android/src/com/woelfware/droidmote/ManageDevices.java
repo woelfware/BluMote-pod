@@ -139,7 +139,6 @@ public class ManageDevices extends Activity {
     	}
     	if (requestCode == ACTIVITY_RENAME && resultCode == RESULT_OK) {
     		device_data.open();	// onActivityResult() is called BEFORE onResume() so need this!
-    		//TODO create rename table function in MyDB
     		return_bundle = intent.getExtras();
     		if ( return_bundle != null ) {
     			return_string = return_bundle.getString("returnStr");

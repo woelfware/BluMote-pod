@@ -9,6 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -20,6 +22,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
+
 
 /**
  * This Activity appears as a dialog. It lists any paired devices and
@@ -34,6 +37,7 @@ public class DeviceListActivity extends Activity {
 
     // Return Intent extra
     public static String EXTRA_DEVICE_ADDRESS = "device_address";
+    public static String EXTRA_DEVICE_NAME = "device_name";
 
     // Member fields
     private BluetoothAdapter mBtAdapter;
@@ -41,6 +45,9 @@ public class DeviceListActivity extends Activity {
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
     private Button scanButton;
     
+    //Shared preferences class - for storing config settings between runs
+    private SharedPreferences prefs;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,18 +95,38 @@ public class DeviceListActivity extends Activity {
         mBtAdapter = BluetoothAdapter.getDefaultAdapter();
 
         // Get a set of currently paired devices
-        Set<BluetoothDevice> pairedDevices = mBtAdapter.getBondedDevices();
+//        Set<BluetoothDevice> pairedDevices = mBtAdapter.getBondedDevices();
 
-        // If there are paired devices, add each one to the ArrayAdapter
-        if (pairedDevices.size() > 0) {
-            findViewById(R.id.title_paired_devices).setVisibility(View.VISIBLE);
-            for (BluetoothDevice device : pairedDevices) {
-                mPairedDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
-            }
-        } else {
+        // pull in preferences for known devices, add to array adapter
+        prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
+    	String prefs_table = prefs.getString("knownDevices", null);       	
+    	// structure is \t"device name"\n"MAC ID" and then repeats for multiple devices
+    	
+    	if (prefs_table != null) {
+    		String devices[] = prefs_table.split("\t");    	
+    	
+    		findViewById(R.id.title_paired_devices).setVisibility(View.VISIBLE);
+    		// iterate through and add to arrayadapter list
+    		for (String device : devices) {
+    			mPairedDevicesArrayAdapter.add(device);
+    		}
+    	}
+    	else {
+    		mPairedDevicesArrayAdapter.clear();
             String noDevices = getResources().getText(R.string.none_paired).toString();
             mPairedDevicesArrayAdapter.add(noDevices);
         }
+    	
+        // If there are paired devices, add each one to the ArrayAdapter
+//        if (pairedDevices.size() > 0) {
+//            findViewById(R.id.title_paired_devices).setVisibility(View.VISIBLE);
+//            for (BluetoothDevice device : pairedDevices) {
+//                mPairedDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());                
+//            }
+//        } else {
+//            String noDevices = getResources().getText(R.string.none_paired).toString();
+//            mPairedDevicesArrayAdapter.add(noDevices);
+//        }
     }
 
     @Override
@@ -133,6 +160,9 @@ public class DeviceListActivity extends Activity {
             mBtAdapter.cancelDiscovery();
         }
 
+        // clear array adapter for new devices
+        mNewDevicesArrayAdapter.clear();
+        
         // Request discover from BluetoothAdapter
         mBtAdapter.startDiscovery();
     }
@@ -145,12 +175,12 @@ public class DeviceListActivity extends Activity {
 
             // Get the device MAC address, which is the last 17 chars in the View
             String info = ((TextView) v).getText().toString();
-            String address = info.substring(info.length() - 17);
-
+            String address = info.substring(info.length() - 17);           
+        	
             // Create the result Intent and include the MAC address
             Intent intent = new Intent();
             intent.putExtra(EXTRA_DEVICE_ADDRESS, address);
-
+            intent.putExtra(EXTRA_DEVICE_NAME, info); //store full name contents, used for "known devices" list
             // Set result and finish this Activity
             setResult(Activity.RESULT_OK, intent);
             finish();
@@ -168,9 +198,15 @@ public class DeviceListActivity extends Activity {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                // If it's already paired, skip it, because it's been listed already
-                if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
+                // TODO skip device if does not have "BluMote" in the name
+                if (Droidmote.D) {
                     mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                }
+                else {
+                	// if we are not in debug mode then screen the entries
+                	if (device.getName().matches("BluMote*")) {
+                		mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                	}
                 }
             // When discovery is finished, change the Activity title
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {

@@ -32,7 +32,6 @@
           android:icon ="@android:drawable/ic_menu_more">
 		<menu>
 			<item android:title="@string/discoverable" android:id="@+id/discoverable" android:icon="@android:drawable/ic_menu_add" />
-			<item android:title="@string/rename_pod" android:id="@+id/rename_pod" android:icon="@android:drawable/ic_menu_edit" />
 			<item android:title="@string/get_pod_info" android:id="@+id/get_info" android:icon="@android:drawable/ic_menu_info_details" />			
 		</menu>
 	</item>

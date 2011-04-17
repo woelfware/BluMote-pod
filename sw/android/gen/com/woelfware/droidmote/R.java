@@ -131,7 +131,7 @@ public final class R {
         public static final int enter_button=0x7f070008;
         public static final int exit_btn=0x7f070028;
         public static final int forward_btn=0x7f070011;
-        public static final int get_info=0x7f070043;
+        public static final int get_info=0x7f070042;
         public static final int guide_btn=0x7f070027;
         public static final int info_btn=0x7f070020;
         public static final int learn_button=0x7f07003e;
@@ -150,7 +150,6 @@ public final class R {
         public static final int power2_btn=0x7f07000d;
         public static final int power_btn=0x7f07000b;
         public static final int record_btn=0x7f070013;
-        public static final int rename_pod=0x7f070042;
         public static final int return_btn=0x7f070022;
         public static final int right_btn=0x7f070021;
         public static final int scan=0x7f07003c;
