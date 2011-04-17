@@ -60,6 +60,12 @@ public class Droidmote extends Activity {
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
     
+    // button payload indexes
+    private static final int BTN_NAME = 0;
+    private static final int BTN_TEXT = 1;
+    private static final int BTN_GRAPHIC_UNPRESSED = 2;
+    private static final int BTN_GRAPHIC_PRESSED = 3;
+    
     // Context menu constants
     private static final int ID_TRAIN = 0;
     private static final int ID_UNTRAIN = 1;
@@ -341,11 +347,10 @@ public class Droidmote extends Activity {
     	payload = button_map.get(rbutton);
 
     	if (payload != null) {
-    		button = (Button)payload[0];
-    		
-    		button.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-    		
+    		button = (Button)payload[BTN_NAME];
+    		    		
 	    	// check if the navigation move_left was pushed
+    		// this only works when we are in number screen
 	    	if (button == move_left_btn) {
 	    		LOOP_KEY = false;
 	    		
@@ -361,7 +366,8 @@ public class Droidmote extends Activity {
 	    			            
 	            return;
 	    	}
-	    	// check if the navigation move_left was pushed
+	    	// check if the navigation move_right was pushed 
+	    	// this only works when we are in main screen
 	    	if (button == move_right_btn) {
 	    		LOOP_KEY = false;
 	    		switch (page) {
@@ -376,7 +382,7 @@ public class Droidmote extends Activity {
 	            return;
 	    	}
 	    	
-	    	// if we got here it means we are a regular button
+	    	// if we got here it means we are a regular button, not move_left or move_right
 	    	
 	    	// turn on LED!
 			led_btn.setBackgroundDrawable(getResources().getDrawable(R.drawable.led));
@@ -386,8 +392,8 @@ public class Droidmote extends Activity {
     		Message msg = new Message();            
     		msg.what = MESSAGE_KEY_PRESSED;
 
-    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[3]));
-    		buttonSend((String)payload[1]);
+    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_PRESSED]));
+    		buttonSend((String)payload[BTN_TEXT]);
     		msg.arg1 = rbutton;
     		last_button = rbutton;	
     		mHandler.sendMessageDelayed(msg, LONG_DELAY_TIME);
@@ -400,6 +406,12 @@ public class Droidmote extends Activity {
     		//only execute this one time and only if not in learn mode
     		// if we don't have !LOOP_KEY you can hit button multiple times
     		// and hold finger on button and you'll get duplicates
+    		
+    		if (e.getAction() == MotionEvent.ACTION_DOWN) {
+    			// even in learn mode should buzz button if action-down happens
+    			v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+    		}
+    		// don't want to execute touchButton when in learn mode
     		if (!LEARN_MODE) { 
     			if (e.getAction() == MotionEvent.ACTION_DOWN) {  
     	    		LOOP_KEY = true; // start looping until we lift finger off key
@@ -432,8 +444,8 @@ public class Droidmote extends Activity {
     	    	payload = button_map.get(BUTTON_ID);
 
     	    	if (payload != null) {
-    	    		button = (Button)payload[0];
-    	    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[3]));
+    	    		button = (Button)payload[BTN_NAME];
+    	    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_PRESSED]));
     	    		sendCode(Commands.LEARN);
     	    	}    	    	    	    	    	    	 			
     		}
@@ -448,7 +460,7 @@ public class Droidmote extends Activity {
 
         			if (payload != null) {
         				msg.arg1 = BUTTON_ID;
-        				buttonSend((String)payload[1]);
+        				buttonSend((String)payload[BTN_TEXT]);
         			}    	    	
 
 
@@ -470,8 +482,8 @@ public class Droidmote extends Activity {
     	while (itr.hasNext()) {
     		Integer key = itr.next();
     		payload = button_map.get(key);
-    		btn = (Button)payload[0];
-    		btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[2]));    		    
+    		btn = (Button)payload[BTN_NAME];
+    		btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_UNPRESSED]));    		    
     	}
     	payload = button_map.get(BUTTON_ID);
     }
@@ -580,7 +592,7 @@ public class Droidmote extends Activity {
         pause_btn.setOnTouchListener(buttonTouch);
         
         //set bundle of associated button properties
-        // order is : Button name, database string identifier for btn, graphic for unpressed, graphic for pushed 
+        // order is : Button name, database string identifier for btn, graphic for unpressed, graphic for pushed         
         Object[] btn_1 = {btn_volume_up, "btn_volume_up", R.drawable.vol_up, R.drawable.vol_up};
         Object[] btn_2 = {btn_volume_down, "btn_volume_down", R.drawable.vol_down, R.drawable.vol_down};
         Object[] btn_3 = {btn_channel_up, "btn_channel_up", R.drawable.ch_up, R.drawable.ch_up};
@@ -876,7 +888,7 @@ public class Droidmote extends Activity {
             			Button toclick;
             			Object[] payload = button_map.get(msg.arg1);
             			if (payload != null) {
-            				toclick = (Button)payload[0];
+            				toclick = (Button)payload[BTN_NAME];
             				toclick.performClick();
             			}        		        		
             	}
@@ -1128,6 +1140,9 @@ public class Droidmote extends Activity {
     	
     	switch (STATE) {
     	case Codes.Commands.LEARN:
+    		//TODO need a "DONE" indicator that triggers to 
+    		// store the data to the database,
+    		// everything leading up to that should be accumulated in array
     		if (response[0] == Codes.Return.ACK) {
     			byte[] content = new byte[bytes];
     			for (int i=0; i< bytes; i++) {
@@ -1138,9 +1153,9 @@ public class Droidmote extends Activity {
     			payload = button_map.get(BUTTON_ID);
     			
     			if (payload != null) {
-    				btn = (Button)payload[0];
-    				btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[2]));
-    				device_data.insertButton(cur_table, (String)payload[1], cur_context, content);
+    				btn = (Button)payload[BTN_NAME];
+    				btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_UNPRESSED]));
+    				device_data.insertButton(cur_table, (String)payload[BTN_TEXT], cur_context, content);
     			}
     		    		    
     			// refresh the local Cursor with new database updates

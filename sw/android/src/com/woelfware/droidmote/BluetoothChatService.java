@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -295,10 +296,16 @@ public class BluetoothChatService {
             // Get a BluetoothSocket for a connection with the
             // given BluetoothDevice
             try {
-                //tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
-            	Method m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});
-            	//Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
-                tmp = (BluetoothSocket) m.invoke(device, 1);
+            	// query host for SDK level, if higher than 9 then use proper function call instead of reflection
+            	if (Build.VERSION.SDK_INT > 9) {
+            		mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
+            	}
+            	else {            	            		            	
+            		//tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
+                	Method m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});
+                	//Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
+                    tmp = (BluetoothSocket) m.invoke(device, 1);
+            	}                
             } 
             //catch (IOException e) {
             catch (Exception e) {
