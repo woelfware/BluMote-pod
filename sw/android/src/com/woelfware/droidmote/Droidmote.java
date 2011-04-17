@@ -39,8 +39,8 @@ import com.woelfware.droidmote.Codes.Commands;
 public class Droidmote extends Activity {
 	// Debugging
     private static final String TAG = "BlueMote";
-    private static final boolean D = true;
-
+    public static final boolean D = true;
+    
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
@@ -54,8 +54,8 @@ public class Droidmote extends Activity {
     public static final int MESSAGE_DEVICE_NAME = 4;
     public static final int MESSAGE_TOAST = 5;
     // Message time for repeat-key-delay
-    public static final int MESSAGE_KEY_PRESSED = 6;
-
+    public static final int MESSAGE_KEY_PRESSED = 6;   
+    
     // Key names received from the BluetoothChatService Handler
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
@@ -120,7 +120,12 @@ public class Droidmote extends Activity {
     
     // Name of the connected device
     private String mConnectedDeviceName = null;
-
+    
+    // connecting device name - temp storage
+    private String connectingDevice;
+    // connecting device MAC address - temp storage
+    private String connectingMAC;
+    
     // Local Bluetooth adapter
     private BluetoothAdapter mBluetoothAdapter = null;
     // Member object for the chat services
@@ -255,7 +260,7 @@ public class Droidmote extends Activity {
         // populate Buttons from DB
 		fetchButtons();
 		
-		// See if the bluetooth device is connected, if not connect to last stored connection
+		// See if the bluetooth device is connected, if not try to connect
 		if (mBluetoothAdapter.isEnabled()) {
 			if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
 				String address = prefs.getString("lastPod", null);
@@ -781,7 +786,6 @@ public class Droidmote extends Activity {
             return;
         }
         // check that we have a context selected and available
-        // TODO make sure this check works with no activity selected
         if (devices != null) {
         	// Check that there's actually something to send
         	if (message.length > 0) {
@@ -802,6 +806,40 @@ public class Droidmote extends Activity {
                 case BluetoothChatService.STATE_CONNECTED:
                     mTitle.setText(R.string.title_connected_to);
                     mTitle.append(mConnectedDeviceName);
+                    // Store the address of connecting device to preferences for re-connect on resume
+                    // this global gets setup in onActivityResult()
+                    
+                    Editor mEditor =  prefs.edit();
+                    mEditor.putString("lastPod",connectingMAC);
+                    // first need to pull current known devices list so we can append to it
+                    if (connectingDevice != null) { 
+                    	prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
+                    	String prefs_table = prefs.getString("knownDevices", null);            	                                          
+
+                    	// then pull name of device off and append
+                    	if (prefs_table == null) {
+                    		prefs_table = connectingDevice; // '\t' is the delimeter between items
+                    	}
+                    	else {
+                    		// make sure isn't already in the list
+                    		String devices[] = prefs_table.split("\t"); 
+                    		boolean foundIt = false;
+                    		for (String device : devices) {
+                    			if (device.matches(connectingDevice) ) {                        	
+                    				foundIt = true;
+                    				break;
+                    			}
+                    		} 
+                    		if (foundIt == false) {
+                    			prefs_table = prefs_table + "\t"+connectingDevice; // '\t' is the delimeter between items
+                    		}                    	                    	
+                    	}
+                    	mEditor.putString("knownDevices",prefs_table);
+                    	// DEBUG - remove this clear after we get it working right
+                    	//mEditor.remove("knownDevices"); 
+                    	// commit changes to the database
+                    	mEditor.commit();    
+                    }
                     break;
                 case BluetoothChatService.STATE_CONNECTING:
                     mTitle.setText(R.string.title_connecting);
@@ -859,12 +897,17 @@ public class Droidmote extends Activity {
             		mChatService.stop();
             	}
                 // Get the device MAC address
-                String address = data.getExtras()
-                                     .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
-                // Store the address of device to preferences for re-connect on resume
+                connectingMAC = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+                
+                // save device for future use - no need to re-scan
+                connectingDevice = (data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_NAME));
+                					//.replaceAll("\\\\", "blah"); //for some reason strings get double backslash when pulling out
+                                
+//                // Store the address of device to preferences for connect in onResume()
                 Editor mEditor =  prefs.edit();
-                mEditor.putString("lastPod",address);
+                mEditor.putString("lastPod",connectingMAC);
                 mEditor.commit();
+
                 // Attempt to connect to the device
                 //device.getName(); // grab the friendly name, a rename command can change this
             }
@@ -888,18 +931,18 @@ public class Droidmote extends Activity {
         		populateDropDown();
         	}
         	break;
-        case REQUEST_RENAME_POD:
-        	// when the rename pod activity returns
-        	Bundle return_bundle;
-        	if (resultCode == Activity.RESULT_OK) {
-        		// add the new item to the database
-        		return_bundle = data.getExtras();
-        		if ( return_bundle != null ) {
-        			Codes.new_name = return_bundle.getString("returnStr");
-        			sendCode(Codes.Commands.RENAME_DEVICE);
-        		}        		
-        	}
-        	break;
+//        case REQUEST_RENAME_POD:
+//        	// when the rename pod activity returns
+//        	Bundle return_bundle;
+//        	if (resultCode == Activity.RESULT_OK) {
+//        		// add the new item to the database
+//        		return_bundle = data.getExtras();
+//        		if ( return_bundle != null ) {
+//        			Codes.new_name = return_bundle.getString("returnStr");
+//        			sendCode(Codes.Commands.RENAME_DEVICE);
+//        		}        		
+//        	}
+//        	break;
         }
     }
 
@@ -914,6 +957,10 @@ public class Droidmote extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case R.id.scan:
+        	// first stop any connecting process if it is running
+        	if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
+        		mChatService.stop();
+        	}
             // Launch the DeviceListActivity to see devices and do scan
             Intent serverIntent = new Intent(this, DeviceListActivity.class);
             startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
@@ -928,11 +975,11 @@ public class Droidmote extends Activity {
     		Intent i = new Intent(this, ManageDevices.class);
             startActivityForResult(i, REQUEST_MANAGE_DEVICE);
         	return true;
-        case R.id.rename_pod:
-        	// Launch the function to ask for a name for device
-        	Intent intent = new Intent(this, EnterDevice.class);
-            startActivityForResult(intent, REQUEST_RENAME_POD);
-        	return true;
+//        case R.id.rename_pod:
+//        	// Launch the function to ask for a name for device
+//        	Intent intent = new Intent(this, EnterDevice.class);
+//            startActivityForResult(intent, REQUEST_RENAME_POD);
+//        	return true;
         case R.id.get_info:
         	sendCode(Codes.Commands.GET_VERSION);
         	return true;
@@ -1039,7 +1086,7 @@ public class Droidmote extends Activity {
     	switch (code) {
     	case Codes.Commands.LEARN:
     		toSend = new byte[2];
-    		toSend[0] = Codes.Commands.DEBUG; // DEBUG , should be LEARN
+    		toSend[0] = Codes.Commands.LEARN; // DEBUG , should be LEARN
     		toSend[0] = (byte)toSend[0];
     		toSend[1] = 0x00; // Reserved
     		STATE = Codes.Commands.LEARN;
@@ -1061,18 +1108,18 @@ public class Droidmote extends Activity {
     		toSend[1] = 0x00; // Reserved
     		sendMessage(toSend);
     		break;
-    	case Codes.Commands.RENAME_DEVICE:
-    		STATE = Codes.Commands.RENAME_DEVICE;
-    		toSend = new byte[Codes.new_name.length()+2];
-    		toSend[0] = Codes.Commands.RENAME_DEVICE;
-    		toSend[0] = (byte)toSend[0];
-    		toSend[1] = 0x00; // Reserved
-    		// load new names to the toSend byte[]
-    		byte[] new_name = Codes.new_name.getBytes();
-    		System.arraycopy(new_name, 0, toSend, 2, new_name.length);
-    		
-    		sendMessage(toSend);
-    		break;
+//    	case Codes.Commands.RENAME_DEVICE:
+//    		STATE = Codes.Commands.RENAME_DEVICE;
+//    		toSend = new byte[Codes.new_name.length()+2];
+//    		toSend[0] = Codes.Commands.RENAME_DEVICE;
+//    		toSend[0] = (byte)toSend[0];
+//    		toSend[1] = 0x00; // Reserved
+//    		// load new names to the toSend byte[]
+//    		byte[] new_name = Codes.new_name.getBytes();
+//    		System.arraycopy(new_name, 0, toSend, 2, new_name.length);
+//    		
+//    		sendMessage(toSend);
+//    		break;
     	}
     }
     
@@ -1117,11 +1164,11 @@ public class Droidmote extends Activity {
     			STATE = 0x00; // reset state
     		}
     		break;
-    	case Codes.Commands.RENAME_DEVICE:
-    		if (response[0] == Codes.Return.ACK) {
-    			STATE = 0x00; // reset state
-    		}
-    		break;
+//    	case Codes.Commands.RENAME_DEVICE:
+//    		if (response[0] == Codes.Return.ACK) {
+//    			STATE = 0x00; // reset state
+//    		}
+//    		break;
     	case Codes.Commands.IR_TRANSMIT:
     		if (response[0] == Codes.Return.ACK) {
     			STATE = 0x00; // reset state

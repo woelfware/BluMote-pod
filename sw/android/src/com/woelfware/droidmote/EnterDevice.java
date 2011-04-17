@@ -40,7 +40,6 @@ public class EnterDevice extends Activity {
 				// grab the text for use in the activity
 				device_string = entered_device.getText();
 				Intent i = getIntent();
-				//TODO need to parse this intent packet out in manage devices class for processing
 				i.putExtra("returnStr", device_string.toString());
 				setResult(RESULT_OK,i);
 				finish();	

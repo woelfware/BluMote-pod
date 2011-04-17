@@ -296,9 +296,9 @@ public class BluetoothChatService {
             // given BluetoothDevice
             try {
                 //tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
-            	Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
+            	Method m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});
+            	//Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
                 tmp = (BluetoothSocket) m.invoke(device, 1);
-//            	tmp = (BluetoothSocket) m.invoke(device, 1);
             } 
             //catch (IOException e) {
             catch (Exception e) {
