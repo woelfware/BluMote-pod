@@ -1,7 +1,5 @@
 package com.woelfware.droidmote;
 
-import java.util.Set;
-
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -24,7 +22,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 
@@ -235,7 +232,6 @@ public class DeviceListActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case R.id.clear_devices:
-        	//TODO make sure this properly flushes devices out
         	Editor mEditor =  prefs.edit();
         	mEditor.remove("knownDevices");
         	mEditor.commit();    

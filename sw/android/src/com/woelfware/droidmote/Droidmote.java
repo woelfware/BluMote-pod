@@ -38,14 +38,14 @@ import com.woelfware.droidmote.Codes.Commands;
 
 public class Droidmote extends Activity {
 	// Debugging
-    private static final String TAG = "BlueMote";
+    //private static final String TAG = "BlueMote";
     public static final boolean D = true;
     
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
     private static final int REQUEST_MANAGE_DEVICE = 3;
-    private static final int REQUEST_RENAME_POD = 4;
+    //private static final int REQUEST_RENAME_POD = 4;
     
     // Message types sent from the BluetoothChatService Handler
     public static final int MESSAGE_STATE_CHANGE = 1;
@@ -159,7 +159,7 @@ public class Droidmote extends Activity {
     private int BUTTON_ID = 0; 
     
     // current State of the pod communication
-    private byte STATE = 0x00;
+    private byte STATE = Codes.Commands.IDLE;
     
     // Sets the delay in-between repeated sending of the keys on the interface
     private static int DELAY_TIME = 250; 
@@ -169,17 +169,15 @@ public class Droidmote extends Activity {
     private static boolean LOOP_KEY = false;
     
     // last button pushed, used in handler, prevents firing wrong click event
-    private static int last_button = 0;
-    
-    // sets mode to learn mode for button action handerls
-    private static boolean LEARN_MODE = false;
+    private static int last_button = 0;  
     
     // keeps track of # of times the MESSAGE_PRESSED has been called, creator/consumer idea
     // prevents user from double tapping a button and creating double messages in queue
-    private int NUM_MESSAGES = 0;
+    private static int NUM_MESSAGES = 0;    
     
     // Hash map to keep track of all the buttons on the interface and associated properties
     HashMap<Integer,Object[]> button_map;
+            
     
     // keep track of what the active page of buttons is
     public enum Pages {
@@ -191,7 +189,7 @@ public class Droidmote extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
-  
+    	
     	// Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -412,7 +410,7 @@ public class Droidmote extends Activity {
     			v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
     		}
     		// don't want to execute touchButton when in learn mode
-    		if (!LEARN_MODE) { 
+    		if (STATE != Codes.Commands.LEARN) { 
     			if (e.getAction() == MotionEvent.ACTION_DOWN) {  
     	    		LOOP_KEY = true; // start looping until we lift finger off key
     	    		
@@ -437,7 +435,7 @@ public class Droidmote extends Activity {
         public void onClick(View v) {
         	BUTTON_ID = v.getId();
         	
-        	if (LEARN_MODE) {
+        	if (STATE == Codes.Commands.LEARN) {
     			// need to set button to pressed and send code to Pod    			
     			Button button = null; // if we can't find one in button_map, set to null
     	    	Object[] payload = null;    	  	    	
@@ -997,11 +995,11 @@ public class Droidmote extends Activity {
         	return true;
         case R.id.learn_button:
         	Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
-        	LEARN_MODE = true;
+        	STATE = Codes.Commands.LEARN;
         	return true;
         case R.id.stop_learn:        
         	Toast.makeText(this, "Stopped Learning", Toast.LENGTH_SHORT).show();
-        	LEARN_MODE = false;
+        	STATE = Codes.Commands.IDLE;
         	// reset all images to unpressed state
         	resetButtons();
         	return true;        		
@@ -1023,7 +1021,7 @@ public class Droidmote extends Activity {
     		fetchButtons();
     	}
 
-        public void onNothingSelected(AdapterView parent) {
+        public void onNothingSelected(AdapterView<?> parent) {
           // Do nothing.
         }
     }
@@ -1135,39 +1133,97 @@ public class Droidmote extends Activity {
     	}
     }
     
+    // called after learn mode is finished and has data to store
+    public void storeButton() {
+    	Button btn = null;
+		Object[] payload = null;
+		payload = button_map.get(BUTTON_ID);
+		
+		if (payload != null) {
+			btn = (Button)payload[BTN_NAME];
+			btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_UNPRESSED]));
+			device_data.insertButton(cur_table, (String)payload[BTN_TEXT], cur_context, Codes.pod_data);
+		}
+	    		    
+		// refresh the local Cursor with new database updates
+		fetchButtons();
+		STATE = Codes.Commands.IDLE; // reset state, drop out of learn mode		
+		Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
+    }
+    
+    // returns true if the data to be inserted is more bytes than array is setup for, 
+    // this should not happen unless pod screwed up
+    public boolean checkPodDataBounds(int bytes) {
+    	if (bytes > (Codes.pod_data.length - Codes.learn_data_index)) {
+			// toast an error, drop out of learn mode, and break
+    		Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
+    		STATE = Codes.Commands.IDLE;    		
+    		return true;
+		}
+    	return false;
+    }
+    
+    // store data from bluetooth packet into the Codes.pod_data array
+    // if we are finished with the command then store the button data to database
+    public void storeResponseData(byte[] response, int bytes) {    			
+		for (int i=0; Codes.learn_data_index < bytes; Codes.learn_data_index++) {
+			Codes.pod_data[Codes.learn_data_index] = response[i];
+			i++;
+		}
+		if (Codes.learn_data_index == (Codes.pod_data.length - 2) ) { // then we are finished collecting data
+			storeButton();
+		}    		
+    }
+    
     // 	this method should be called whenever we receive a byte[] from the pod
-    public void interpretResponse(byte[] response, int bytes) {
-    	
+    // the bytes argument tells us how many bytes were received and stored in response[]
+    public void interpretResponse(byte[] response, int bytes) {    	
     	switch (STATE) {
     	case Codes.Commands.LEARN:
-    		//TODO need a "DONE" indicator that triggers to 
-    		// store the data to the database,
-    		// everything leading up to that should be accumulated in array
-    		if (response[0] == Codes.Return.ACK) {
-    			byte[] content = new byte[bytes];
-    			for (int i=0; i< bytes; i++) {
-    				content[i] = response[i];
-    			}
-    			Button btn = null;
-    			Object[] payload = null;
-    			payload = button_map.get(BUTTON_ID);
+    		// learn data may not come all together, so need to process data in chunks
+    		if (response[0] == Codes.Return.ACK) { // check if beginning of data stream
+    			//TODO test that new code to pull off num of bytes of payload is working...
+    			// byte 2 of response data is defined as the # of bytes is going to be sent 
+    			int num_bytes = response[2]; // right now response[1] is reserved
     			
-    			if (payload != null) {
-    				btn = (Button)payload[BTN_NAME];
-    				btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_UNPRESSED]));
-    				device_data.insertButton(cur_table, (String)payload[BTN_TEXT], cur_context, content);
+    			// create a new learn_data array of the appropriate size
+    			Codes.pod_data = new byte[num_bytes + 2];
+    			
+    			// store length of data as first two bytes (used in transmitting back)
+    			Codes.pod_data[0] = response[1];
+    			Codes.pod_data[1] = response[2];
+    			// set index to 2
+    			Codes.learn_data_index = 2;
+    			
+    			// check that data will not over-run the learn_data array
+    			if (checkPodDataBounds(bytes) ) // if true then break
+    			{
+    				// something screwed up, abort
+    				Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
+    	    		STATE = Codes.Commands.IDLE;
+    				break;
     			}
-    		    		    
-    			// refresh the local Cursor with new database updates
-    			fetchButtons();
-    			STATE = 0x00; // reset state
-    			LEARN_MODE = false;
-    			Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
+    			storeResponseData(response, bytes);	
     		}
+    		else {
+    			// if not beginning of packet, means some data was straggling in a new packet,
+        		// need to aggregate it
+        		
+    			// check that data will not over-run the learn_data array
+    			if (checkPodDataBounds(bytes) ) // if true then break
+    			{
+    				// something screwed up, abort
+    				Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
+    	    		STATE = Codes.Commands.IDLE;
+    				break;
+    			}
+    			// append to end of Codes.pod_data
+    			storeResponseData(response, bytes);
+    		}    		
     		break;
     	case Codes.Commands.GET_VERSION:
     		if (response[0] == Codes.Return.ACK) {
-    			STATE = 0x00; // reset state
+    			STATE = Codes.Commands.IDLE; // reset state
     			// convert data into a String
     			Codes.pod_data = response;
     			// need to launch window to dump the data to
@@ -1176,23 +1232,22 @@ public class Droidmote extends Activity {
     		break;
     	case Codes.Commands.ABORT_LEARN:
     		if (response[0] == Codes.Return.ACK) {
-    			STATE = 0x00; // reset state
+    			STATE = Codes.Commands.IDLE; // reset state
     		}
     		break;
 //    	case Codes.Commands.RENAME_DEVICE:
 //    		if (response[0] == Codes.Return.ACK) {
-//    			STATE = 0x00; // reset state
+//    			STATE = Codes.Commands.IDLE; // reset state
 //    		}
 //    		break;
     	case Codes.Commands.IR_TRANSMIT:
     		if (response[0] == Codes.Return.ACK) {
-    			STATE = 0x00; // reset state
+    			STATE = Codes.Commands.IDLE; // reset state
     		}
     		break;
     	}	
     }
 
-    //showDialog(DIALOG_SHOW_INFO);
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		super.onCreateDialog(id);
@@ -1219,4 +1274,14 @@ public class Droidmote extends Activity {
 		}
 		return alert;
 	}	
+	
+	// returns integer from two bytes
+	// a is upper nibble, b is lower nibble	q
+//	private int bytesToInt(byte a, byte b) {  
+//		int i = 0;
+//	    i |= a & 0xFF;
+//	    i <<= 8;
+//	    i |= b & 0xFF;
+//	    return i;  
+//	}   
 }
