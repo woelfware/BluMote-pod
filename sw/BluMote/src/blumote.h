@@ -4,10 +4,8 @@
 #include <stdbool.h>
 
 enum command_codes {
-	BLUMOTE_DISCONNECT,
-	BLUMOTE_RENAME_DEVICE,
-	BLUMOTE_LEARN,
 	BLUMOTE_GET_VERSION,
+	BLUMOTE_LEARN,
 	BLUMOTE_IR_TRANSMIT,
 	BLUMOTE_DEBUG = 0xFF	/* specialized debug command whose functionality may change any time */
 };

@@ -9,20 +9,21 @@
 #include <stdint.h>
 
 struct circular_buffer {
-	uint8_t writePointer,
-		readPointer,
-		size;
+	uint8_t wr_ptr,
+		rd_ptr,
+		size,
+		cnt;
 	volatile uint8_t *buf;
 };
 
 inline bool buf_full(struct circular_buffer *que)
 {
-	return (((que->writePointer + 1) & (que->size - 1)) == que->readPointer); 
+	return (que->cnt + 1 == que->size); 
 }
- 
+
 inline bool buf_empty(struct circular_buffer *que)
 {
-	return (que->readPointer == que->writePointer); 
+	return (que->cnt == 0); 
 }
 
 void buf_init(struct circular_buffer *pQue, volatile uint8_t *buf, uint8_t size);

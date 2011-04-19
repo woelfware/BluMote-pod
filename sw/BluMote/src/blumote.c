@@ -16,15 +16,15 @@ static int nbr_bytes;
 static void blumote_process_cmd()
 {
 	switch (buf[0]) {
-	case BLUMOTE_LEARN:
-		learn_ir_code = true;
-		break;
-
 	case BLUMOTE_GET_VERSION: {
 		char const response[] = {BLUMOTE_ACK,
 			BLUMOTE_FW, VERSION_MAJOR, VERSION_MINOR, VERSION_REV}; 
 		(void)bluetooth_puts(response, sizeof(response));
 		}
+		break;
+
+	case BLUMOTE_LEARN:
+		learn_ir_code = true;
 		break;
 
 	case BLUMOTE_IR_TRANSMIT:
@@ -399,8 +399,9 @@ bool tx_learned_code()
 	switch (current_state) {
 	case tx_status:
 		if (!buf_deque(&ir_rx, &c)) {
-			char str[2] = {BLUMOTE_ACK};
-			str[1] = c; 
+			char str[4] = {BLUMOTE_ACK, 0};
+			str[2] = ir_rx.cnt;
+			str[3] = c;
 			bluetooth_puts(str, sizeof(str));
 			current_state = tx_code;
 		} else {
