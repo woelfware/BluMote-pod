@@ -13,13 +13,11 @@ bool learn_ir_code = false;
 static char buf[BLUMOTE_RX_BUF_SIZE];
 static int nbr_bytes;
 
-static void blumote_process_cmd()
+static bool blumote_process_cmd()
 {
-	switch (buf[0]) {
-	case BLUMOTE_LEARN:
-		learn_ir_code = true;
-		break;
+	bool change_state = true;
 
+	switch (buf[0]) {
 	case BLUMOTE_GET_VERSION: {
 		char const response[] = {BLUMOTE_ACK,
 			BLUMOTE_FW, VERSION_MAJOR, VERSION_MINOR, VERSION_REV}; 
@@ -27,7 +25,22 @@ static void blumote_process_cmd()
 		}
 		break;
 
-	case BLUMOTE_IR_TRANSMIT:
+	case BLUMOTE_LEARN:
+		learn_ir_code = true;
+		break;
+
+	case BLUMOTE_IR_TRANSMIT: {
+		int i = 3;
+		uint8_t nbr_ir_code_bytes = buf[2];
+
+		if (buf_empty(&ir_rx)) {
+			while (i < nbr_ir_code_bytes) {
+				buf_enque(&ir_rx, buf[i++]);
+			}
+		} else {
+			change_state = false;
+		}
+		}
 		break;
 	
 	default: {
@@ -36,6 +49,8 @@ static void blumote_process_cmd()
 		}
 		break;
 	}
+
+	return change_state;
 }
 
 bool init_blumote(int ms)
@@ -373,8 +388,10 @@ bool blumote_main(int ms)
 		break;
 
 	case process_cmd:
-		blumote_process_cmd();	/* done, fallthrough */
-	default:	/* shouldn't get here */
+		if (!blumote_process_cmd()) {
+			break;
+		}	/* else done, fallthrough */
+	default:
 		current_state = default_state;
 		memset(buf, 0, nbr_bytes);
 		nbr_bytes = 0;
@@ -399,8 +416,9 @@ bool tx_learned_code()
 	switch (current_state) {
 	case tx_status:
 		if (!buf_deque(&ir_rx, &c)) {
-			char str[2] = {BLUMOTE_ACK};
-			str[1] = c; 
+			char str[4] = {BLUMOTE_ACK, 0};
+			str[2] = ir_rx.cnt;
+			str[3] = c;
 			bluetooth_puts(str, sizeof(str));
 			current_state = tx_code;
 		} else {

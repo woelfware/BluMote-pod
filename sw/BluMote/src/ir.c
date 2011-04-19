@@ -9,6 +9,26 @@ static inline bool is_space()
 	return (P1IN & BIT3) ? true : false;
 }
 
+static void carrier_freq(bool on)
+{
+	if (on){
+		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */		
+	} else {
+		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
+	}
+}
+
+int ir_getchar()
+{
+	int c;
+
+	if (buf_deque(&ir_rx, (uint8_t *)&c)) {
+		c = EOF;
+	}
+
+	return c;
+}
+
 bool ir_learn(int us)
 {
 	enum state {
@@ -92,7 +112,63 @@ bool ir_learn(int us)
 
 bool ir_main(int us)
 {
+	enum state {
+		default_state = 0,
+		tx_start = 0,
+		tx_pulses,
+		tx_spaces
+	};
+	static enum state current_state = default_state;
+	static uint16_t duration = 0;
+	static uint16_t stop_time_us = 0;
 	bool run_again = true;
+	bool get_next = false;
+
+	switch (current_state) {
+	case tx_start:
+		carrier_freq(true);	/*Start pulse clock*/
+		get_next = true;
+		break;
+
+	case tx_pulses:
+		if (duration < stop_time_us) {
+			duration += us;
+		} else {
+			carrier_freq(false);	/*Stop Pulse Clock*/
+			get_next = true;
+			current_state = tx_spaces;
+		}
+		break;
+
+	case tx_spaces:
+		if (duration < stop_time_us) {
+			duration += us;
+		} else {
+			carrier_freq(true);	/*Start pulse clock*/
+			get_next = true;
+			current_state = tx_pulses;
+		}
+		break;
+
+	default:
+		current_state = default_state;
+		run_again = false;
+		carrier_freq(false);	/*Stop Pulse Clock*/
+		while (!buf_deque(&ir_rx, NULL));
+		break;
+	}
+	
+	if (get_next) {
+		stop_time_us = ir_getchar() << 8;
+		stop_time_us += ir_getchar();
+		if ((int)stop_time_us == EOF) {
+			carrier_freq(false);	/*Stop Pulse Clock*/
+			run_again = false;
+			current_state = default_state;
+		}
+		get_next = false;
+		duration = 0;
+	}
 
 	return run_again;
 }

@@ -913,7 +913,7 @@ public class Droidmote extends Activity {
                 connectingDevice = (data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_NAME));
                 					//.replaceAll("\\\\", "blah"); //for some reason strings get double backslash when pulling out
                                 
-//                // Store the address of device to preferences for connect in onResume()
+                // Store the address of device to preferences for connect in onResume()
                 Editor mEditor =  prefs.edit();
                 mEditor.putString("lastPod",connectingMAC);
                 mEditor.commit();
