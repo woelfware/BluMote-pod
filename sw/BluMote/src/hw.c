@@ -44,11 +44,6 @@ void init_hw()
 	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrupt */
 
 	/* IR configs */
-#if 0
-	CCTL0 = CCIE;	/* CCR0 interrupt enabled */
- 	CCR0 = (SYS_CLK * US_PER_IR_TICK) - 1;
- 	TACTL = TASSEL_2 +  MC_1; /* SMCLK, up mode */
-#else
 	P1SEL |= BIT5;  /* Set as alternate function */
 	CCTL1 = CCIE;	/* CCR1 interrupt enabled */
  	CCR1 = (SYS_CLK * US_PER_IR_TICK) - 1;
@@ -56,7 +51,7 @@ void init_hw()
 	CCTL0 = OUTMOD_4;  /* CCR0 interrupt disabled and Toggle */
 	CCR0 = ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);
 	TACTL = TASSEL_2 +  MC_2; /* SMCLK, continuous */
-#endif
+
 	__bis_SR_register(GIE);	/* interrupts enabled */
 
 	init_bufs();
@@ -64,17 +59,23 @@ void init_hw()
 
 int get_ms()
 {
-	int elapsed_time = sys_tick << 1;
+	int elapsed_time;
+	__disable_interrupt();
+	elapsed_time = sys_tick << 1;
+	/* could get an interrupt here and get missing sys_ticks */
 	sys_tick = 0;
+	__enable_interrupt();
 	return elapsed_time;
 }
 
 int get_us()
 {
-	__bic_SR_register(GIE);	/* interrupts disabled */
-	int elapsed_time = ir_tick * US_PER_IR_TICK;
+	int elapsed_time;
+	__disable_interrupt();
+	elapsed_time = ir_tick * US_PER_IR_TICK;
+	/* could get an interrupt here and get missing ir_ticks */
 	ir_tick = 0;
-	__bis_SR_register(GIE);	/* interrupts enabled */
+	__enable_interrupt();
 	return elapsed_time;
 }
 
