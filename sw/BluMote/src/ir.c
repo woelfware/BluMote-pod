@@ -110,7 +110,7 @@ bool ir_learn(int us)
 	return run_again;
 }
 
-bool ir_transmit(int us)
+bool ir_main(int us)
 {
 	enum state {
 		default_state = 0,
@@ -124,12 +124,12 @@ bool ir_transmit(int us)
 	bool run_again = true;
 	bool get_next = false;
 
-
 	switch (current_state) {
 	case tx_start:
 		carrier_freq(true);	/*Start pulse clock*/
 		get_next = true;
 		break;
+
 	case tx_pulses:
 		if (duration < stop_time_us) {
 			duration += us;
@@ -149,6 +149,7 @@ bool ir_transmit(int us)
 			current_state = tx_pulses;
 		}
 		break;
+
 	default:
 		current_state = default_state;
 		run_again = false;
@@ -168,15 +169,6 @@ bool ir_transmit(int us)
 		get_next = false;
 		duration = 0;
 	}
-
-	return run_again;
-}
-
-bool ir_main(int us)
-{
-	bool run_again = true;
-	
-	ir_transmit(us);
 
 	return run_again;
 }
