@@ -44,10 +44,19 @@ void init_hw()
 	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrupt */
 
 	/* IR configs */
+#if 0
 	CCTL0 = CCIE;	/* CCR0 interrupt enabled */
  	CCR0 = (SYS_CLK * US_PER_IR_TICK) - 1;
-	TACTL = TASSEL_2 +  MC_1; /* SMCLK, upmode */
-
+ 	TACTL = TASSEL_2 +  MC_1; /* SMCLK, up mode */
+#else
+	P1SEL |= BIT5;  /* Set as alternate function */
+	CCTL1 = CCIE;	/* CCR1 interrupt enabled */
+ 	CCR1 = (SYS_CLK * US_PER_IR_TICK) - 1;
+ 	
+	CCTL0 = OUTMOD_4;  /* CCR0 interrupt disabled and Toggle */
+	CCR0 = ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);
+	TACTL = TASSEL_2 +  MC_2; /* SMCLK, continuous */
+#endif
 	__bis_SR_register(GIE);	/* interrupts enabled */
 
 	init_bufs();
@@ -62,8 +71,10 @@ int get_ms()
 
 int get_us()
 {
+	__bic_SR_register(GIE);	/* interrupts disabled */
 	int elapsed_time = ir_tick * US_PER_IR_TICK;
 	ir_tick = 0;
+	__bis_SR_register(GIE);	/* interrupts enabled */
 	return elapsed_time;
 }
 
@@ -77,7 +88,19 @@ __interrupt void USCI0RX_ISR(void)
 #pragma vector = TIMERA0_VECTOR
 __interrupt void TIMERA0_ISR(void)
 {
-	ir_tick++;
+	//ir_tick++;
+	CCR0 += ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);
+	P1OUT ^= BIT4;
+}
+
+#pragma vector=TIMERA1_VECTOR
+__interrupt void TIMERA1_ISR(void)
+{
+ 	switch( TAIV ) {
+ 	case  2: CCR1 += ((SYS_CLK * US_PER_IR_TICK) - 1);	// Add Offset to CCR1
+ 		ir_tick++;	
+		break;
+ }
 }
 
 /* WDT ISR */
