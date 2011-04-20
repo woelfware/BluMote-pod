@@ -8,10 +8,10 @@
 
 struct circular_buffer uart_rx,
 	uart_tx,
-	ir_rx;
+	gp_rx_tx;
 static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
-	buf_ir[IR_BUF_SIZE];
+	buf_gp[GP_BUF_SIZE];
 
 static volatile int ir_tick = 0;
 static volatile int sys_tick = 0;
@@ -23,7 +23,7 @@ static void init_bufs()
 {
 	buf_init(&uart_rx, buf_uart_rx, sizeof(buf_uart_rx));
 	buf_init(&uart_tx, buf_uart_tx, sizeof(buf_uart_tx));
-	buf_init(&ir_rx, buf_ir, sizeof(buf_ir));
+	buf_init(&gp_rx_tx, buf_gp, sizeof(buf_gp));
 }
 
 void init_hw()
@@ -47,7 +47,6 @@ void init_hw()
 	P1SEL |= BIT5;  /* Set as alternate function */
 	CCTL1 = CCIE;	/* CCR1 interrupt enabled */
  	CCR1 = (SYS_CLK * US_PER_IR_TICK) - 1;
- 	
 	CCTL0 = OUTMOD_4;  /* CCR0 interrupt disabled and Toggle */
 	CCR0 = ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);
 	TACTL = TASSEL_2 +  MC_2; /* SMCLK, continuous */
@@ -62,7 +61,6 @@ int get_ms()
 	int elapsed_time;
 	__disable_interrupt();
 	elapsed_time = sys_tick << 1;
-	/* could get an interrupt here and get missing sys_ticks */
 	sys_tick = 0;
 	__enable_interrupt();
 	return elapsed_time;
@@ -73,7 +71,6 @@ int get_us()
 	int elapsed_time;
 	__disable_interrupt();
 	elapsed_time = ir_tick * US_PER_IR_TICK;
-	/* could get an interrupt here and get missing ir_ticks */
 	ir_tick = 0;
 	__enable_interrupt();
 	return elapsed_time;

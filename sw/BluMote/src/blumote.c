@@ -8,16 +8,20 @@
 #include "hw.h"
 #include <string.h>
 
-bool learn_ir_code = false;
+enum m_strcmp_rc {
+	m_strcmp_match,
+	m_strcmp_buf_underrun,
+	m_strcmp_no_match
+};
 
-static char buf[BLUMOTE_RX_BUF_SIZE];
-static int nbr_bytes;
+bool learn_ir_code = false;
 
 static bool blumote_process_cmd()
 {
+	int c = buf_deque(&gp_rx_tx, NULL);
 	bool change_state = true;
 
-	switch (buf[0]) {
+	switch (c) {
 	case BLUMOTE_GET_VERSION: {
 		char const response[] = {BLUMOTE_ACK,
 			BLUMOTE_FW, VERSION_MAJOR, VERSION_MINOR, VERSION_REV}; 
@@ -29,18 +33,12 @@ static bool blumote_process_cmd()
 		learn_ir_code = true;
 		break;
 
-	case BLUMOTE_IR_TRANSMIT: {
-		int i = 3;
-		uint8_t nbr_ir_code_bytes = buf[2];
-
-		if (buf_empty(&ir_rx)) {
-			while (i < nbr_ir_code_bytes) {
-				buf_enque(&ir_rx, buf[i++]);
-			}
-		} else {
-			change_state = false;
-		}
-		}
+	case BLUMOTE_IR_TRANSMIT:
+		/* pop the reserved and length fields and let
+		 * the ir handle the code
+		 */
+		(void)buf_deque(&gp_rx_tx, NULL);	/* reserved */
+		(void)buf_deque(&gp_rx_tx, NULL);	/* length */
 		break;
 	
 	default: {
@@ -51,6 +49,34 @@ static bool blumote_process_cmd()
 	}
 
 	return change_state;
+}
+
+static enum m_strcmp_rc m_strcmp(char const *str, struct circular_buffer *que)
+{
+	enum m_strcmp_rc rc = m_strcmp_match;
+	int i = 0;
+	uint8_t m_buf[16];
+
+	for ( ; i < strlen(str); i++) {
+		if (!buf_deque(&gp_rx_tx, &m_buf[i])) { 
+			if (m_buf[i] != str[i]) {
+				rc = m_strcmp_no_match;
+				for ( ; i >= 0; i--) {
+					(void)buf_undeque(que, m_buf[i]);
+				}
+				break;
+			}
+		} else {
+			rc = m_strcmp_buf_underrun;
+			--i;
+			for ( ; i >= 0; --i) {
+				(void)buf_undeque(que, m_buf[i]);
+			}
+			break;
+		}
+	}
+
+	return rc;
 }
 
 bool init_blumote(int ms)
@@ -65,8 +91,12 @@ bool init_blumote(int ms)
 		rx_get_name,
 		tx_set_name,
 		rx_set_name,
+		tx_get_low_latency,
+		rx_get_low_latency,
 		tx_set_low_latency,
 		rx_set_low_latency,
+		tx_get_low_power,
+		rx_get_low_power,
 		tx_set_low_power,
 		rx_set_low_power,
 		tx_exit_cmd_mode,
@@ -77,16 +107,16 @@ bool init_blumote(int ms)
 	static int ttl;	/* time to live */
 	int c;
 	bool run_again = true;
+	static bool reset_bt = false;
 
 	switch (current_state) {
 	case wait_one_sec1:
 		ttl = 1000;
 		current_state = wait_one_sec2;
-		
+
 		/* clear out the rx buffers */
 		while (bluetooth_getchar() != EOF);
-		memset(buf, 0, sizeof(buf));
-		nbr_bytes = 0;
+		while (!buf_deque(&gp_rx_tx, NULL));
 		break;
 
 	case wait_one_sec2:
@@ -109,22 +139,26 @@ bool init_blumote(int ms)
 		ttl -= ms;
 
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[nbr_bytes++] = c;
-			nbr_bytes &= sizeof(buf) - 1;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 		
 		if (ttl >= 0) {
-			char const *str = "CMD\r\n";
-			if (memcmp(buf, str, strlen(str)) == 0) {
+			enum m_strcmp_rc rc = m_strcmp("CMD\r\n", &gp_rx_tx);
+
+			switch (rc) {
+			case m_strcmp_match:
 				current_state = tx_get_name;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
+				while (!buf_deque(&gp_rx_tx, NULL));
+				break;
+
+			case m_strcmp_no_match:
+				current_state = reset_bluetooth;
+				break;
 			}
-		} else {	/* no response; already in CMD mode? */
+		} else {	/* invalid/no response; already in CMD mode? */
 			current_state = tx_get_name;
-			memset(buf, 0, nbr_bytes);
-			nbr_bytes = 0;
+			while (!buf_deque(&gp_rx_tx, NULL));
 		}
 		break;
 
@@ -141,37 +175,21 @@ bool init_blumote(int ms)
 		ttl -= ms;
 
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[nbr_bytes++] = c;
-			nbr_bytes &= sizeof(buf) - 1;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 
 		if (ttl >= 0) {
-			if (buf[nbr_bytes - 1] == '\n') {
-				char const *str[] = {
-					"BluMote",
-					"ERR\r\n",
-					"?\r\n"
-				};
-				if (memcmp(buf, str[0], strlen(str[0])) == 0) {
-					current_state = tx_exit_cmd_mode;
-					memset(buf, 0, nbr_bytes);
-					nbr_bytes = 0;
-				} else if (memcmp(buf, str[1], strlen(str[1])) == 0
-						|| memcmp(buf, str[2], strlen(str[2])) == 0) {
-					current_state = reset_bluetooth;
-					memset(buf, 0, nbr_bytes);
-					nbr_bytes = 0;
-				} else {
-					current_state = tx_set_name;
-					memset(buf, 0, nbr_bytes);
-					nbr_bytes = 0;
-				}
+			if (m_strcmp("BluMote\r\n", &gp_rx_tx) == m_strcmp_match) {
+				current_state = tx_exit_cmd_mode;
+				while (!buf_deque(&gp_rx_tx, NULL));
+			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
+					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
+				current_state = reset_bluetooth;
 			}
-		} else {	/* no response; already in CMD mode? */
+		} else {	/* no response or invalid name */
 			current_state = tx_set_name;
-			memset(buf, 0, nbr_bytes);
-			nbr_bytes = 0;
+			while (!buf_deque(&gp_rx_tx, NULL));
 		}
 		break;
 
@@ -184,36 +202,34 @@ bool init_blumote(int ms)
 		}
 		break;
 
-	case rx_set_name:
+	case tx_get_low_latency: {
+		char const *str = "GSQ\r";
+		if (bluetooth_puts(str, strlen(str)) != EOF) {
+			current_state = rx_get_name;
+			ttl = 50;
+		}
+		}
+		break;
+
+	case rx_get_low_latency:
 		ttl -= ms;
-		
+
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[nbr_bytes++] = c;
-			nbr_bytes &= sizeof(buf) - 1;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 
 		if (ttl >= 0) {
-			char const *str[] = {
-				"AOK\r\n",
-				"ERR\r\n",
-				"?\r\n"
-			};
-			if (memcmp(buf, str[0], strlen(str[0])) == 0) {
-				current_state = tx_set_low_latency;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
-				run_again = false;
-			} else if (memcmp(buf, str[1], strlen(str[1])) == 0
-					|| memcmp(buf, str[2], strlen(str[2])) == 0) {
+			if (m_strcmp("16\r\n", &gp_rx_tx) == m_strcmp_match) {
+				current_state = tx_exit_cmd_mode;
+				while (!buf_deque(&gp_rx_tx, NULL));
+			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
+					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
 			}
-		} else {	/* no response... there's a comm failure */
-			current_state = reset_bluetooth;
-			memset(buf, 0, nbr_bytes);
-			nbr_bytes = 0;
+		} else {	/* no response or invalid name */
+			current_state = tx_set_low_latency;
+			while (!buf_deque(&gp_rx_tx, NULL));
 		}
 		break;
 
@@ -226,36 +242,34 @@ bool init_blumote(int ms)
 		}
 		break;
 
-	case rx_set_low_latency:
+	case tx_get_low_power: {
+		char const *str = "GSQ\r";
+		if (bluetooth_puts(str, strlen(str)) != EOF) {
+			current_state = rx_get_name;
+			ttl = 50;
+		}
+		}
+		break;
+
+	case rx_get_low_power:
 		ttl -= ms;
-		
+
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[nbr_bytes++] = c;
-			nbr_bytes &= sizeof(buf) - 1;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 
 		if (ttl >= 0) {
-			char const *str[] = {
-				"AOK\r\n",
-				"ERR\r\n",
-				"?\r\n"
-			};
-			if (memcmp(buf, str[0], strlen(str[0])) == 0) {
+			if (m_strcmp("0050\r\n", &gp_rx_tx) == m_strcmp_match) {
+				current_state = tx_exit_cmd_mode;
+				while (!buf_deque(&gp_rx_tx, NULL));
+			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
+					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
-				run_again = false;
-			} else if (memcmp(buf, str[1], strlen(str[1])) == 0
-					|| memcmp(buf, str[2], strlen(str[2])) == 0) {
-				current_state = tx_set_low_latency;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
 			}
-		} else {	/* no response... there's a comm failure */
-			current_state = reset_bluetooth;
-			memset(buf, 0, nbr_bytes);
-			nbr_bytes = 0;
+		} else {	/* no response or invalid name */
+			current_state = tx_set_low_power;
+			while (!buf_deque(&gp_rx_tx, NULL));
 		}
 		break;
 
@@ -268,36 +282,41 @@ bool init_blumote(int ms)
 		}
 		break;
 
+	case rx_set_name:
+	case rx_set_low_latency:
 	case rx_set_low_power:
 		ttl -= ms;
 
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[nbr_bytes++] = c;
-			nbr_bytes &= sizeof(buf) - 1;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 
 		if (ttl >= 0) {
-			char const *str[] = {
-				"AOK\r\n",
-				"ERR\r\n",
-				"?\r\n"
-			};
-			if (memcmp(buf, str[0], strlen(str[0])) == 0) {
-				current_state = reset_bluetooth;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
+			if (m_strcmp("AOK\r\n", &gp_rx_tx) == m_strcmp_match) {
+				switch (current_state) {
+				case rx_set_name:
+					current_state = tx_set_low_latency;
+					reset_bt = true;
+					break;
+
+				case rx_set_low_latency:
+					current_state = tx_exit_cmd_mode;
+					reset_bt = true;
+					break;
+
+				case rx_set_low_power:
+					current_state = tx_exit_cmd_mode;
+					break;
+				}
 				run_again = false;
-			} else if (memcmp(buf, str[1], strlen(str[1])) == 0
-					|| memcmp(buf, str[2], strlen(str[2])) == 0) {
-				current_state = tx_set_low_latency;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
+				while (!buf_deque(&gp_rx_tx, NULL));
+			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
+					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
+				current_state = reset_bluetooth;
 			}
-		} else {	/* no response... there's a comm failure */
+		} else {	/* invalid/no response */
 			current_state = reset_bluetooth;
-			memset(buf, 0, nbr_bytes);
-			nbr_bytes = 0;
 		}
 		break;
 
@@ -314,36 +333,40 @@ bool init_blumote(int ms)
 		ttl -= ms;
 
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[nbr_bytes++] = c;
-			nbr_bytes &= sizeof(buf) - 1;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 
 		if (ttl >= 0) {
-			char const *str = "END\r\n";
-			if (memcmp(buf, str, strlen(str)) == 0) {
-				current_state = default_state;
-				memset(buf, 0, nbr_bytes);
-				nbr_bytes = 0;
+			if (m_strcmp("END\r\n", &gp_rx_tx) == m_strcmp_match) {
+				if (!reset_bt) {
+					current_state = tx_set_low_latency;
+				} else {
+					current_state = reset_bluetooth;
+				}
 				run_again = false;
+				while (!buf_deque(&gp_rx_tx, NULL));
+			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
+					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
+				current_state = reset_bluetooth;
 			}
-		} else {	/* no response... there's a comm failure */
+		} else {	/* invalid/no response */
 			current_state = reset_bluetooth;
-			memset(buf, 0, nbr_bytes);
-			nbr_bytes = 0;
 		}
 		break;
 
 	case reset_bluetooth:
 		if (issue_bluetooth_reset(ms) == false) {
 			current_state = default_state;
+			reset_bt = false;
 		}
+		while (!buf_deque(&gp_rx_tx, NULL));
 		break;
 
 	default:	/* shouldn't get here */
 		current_state = default_state;
-		memset(buf, 0, nbr_bytes);
-		nbr_bytes = 0;
+		reset_bt = false;
+		while (!buf_deque(&gp_rx_tx, NULL));
 		break;
 	}
 
@@ -356,7 +379,8 @@ bool blumote_main(int ms)
 		default_state = 0,
 		rx_cmd1 = 0,
 		rx_cmd2,
-		process_cmd
+		process_cmd,
+		handle_buf_overflow
 	};
 	static enum state current_state = default_state;
 	static int ttl;
@@ -368,7 +392,7 @@ bool blumote_main(int ms)
 		/* get the first char */
 		if ((c = bluetooth_getchar()) != EOF) {
 			current_state = rx_cmd2;
-			buf[nbr_bytes++] = c;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 		break;
@@ -376,8 +400,7 @@ bool blumote_main(int ms)
 	case rx_cmd2:
 		ttl -= ms;
 		while ((c = bluetooth_getchar()) != EOF) {
-			buf[nbr_bytes++] = c;
-			nbr_bytes &= sizeof(buf) - 1;
+			(void)buf_enque(&gp_rx_tx, c);
 			ttl = 20;
 		}
 
@@ -393,8 +416,7 @@ bool blumote_main(int ms)
 		}	/* else done, fallthrough */
 	default:
 		current_state = default_state;
-		memset(buf, 0, nbr_bytes);
-		nbr_bytes = 0;
+		while (buf_deque(&gp_rx_tx, NULL));
 		break;
 	}
 
@@ -415,9 +437,9 @@ bool tx_learned_code()
 
 	switch (current_state) {
 	case tx_status:
-		if (!buf_deque(&ir_rx, &c)) {
+		if (!buf_deque(&gp_rx_tx, &c)) {
 			char str[4] = {BLUMOTE_ACK, 0};
-			str[2] = ir_rx.cnt;
+			str[2] = gp_rx_tx.cnt;
 			str[3] = c;
 			bluetooth_puts(str, sizeof(str));
 			current_state = tx_code;
@@ -428,7 +450,7 @@ bool tx_learned_code()
 		break;
 
 	case tx_code:
-		while (!buf_deque(&ir_rx, &c)) {
+		while (!buf_deque(&gp_rx_tx, &c)) {
 			if (bluetooth_putchar((int)c) == EOF) {
 				current_state = wait_for_bt_buf;
 				break;
@@ -454,4 +476,3 @@ bool tx_learned_code()
 
 	return run_again; 
 }
-

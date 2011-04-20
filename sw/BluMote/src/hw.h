@@ -10,7 +10,7 @@
 
 extern struct circular_buffer uart_rx,
 	uart_tx,
-	ir_rx;
+	gp_rx_tx;	/* general purpose buffer. used by blumote, ir */
 	
 extern volatile bool got_pulse;
 

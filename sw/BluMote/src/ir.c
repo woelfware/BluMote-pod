@@ -22,7 +22,7 @@ int ir_getchar()
 {
 	int c;
 
-	if (buf_deque(&ir_rx, (uint8_t *)&c)) {
+	if (buf_deque(&gp_rx_tx, (uint8_t *)&c)) {
 		c = EOF;
 	}
 
@@ -73,8 +73,8 @@ bool ir_learn(int us)
 		if (!is_space()) {
 			duration += us;
 		} else {
-			(void)buf_enque(&ir_rx, (duration >> 8) & 0xFF);
-			(void)buf_enque(&ir_rx, duration & 0xFF);
+			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
+			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
 			duration = 0;
 			current_state = rx_spaces;
 		}
@@ -90,8 +90,8 @@ bool ir_learn(int us)
 				current_state = default_state;
 			}
 		} else {
-			(void)buf_enque(&ir_rx, (duration >> 8) & 0xFF);
-			(void)buf_enque(&ir_rx, duration & 0xFF);
+			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
+			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
 			duration = 0;
 			current_state = rx_pulses;
 		}
@@ -103,7 +103,7 @@ bool ir_learn(int us)
 		duration = 0;
 		ttl = IR_LEARN_CODE_TIMEOUT;
 		run_again = false;
-		while (!buf_deque(&ir_rx, NULL));
+		while (!buf_deque(&gp_rx_tx, NULL));
 		break;
 	}
 
@@ -123,7 +123,7 @@ bool ir_main(int us)
 	static uint16_t stop_time_us = 0;
 	bool run_again = true;
 	bool get_next = false;
-
+#if 0
 	switch (current_state) {
 	case tx_start:
 		carrier_freq(true);	/*Start pulse clock*/
@@ -169,6 +169,6 @@ bool ir_main(int us)
 		get_next = false;
 		duration = 0;
 	}
-
+#endif
 	return run_again;
 }
