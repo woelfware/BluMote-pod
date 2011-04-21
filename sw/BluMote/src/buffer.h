@@ -27,7 +27,7 @@ inline bool buf_empty(struct circular_buffer *que)
 	return (que->cnt == 0); 
 }
 
-void buf_init(struct circular_buffer *pQue, volatile uint8_t *buf, size_t size);
+void buf_init(struct circular_buffer *que, volatile uint8_t *buf, size_t size);
 
 /*
  * \return bool
@@ -49,5 +49,10 @@ bool buf_deque(struct circular_buffer *que, uint8_t *pK);
  * \retval false	buffer was not full
  */
 bool buf_undeque(struct circular_buffer *que, uint8_t k);
+
+/*
+ * clear out the buffer
+ */
+void buf_clear(struct circular_buffer *que);
 
 #endif /*BUFFER_H_*/

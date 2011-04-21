@@ -104,7 +104,7 @@ bool ir_learn(int us)
 		duration = 0;
 		ttl = IR_LEARN_CODE_TIMEOUT;
 		run_again = false;
-		while (!buf_deque(&gp_rx_tx, NULL));
+		buf_clear(&gp_rx_tx);
 		break;
 	}
 
@@ -156,7 +156,7 @@ bool ir_main(int us)
 			current_state = default_state;
 			run_again = false;
 			carrier_freq(false);	/*Stop Pulse Clock*/
-			while (!buf_deque(&gp_rx_tx, NULL));
+			buf_clear(&gp_rx_tx);
 			break;
 		}
 		

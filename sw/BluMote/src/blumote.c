@@ -118,7 +118,7 @@ bool init_blumote(int ms)
 
 		/* clear out the rx buffers */
 		while (bluetooth_getchar() != EOF);
-		while (!buf_deque(&gp_rx_tx, NULL));
+		buf_clear(&gp_rx_tx);
 		break;
 
 	case wait_one_sec2:
@@ -151,7 +151,7 @@ bool init_blumote(int ms)
 			switch (rc) {
 			case m_strcmp_match:
 				current_state = tx_get_name;
-				while (!buf_deque(&gp_rx_tx, NULL));
+				buf_clear(&gp_rx_tx);
 				break;
 
 			case m_strcmp_no_match:
@@ -160,7 +160,7 @@ bool init_blumote(int ms)
 			}
 		} else {	/* invalid/no response; already in CMD mode? */
 			current_state = tx_get_name;
-			while (!buf_deque(&gp_rx_tx, NULL));
+			buf_clear(&gp_rx_tx);
 		}
 		break;
 
@@ -184,14 +184,14 @@ bool init_blumote(int ms)
 		if (ttl >= 0) {
 			if (m_strcmp("BluMote\r\n", &gp_rx_tx) == m_strcmp_match) {
 				current_state = tx_exit_cmd_mode;
-				while (!buf_deque(&gp_rx_tx, NULL));
+				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
 			}
 		} else {	/* no response or invalid name */
 			current_state = tx_set_name;
-			while (!buf_deque(&gp_rx_tx, NULL));
+			buf_clear(&gp_rx_tx);
 		}
 		break;
 
@@ -224,14 +224,14 @@ bool init_blumote(int ms)
 		if (ttl >= 0) {
 			if (m_strcmp("16\r\n", &gp_rx_tx) == m_strcmp_match) {
 				current_state = tx_exit_cmd_mode;
-				while (!buf_deque(&gp_rx_tx, NULL));
+				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
 			}
 		} else {	/* no response or invalid name */
 			current_state = tx_set_low_latency;
-			while (!buf_deque(&gp_rx_tx, NULL));
+			buf_clear(&gp_rx_tx);
 		}
 		break;
 
@@ -264,14 +264,14 @@ bool init_blumote(int ms)
 		if (ttl >= 0) {
 			if (m_strcmp("0050\r\n", &gp_rx_tx) == m_strcmp_match) {
 				current_state = tx_exit_cmd_mode;
-				while (!buf_deque(&gp_rx_tx, NULL));
+				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
 			}
 		} else {	/* no response or invalid name */
 			current_state = tx_set_low_power;
-			while (!buf_deque(&gp_rx_tx, NULL));
+			buf_clear(&gp_rx_tx);
 		}
 		break;
 
@@ -312,7 +312,7 @@ bool init_blumote(int ms)
 					break;
 				}
 				run_again = false;
-				while (!buf_deque(&gp_rx_tx, NULL));
+				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
@@ -347,7 +347,7 @@ bool init_blumote(int ms)
 					current_state = reset_bluetooth;
 				}
 				run_again = false;
-				while (!buf_deque(&gp_rx_tx, NULL));
+				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
@@ -362,13 +362,13 @@ bool init_blumote(int ms)
 			current_state = default_state;
 			reset_bt = false;
 		}
-		while (!buf_deque(&gp_rx_tx, NULL));
+		buf_clear(&gp_rx_tx);
 		break;
 
 	default:	/* shouldn't get here */
 		current_state = default_state;
 		reset_bt = false;
-		while (!buf_deque(&gp_rx_tx, NULL));
+		buf_clear(&gp_rx_tx);
 		break;
 	}
 
@@ -418,7 +418,7 @@ bool blumote_main(int ms)
 		}	/* else done, fallthrough */
 	default:
 		current_state = default_state;
-		while (!buf_deque(&gp_rx_tx, NULL));
+		buf_clear(&gp_rx_tx);
 		break;
 	}
 

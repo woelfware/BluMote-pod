@@ -5,12 +5,11 @@
 
 #include "buffer.h"
 
-void buf_init(struct circular_buffer *pQue, volatile uint8_t *buf, size_t size)
+void buf_init(struct circular_buffer *que, volatile uint8_t *buf, size_t size)
 {
-	pQue->buf = buf;
-	pQue->size = size;
-	pQue->cnt = 0;
-	pQue->wr_ptr = pQue->rd_ptr = 0;
+	que->buf = buf;
+	que->size = size;
+	buf_clear(que);
 }
 
 bool buf_enque(struct circular_buffer *que, uint8_t k)
@@ -46,4 +45,10 @@ bool buf_undeque(struct circular_buffer *que, uint8_t k)
 		que->cnt++;
 	}
 	return isFull;
+}
+
+void buf_clear(struct circular_buffer *que)
+{
+	que->cnt = 0;
+	que->wr_ptr = que->rd_ptr = 0;
 }
