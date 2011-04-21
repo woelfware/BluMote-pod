@@ -78,6 +78,17 @@ int get_us()
 	return elapsed_time;
 }
 
+bool own_gp_buf(enum gp_buf_owner owner)
+{
+	if (gp_buf_owner == owner
+			|| gp_buf_owner == gp_buf_owner_none) {
+		gp_buf_owner = owner;
+		return true;
+	}
+
+	return false;
+}
+
 #pragma vector = USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void)
 {
