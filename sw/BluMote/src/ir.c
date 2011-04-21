@@ -125,6 +125,10 @@ bool ir_main(int us)
 	bool run_again = true;
 	bool get_next = false;
 
+	if (!own_gp_buf(gp_buf_owner_ir)) {
+		return run_again;
+	}	
+	
 	if (!buf_empty(&gp_rx_tx)) {
 		switch (current_state) {
 		case tx_start:

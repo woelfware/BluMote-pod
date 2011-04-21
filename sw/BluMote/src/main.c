@@ -42,6 +42,8 @@ void main()
 			}
 		}
 		if (learn_ir_code) {
+			gp_buf_owner = gp_buf_owner_none;
+			buf_clear(&gp_rx_tx);
 			(void)get_us();
 			while (ir_learn(get_us()));
 			learn_ir_code = false;
