@@ -131,7 +131,7 @@ bool ir_main(int us)
 			carrier_freq(true);	/*Start pulse clock*/
 			get_next = true;
 			break;
-	
+
 		case tx_pulses:
 			if (duration < stop_time_us) {
 				duration += us;
@@ -175,5 +175,6 @@ bool ir_main(int us)
 		carrier_freq(false);	/*Stop Pulse Clock*/
 		current_state = default_state;
 	}
+
 	return run_again;
 }

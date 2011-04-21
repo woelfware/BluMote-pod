@@ -6,6 +6,8 @@
 #include "hw.h"
 #include "msp430.h"
 
+enum gp_buf_owner gp_buf_owner = gp_buf_owner_none;
+
 struct circular_buffer uart_rx,
 	uart_tx,
 	gp_rx_tx;
@@ -86,7 +88,6 @@ __interrupt void USCI0RX_ISR(void)
 #pragma vector = TIMERA0_VECTOR
 __interrupt void TIMERA0_ISR(void)
 {
-	//ir_tick++;
 	CCR0 += ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);
 	P1OUT ^= BIT4;
 }
@@ -95,13 +96,12 @@ __interrupt void TIMERA0_ISR(void)
 __interrupt void TIMERA1_ISR(void)
 {
  	switch( TAIV ) {
- 	case  2: CCR1 += ((SYS_CLK * US_PER_IR_TICK) - 1);	// Add Offset to CCR1
+ 	case  2: CCR1 += ((SYS_CLK * US_PER_IR_TICK) - 1);	/* Add Offset to CCR1 */
  		ir_tick++;	
 		break;
- }
+	}
 }
 
-/* WDT ISR */
 #pragma vector = WDT_VECTOR
 __interrupt void watchdog_timer(void)
 {
