@@ -18,8 +18,10 @@ bool learn_ir_code = false;
 
 static bool blumote_process_cmd()
 {
-	int c = buf_deque(&gp_rx_tx, NULL);
 	bool change_state = true;
+	uint8_t c;
+
+	(void)buf_deque(&gp_rx_tx, &c);
 
 	switch (c) {
 	case BLUMOTE_GET_VERSION: {
@@ -416,7 +418,7 @@ bool blumote_main(int ms)
 		}	/* else done, fallthrough */
 	default:
 		current_state = default_state;
-		while (buf_deque(&gp_rx_tx, NULL));
+		while (!buf_deque(&gp_rx_tx, NULL));
 		break;
 	}
 
