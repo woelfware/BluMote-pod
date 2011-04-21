@@ -15,6 +15,7 @@ static void carrier_freq(bool on)
 		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */		
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
+		P1OUT &= ~(BIT4 + BIT5);	/* Turn off IR LED */
 	}
 }
 
@@ -123,52 +124,56 @@ bool ir_main(int us)
 	static uint16_t stop_time_us = 0;
 	bool run_again = true;
 	bool get_next = false;
-#if 0
-	switch (current_state) {
-	case tx_start:
-		carrier_freq(true);	/*Start pulse clock*/
-		get_next = true;
-		break;
 
-	case tx_pulses:
-		if (duration < stop_time_us) {
-			duration += us;
-		} else {
-			carrier_freq(false);	/*Stop Pulse Clock*/
-			get_next = true;
-			current_state = tx_spaces;
-		}
-		break;
-
-	case tx_spaces:
-		if (duration < stop_time_us) {
-			duration += us;
-		} else {
+	if (!buf_empty(&gp_rx_tx)) {
+		switch (current_state) {
+		case tx_start:
 			carrier_freq(true);	/*Start pulse clock*/
 			get_next = true;
-			current_state = tx_pulses;
-		}
-		break;
-
-	default:
-		current_state = default_state;
-		run_again = false;
-		carrier_freq(false);	/*Stop Pulse Clock*/
-		while (!buf_deque(&ir_rx, NULL));
-		break;
-	}
+			break;
 	
-	if (get_next) {
-		stop_time_us = ir_getchar() << 8;
-		stop_time_us += ir_getchar();
-		if ((int)stop_time_us == EOF) {
-			carrier_freq(false);	/*Stop Pulse Clock*/
-			run_again = false;
+		case tx_pulses:
+			if (duration < stop_time_us) {
+				duration += us;
+			} else {
+				carrier_freq(false);	/*Stop Pulse Clock*/
+				get_next = true;
+				current_state = tx_spaces;
+			}
+			break;
+	
+		case tx_spaces:
+			if (duration < stop_time_us) {
+				duration += us;
+			} else {
+				carrier_freq(true);	/*Start pulse clock*/
+				get_next = true;
+				current_state = tx_pulses;
+			}
+			break;
+	
+		default:
 			current_state = default_state;
+			run_again = false;
+			carrier_freq(false);	/*Stop Pulse Clock*/
+			while (!buf_deque(&gp_rx_tx, NULL));
+			break;
 		}
-		get_next = false;
-		duration = 0;
+		
+		if (get_next) {
+			stop_time_us = ir_getchar() << 8;
+			stop_time_us += ir_getchar();
+			if ((int)stop_time_us == EOF) {
+				carrier_freq(false);	/*Stop Pulse Clock*/
+				run_again = false;
+				current_state = default_state;
+			}
+			get_next = false;
+			duration = 0;
+		}
+	} else {
+		carrier_freq(false);	/*Stop Pulse Clock*/
+		current_state = default_state;
 	}
-#endif
 	return run_again;
 }
