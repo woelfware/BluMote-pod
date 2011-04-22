@@ -466,8 +466,11 @@ bool tx_learned_code()
 		break;
 
 	case tx_code:
+	case wait_for_bt_buf:
+		current_state = tx_code;
 		while (!buf_deque(&gp_rx_tx, &c)) {
 			if (bluetooth_putchar((int)c) == EOF) {
+				(void)buf_undeque(&gp_rx_tx, c);
 				current_state = wait_for_bt_buf;
 				break;
 			}
@@ -475,12 +478,6 @@ bool tx_learned_code()
 		if (current_state == tx_code) {
 			current_state = default_state;
 			run_again = false;
-		}
-		break;
-
-	case wait_for_bt_buf:
-		if (bluetooth_putchar((int)c) != EOF) {
-			current_state = tx_code;
 		}
 		break;
 
