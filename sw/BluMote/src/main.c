@@ -48,7 +48,7 @@ void main()
 			while (ir_learn(get_us()));
 			learn_ir_code = false;
 			(void)get_ms();
-			while (run_again = tx_learned_code()) {
+			while (tx_learned_code()) {
 				(void)bluetooth_main(get_ms());
 			}
 			run_again = true;

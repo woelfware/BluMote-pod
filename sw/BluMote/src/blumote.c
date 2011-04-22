@@ -423,8 +423,8 @@ bool blumote_main(int ms)
 		break;
 
 	case process_cmd:
+		run_again = true;
 		if (!blumote_process_cmd()) {
-			run_again = true;
 			break;
 		}	/* else done, fallthrough */
 	default:
