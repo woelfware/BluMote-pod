@@ -103,11 +103,12 @@ __interrupt void TIMERA0_ISR(void)
 	P1OUT ^= BIT4;
 }
 
-#pragma vector=TIMERA1_VECTOR
+#pragma vector = TIMERA1_VECTOR
 __interrupt void TIMERA1_ISR(void)
 {
- 	switch( TAIV ) {
- 	case  2: CCR1 += ((SYS_CLK * US_PER_IR_TICK) - 1);	/* Add Offset to CCR1 */
+ 	switch (TAIV) {
+ 	case 2:
+		CCR1 += ((SYS_CLK * US_PER_IR_TICK) - 1);	/* Add Offset to CCR1 */
  		ir_tick++;	
 		break;
 	}

@@ -1,3 +1,4 @@
+#include "blumote.h"
 #include "config.h"
 #include "hw.h"
 #include "ir.h"
@@ -128,7 +129,7 @@ bool ir_main(int us)
 	if (!own_gp_buf(gp_buf_owner_ir)) {
 		return run_again;
 	}	
-	
+
 	if (!buf_empty(&gp_rx_tx)) {
 		switch (current_state) {
 		case tx_start:
@@ -178,6 +179,9 @@ bool ir_main(int us)
 	} else {
 		carrier_freq(false);	/*Stop Pulse Clock*/
 		current_state = default_state;
+		gp_buf_owner = gp_buf_owner_none;
+		tx_ir_code = false;
+		run_again = false;
 	}
 
 	return run_again;

@@ -14,7 +14,8 @@ enum m_strcmp_rc {
 	m_strcmp_no_match
 };
 
-bool learn_ir_code = false;
+bool learn_ir_code = false,
+	tx_ir_code = false;
 
 static bool blumote_process_cmd()
 {
@@ -41,6 +42,7 @@ static bool blumote_process_cmd()
 		 */
 		(void)buf_deque(&gp_rx_tx, NULL);	/* reserved */
 		(void)buf_deque(&gp_rx_tx, NULL);	/* length */
+		tx_ir_code = true;
 		break;
 	
 	default: {
@@ -394,8 +396,14 @@ bool blumote_main(int ms)
 		/* get the first char */
 		if ((c = bluetooth_getchar()) != EOF) {
 			current_state = rx_cmd2;
-			(void)buf_enque(&gp_rx_tx, c);
+			if (!own_gp_buf(gp_buf_owner_bt)) {
+				/* couldn't get the gp_buf lock, put the byte back */
+				(void)buf_undeque(&uart_rx, c);
+			} else {
+				(void)buf_enque(&gp_rx_tx, c);
+			}
 			ttl = 20;
+			run_again = true;
 		}
 		break;
 
@@ -410,15 +418,21 @@ bool blumote_main(int ms)
 			/* should have the whole message by now */
 			current_state = process_cmd;
 		}
+
+		run_again = true;
 		break;
 
 	case process_cmd:
 		if (!blumote_process_cmd()) {
+			run_again = true;
 			break;
 		}	/* else done, fallthrough */
 	default:
 		current_state = default_state;
-		buf_clear(&gp_rx_tx);
+		if (!tx_ir_code) {
+			/* preserve the ir code for ir_main */
+			buf_clear(&gp_rx_tx);
+		}
 		break;
 	}
 
