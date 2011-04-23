@@ -11,19 +11,16 @@ class Bluemote_Client(bluemote.Services):
 		self.addr = None
 
 	def find_bluemote_pods(self, pod_name = None):
+		
 		if pod_name is None:
 			pod_name = self.service["name"]
 		print "Searching for \"%s\" service..." % (pod_name)
 		return find_service(name = pod_name)
 
-	def connect_to_bluemote_pod(self, pod):
-		port = pod["port"]
-		name = pod["name"]
-		host = pod["host"]
-
+	def connect_to_bluemote_pod(self, addr):
 		# Create the client socket
 		self.client_sock = BluetoothSocket(RFCOMM)
-		self.client_sock.connect((host, port))
+		self.client_sock.connect((addr, 1))
 
 	def transport_tx(self, cmd, msg):
 		full_msg = struct.pack("B", cmd)
@@ -93,37 +90,45 @@ if __name__ == "__main__":
 	bm_remote = Bluemote_Client()
 
 	try:
-		bm_pods = bm_remote.find_bluemote_pods()
-		bm_remote.connect_to_bluemote_pod(bm_pods[0])
+		nearby_devices = discover_devices(lookup_names = True)
+		print 'found %d devices' % len(nearby_devices)
+		for addr, name in nearby_devices:
+			if name[:len('BluMote')] == 'BluMote':
+				print 'connecting to', addr, name
+				bm_remote.connect_to_bluemote_pod(addr)
 
+		print 'getting version info'
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
 
-		"""
 		print "Please push key \"1\" on your remote."
 		key_code = bm_remote.learn()
 		print key_code
 
+		"""
 		print "Trying out debug message to get a precanned button press."
 		for i in range(10):
 			print "Requesting button \"%d\"." % (i)
 			key_code = bm_remote.debug(struct.pack('B', i))
 			print key_code
 		"""
-
+		'''
 		new_pod_name = "indigomote"
 		print "Renaming pod to \"%s\"." % (new_pod_name)
 		bm_remote.rename_device(new_pod_name)
+		'''
 
 		bm_remote.client_sock.close()
 
+		'''
 		bm_pods = bm_remote.find_bluemote_pods(new_pod_name)
 		bm_remote.connect_to_bluemote_pod(bm_pods[0])
 
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
+		'''
 	except IOError:
 		pass
 	finally:

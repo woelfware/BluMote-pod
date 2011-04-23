@@ -8,10 +8,21 @@
 #include "buffer.h"
 #include <msp430.h>
 
+/*
+ * mutex on the general purpose buffer so
+ * it doesn't get clobbered.
+ */
+enum gp_buf_owner {
+	gp_buf_owner_none,
+	gp_buf_owner_bt,
+	gp_buf_owner_ir
+};
+extern enum gp_buf_owner gp_buf_owner;
+
 extern struct circular_buffer uart_rx,
 	uart_tx,
-	ir_rx;
-	
+	gp_rx_tx;	/* general purpose buffer. used by blumote, ir */
+
 extern volatile bool got_pulse;
 
 /**
@@ -31,5 +42,12 @@ int get_ms();
  * Don't use while in rx mode.
  */
 int get_us();
+
+/*
+ * return true if the requesting owner already owns or
+ * is granted ownership of gp_buf
+ * return false if gp_buf is aleady owned by another task
+ */
+bool own_gp_buf(enum gp_buf_owner owner);
 
 #endif /*HW_H_*/

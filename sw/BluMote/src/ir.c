@@ -1,3 +1,4 @@
+#include "blumote.h"
 #include "config.h"
 #include "hw.h"
 #include "ir.h"
@@ -15,6 +16,7 @@ static void carrier_freq(bool on)
 		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */		
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
+		P1OUT &= ~(BIT4 + BIT5);	/* Turn off IR LED */
 	}
 }
 
@@ -22,7 +24,7 @@ int ir_getchar()
 {
 	int c;
 
-	if (buf_deque(&ir_rx, (uint8_t *)&c)) {
+	if (buf_deque(&gp_rx_tx, (uint8_t *)&c)) {
 		c = EOF;
 	}
 
@@ -73,8 +75,8 @@ bool ir_learn(int us)
 		if (!is_space()) {
 			duration += us;
 		} else {
-			(void)buf_enque(&ir_rx, (duration >> 8) & 0xFF);
-			(void)buf_enque(&ir_rx, duration & 0xFF);
+			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
+			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
 			duration = 0;
 			current_state = rx_spaces;
 		}
@@ -90,8 +92,8 @@ bool ir_learn(int us)
 				current_state = default_state;
 			}
 		} else {
-			(void)buf_enque(&ir_rx, (duration >> 8) & 0xFF);
-			(void)buf_enque(&ir_rx, duration & 0xFF);
+			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
+			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
 			duration = 0;
 			current_state = rx_pulses;
 		}
@@ -103,7 +105,7 @@ bool ir_learn(int us)
 		duration = 0;
 		ttl = IR_LEARN_CODE_TIMEOUT;
 		run_again = false;
-		while (!buf_deque(&ir_rx, NULL));
+		buf_clear(&gp_rx_tx);
 		break;
 	}
 
@@ -124,50 +126,62 @@ bool ir_main(int us)
 	bool run_again = true;
 	bool get_next = false;
 
-	switch (current_state) {
-	case tx_start:
-		carrier_freq(true);	/*Start pulse clock*/
-		get_next = true;
-		break;
+	if (!own_gp_buf(gp_buf_owner_ir)) {
+		return run_again;
+	}	
 
-	case tx_pulses:
-		if (duration < stop_time_us) {
-			duration += us;
-		} else {
-			carrier_freq(false);	/*Stop Pulse Clock*/
-			get_next = true;
-			current_state = tx_spaces;
-		}
-		break;
-
-	case tx_spaces:
-		if (duration < stop_time_us) {
-			duration += us;
-		} else {
+	if (!buf_empty(&gp_rx_tx)) {
+		switch (current_state) {
+		case tx_start:
 			carrier_freq(true);	/*Start pulse clock*/
 			get_next = true;
-			current_state = tx_pulses;
-		}
-		break;
+			break;
 
-	default:
-		current_state = default_state;
-		run_again = false;
-		carrier_freq(false);	/*Stop Pulse Clock*/
-		while (!buf_deque(&ir_rx, NULL));
-		break;
-	}
+		case tx_pulses:
+			if (duration < stop_time_us) {
+				duration += us;
+			} else {
+				carrier_freq(false);	/*Stop Pulse Clock*/
+				get_next = true;
+				current_state = tx_spaces;
+			}
+			break;
 	
-	if (get_next) {
-		stop_time_us = ir_getchar() << 8;
-		stop_time_us += ir_getchar();
-		if ((int)stop_time_us == EOF) {
-			carrier_freq(false);	/*Stop Pulse Clock*/
-			run_again = false;
+		case tx_spaces:
+			if (duration < stop_time_us) {
+				duration += us;
+			} else {
+				carrier_freq(true);	/*Start pulse clock*/
+				get_next = true;
+				current_state = tx_pulses;
+			}
+			break;
+	
+		default:
 			current_state = default_state;
+			run_again = false;
+			carrier_freq(false);	/*Stop Pulse Clock*/
+			buf_clear(&gp_rx_tx);
+			break;
 		}
-		get_next = false;
-		duration = 0;
+		
+		if (get_next) {
+			stop_time_us = ir_getchar() << 8;
+			stop_time_us += ir_getchar();
+			if ((int)stop_time_us == EOF) {
+				carrier_freq(false);	/*Stop Pulse Clock*/
+				run_again = false;
+				current_state = default_state;
+			}
+			get_next = false;
+			duration = 0;
+		}
+	} else {
+		carrier_freq(false);	/*Stop Pulse Clock*/
+		current_state = default_state;
+		gp_buf_owner = gp_buf_owner_none;
+		tx_ir_code = false;
+		run_again = false;
 	}
 
 	return run_again;

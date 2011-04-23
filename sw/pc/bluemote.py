@@ -3,11 +3,9 @@
 
 class Command_Codes():
 	def __init__(self):
-		self.disconnect    = 0x00
-		self.rename_device = 0x01
-		self.learn         = 0x02
-		self.get_version   = 0x03
-		self.ir_transmit   = 0x04
+		self.get_version   = 0x00
+		self.learn         = 0x01
+		self.ir_transmit   = 0x02
 		self.debug         = 0xFF	# specialized debug command whose functionality change whenever
 
 class Command_Return_Codes():

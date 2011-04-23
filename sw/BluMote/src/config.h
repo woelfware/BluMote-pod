@@ -17,10 +17,9 @@
 /* Buffer Sizes
  * Note: must be powers of 2
  */
-#define BLUMOTE_RX_BUF_SIZE	(128)
-#define IR_BUF_SIZE		(128)
+#define GP_BUF_SIZE	(256)	/* blumote, ir */
 #define UART_RX_BUF_SIZE	(32)
-#define UART_TX_BUF_SIZE	(64)
+#define UART_TX_BUF_SIZE	(32)
 
 #ifndef EOF
 #define EOF	(-1)
