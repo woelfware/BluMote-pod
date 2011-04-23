@@ -1,7 +1,6 @@
 package com.woelfware.droidmote;
 
 import java.util.HashMap;
-import java.util.Iterator;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -28,6 +27,7 @@ import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -63,8 +63,6 @@ public class Droidmote extends Activity {
     // button payload indexes
     private static final int BTN_NAME = 0;
     private static final int BTN_TEXT = 1;
-    private static final int BTN_GRAPHIC_UNPRESSED = 2;
-    private static final int BTN_GRAPHIC_PRESSED = 3;
     
     // Context menu constants
     private static final int ID_TRAIN = 0;
@@ -75,39 +73,40 @@ public class Droidmote extends Activity {
     
     // Layout Views
     private TextView mTitle;
-    private Button btn_volume_up;
-    private Button btn_volume_down;
-    private Button btn_channel_up;
-    private Button btn_channel_down;
+    private ImageButton fav_btn;
+    private ImageButton btn_volume_up;
+    private ImageButton btn_volume_down;
+    private ImageButton btn_channel_up;
+    private ImageButton btn_channel_down;
     private Spinner device_spinner;
     private Button btn_input;
-    private Button led_btn;
-    private Button btn_pwr;
-    private Button power2_btn;
-    private Button back_skip_btn;
-    private Button back_btn;
-    private Button forward_btn;
-    private Button skip_forward_btn;
-    private Button record_btn;
-    private Button stop_btn;
-    private Button play_btn;
-    private Button pause_btn;
-    private Button eject_btn;
+//    private ImageButton led_btn;
+    private ImageButton btn_pwr;
+    private ImageButton power2_btn;
+    private ImageButton back_skip_btn;
+    private ImageButton back_btn;
+    private ImageButton forward_btn;
+    private ImageButton skip_forward_btn;
+    private ImageButton record_btn;
+    private ImageButton stop_btn;
+    private ImageButton play_btn;
+    private ImageButton pause_btn;
+    private ImageButton eject_btn;
     private Button disc_btn;
-    private Button left_btn;
-    private Button mute_btn;
+    private ImageButton left_btn;
+    private ImageButton mute_btn;
     private Button enter_btn;
-    private Button down_btn;
+    private ImageButton down_btn;
     private Button info_btn;
-    private Button right_btn;
-    private Button return_btn;
-    private Button pgup_btn;
-    private Button pgdn_btn;
+    private ImageButton right_btn;
+    private ImageButton return_btn;
+    private ImageButton pgup_btn;
+    private ImageButton pgdn_btn;
     private Button guide_btn;
     private Button exit_btn;
-    private Button btn_up;
-    private Button move_left_btn;
-    private Button move_right_btn;
+    private ImageButton btn_up;
+    private ImageButton move_left_btn;
+    private ImageButton move_right_btn;
     private Button btn_n0;
     private Button btn_n1;
     private Button btn_n2;
@@ -122,7 +121,7 @@ public class Droidmote extends Activity {
     private Button btn_enter;
     private Button btn_exit;
     private Button btn_last;
-    private Button btn_home;
+    private ImageButton btn_home;
     
     // Name of the connected device
     private String mConnectedDeviceName = null;
@@ -226,21 +225,11 @@ public class Droidmote extends Activity {
     @Override
     public void onStart() {
         super.onStart();
-
-        // If BT is not on, request that it be enabled.
-        // setupChat() will then be called during onActivityResult
-//        if (!mBluetoothAdapter.isEnabled()) {
-//            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-//        // Otherwise, setup the session
-//        } 
-//        else {
             if (mChatService == null) {
             	// Initialize the BluetoothChatService to perform bluetooth connections
                 mChatService = new BluetoothChatService(this, mHandler);
             	setupDefaultButtons();
             }
- //       }
     }
 
     @Override
@@ -339,58 +328,63 @@ public class Droidmote extends Activity {
     
     // Called when a user pushes a button down for the first time
     private void touchButton(int rbutton) {
-    	Button button = null; // if we can't find one in button_map, set to null
+    	ImageButton imgbutton = null; // some buttons are image buttons, don't know which until try
+    	
     	Object[] payload = null;    	
     	    	    	  	    	
     	payload = button_map.get(rbutton);
 
     	if (payload != null) {
-    		button = (Button)payload[BTN_NAME];
+    		try {
+    			// test if button is an image button type
+    			imgbutton = (ImageButton)payload[BTN_NAME];
+    			
+    			// see if we have a navigation page move command....
+    			if (imgbutton == move_left_btn) {
+    				LOOP_KEY = false;
+
+    				switch (page) {
+    				case MAIN:	    			
+    					return;
+    				case NUMBERS:
+    					setContentView(R.layout.main);
+    					page = Pages.MAIN;
+    					setupDefaultButtons();
+    					return;
+    				}
+
+    				return;
+    			}
+    			// check if the navigation move_right was pushed 
+    			// this only works when we are in main screen
+    			if (imgbutton == move_right_btn) {
+    				LOOP_KEY = false;
+    				switch (page) {
+    				case MAIN:
+    					setContentView(R.layout.number_screen_test);
+    					page = Pages.NUMBERS;
+    					setupNumbers();
+    					return;
+    				case NUMBERS:	    			
+    					return;
+    				}
+    				return;
+    			}
+    		}
+    		catch (Exception e) {
+    			// guess it wasn't....
+    		}    		
     		    		
-	    	// check if the navigation move_left was pushed
-    		// this only works when we are in number screen
-	    	if (button == move_left_btn) {
-	    		LOOP_KEY = false;
-	    		
-	    		switch (page) {
-	    		case MAIN:	    			
-		            return;
-	    		case NUMBERS:
-	    			setContentView(R.layout.main);
-	    			page = Pages.MAIN;
-		            setupDefaultButtons();
-		            return;
-	    		}
-	    			            
-	            return;
-	    	}
-	    	// check if the navigation move_right was pushed 
-	    	// this only works when we are in main screen
-	    	if (button == move_right_btn) {
-	    		LOOP_KEY = false;
-	    		switch (page) {
-	    		case MAIN:
-	    			setContentView(R.layout.number_screen);
-	    			page = Pages.NUMBERS;
-		            setupNumbers();
-		            return;
-	    		case NUMBERS:	    			
-		            return;
-	    		}
-	            return;
-	    	}
-	    	
 	    	// if we got here it means we are a regular button, not move_left or move_right
 	    	
 	    	// turn on LED!
-			led_btn.setBackgroundDrawable(getResources().getDrawable(R.drawable.led));
+	//		led_btn.setBackgroundDrawable(getResources().getDrawable(R.drawable.led));
 
 			NUM_MESSAGES++;
 			
     		Message msg = new Message();            
     		msg.what = MESSAGE_KEY_PRESSED;
 
-    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_PRESSED]));
     		buttonSend((String)payload[BTN_TEXT]);
     		msg.arg1 = rbutton;
     		last_button = rbutton;	
@@ -407,7 +401,7 @@ public class Droidmote extends Activity {
     		
     		if (e.getAction() == MotionEvent.ACTION_DOWN) {
     			// even in learn mode should buzz button if action-down happens
-    			v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+    			v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);    
     		}
     		// don't want to execute touchButton when in learn mode
     		if (STATE != Codes.Commands.LEARN) { 
@@ -415,16 +409,13 @@ public class Droidmote extends Activity {
     	    		LOOP_KEY = true; // start looping until we lift finger off key
     	    		
     				touchButton(v.getId());
-    				return true;  // because we consumed the event
+    				return false;  //allows XML to consume
     			}   
     			else if (e.getAction() == MotionEvent.ACTION_UP) {
     				// turn off LED
-    				led_btn.setBackgroundDrawable(getResources().getDrawable(R.drawable.led_off));
+  //  				led_btn.setBackgroundDrawable(getResources().getDrawable(R.drawable.led_off));
 
     				LOOP_KEY = false;	// reset loop key global
-    				// is this heavy to reset all buttons? 
-    				// otherwise do switch/case
-    				resetButtons();
     			}
     		}
     		return false;   		
@@ -436,16 +427,7 @@ public class Droidmote extends Activity {
         	BUTTON_ID = v.getId();
         	
         	if (STATE == Codes.Commands.LEARN) {
-    			// need to set button to pressed and send code to Pod    			
-    			Button button = null; // if we can't find one in button_map, set to null
-    	    	Object[] payload = null;    	  	    	
-    	    	payload = button_map.get(BUTTON_ID);
-
-    	    	if (payload != null) {
-    	    		button = (Button)payload[BTN_NAME];
-    	    		button.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_PRESSED]));
-    	    		sendCode(Commands.LEARN);
-    	    	}    	    	    	    	    	    	 			
+    	    		sendCode(Commands.LEARN);  	    	    	    	    	    	 			
     		}
         	else { // skip this handler if we are in learn button mode
         		// send message to handler after the delay expires, allows for repeating event
@@ -461,7 +443,6 @@ public class Droidmote extends Activity {
         				buttonSend((String)payload[BTN_TEXT]);
         			}    	    	
 
-
         			NUM_MESSAGES++;
         			mHandler.sendMessageDelayed(msg, DELAY_TIME);
         		}
@@ -470,62 +451,46 @@ public class Droidmote extends Activity {
         }
     };
     
-    // this function iterates through buttons and sets them to default un-pushed graphic view
-    private void resetButtons() {
-    	Object[] payload;    	
-    	Button btn;
-    	
-    	// need iterate through button_map and reset images to unpressed state image
-    	Iterator<Integer> itr = button_map.keySet().iterator();
-    	while (itr.hasNext()) {
-    		Integer key = itr.next();
-    		payload = button_map.get(key);
-    		btn = (Button)payload[BTN_NAME];
-    		btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_UNPRESSED]));    		    
-    	}
-    	payload = button_map.get(BUTTON_ID);
-    }
-    
     // called to setup the buttons on the screen
     private void setupDefaultButtons() {
     	
     	setupSpinner();
         
         // Initialize the buttons with a listener for click and touch events
-        btn_volume_up = (Button) findViewById(R.id.btn_volume_up);
-        btn_volume_down = (Button) findViewById(R.id.btn_volume_down);
-        btn_channel_up = (Button) findViewById(R.id.btn_channel_up);
-        btn_channel_down = (Button) findViewById(R.id.btn_channel_down);
+        btn_volume_up = (ImageButton) findViewById(R.id.btn_volume_up);
+        btn_volume_down = (ImageButton) findViewById(R.id.btn_volume_down);
+        btn_channel_up = (ImageButton) findViewById(R.id.btn_channel_up);
+        btn_channel_down = (ImageButton) findViewById(R.id.btn_channel_down);
         btn_input = (Button) findViewById(R.id.btn_input);
-        led_btn = (Button) findViewById(R.id.led_btn);
-        btn_pwr = (Button) findViewById(R.id.power_btn);
-        power2_btn = (Button) findViewById(R.id.power2_btn);
-        back_skip_btn = (Button) findViewById(R.id.back_skip_btn);
-        back_btn = (Button) findViewById(R.id.back_btn);
-        forward_btn = (Button) findViewById(R.id.forward_btn);
-        skip_forward_btn = (Button) findViewById(R.id.skip_forward_btn); 
-        record_btn = (Button) findViewById(R.id.record_btn);
-        stop_btn = (Button) findViewById(R.id.stop_btn);
-    	play_btn = (Button) findViewById(R.id.play_btn);
-    	eject_btn = (Button) findViewById(R.id.eject_btn);
+//        led_btn = (ImageButton) findViewById(R.id.led_btn);
+        btn_pwr = (ImageButton) findViewById(R.id.power_btn);
+        power2_btn = (ImageButton) findViewById(R.id.power2_btn);
+        back_skip_btn = (ImageButton) findViewById(R.id.back_skip_btn);
+        back_btn = (ImageButton) findViewById(R.id.back_btn);
+        forward_btn = (ImageButton) findViewById(R.id.forward_btn);
+        skip_forward_btn = (ImageButton) findViewById(R.id.skip_forward_btn); 
+        record_btn = (ImageButton) findViewById(R.id.record_btn);
+        stop_btn = (ImageButton) findViewById(R.id.stop_btn);
+    	play_btn = (ImageButton) findViewById(R.id.play_btn);
+    	eject_btn = (ImageButton) findViewById(R.id.eject_btn);
     	disc_btn = (Button) findViewById(R.id.disc_btn);
-    	left_btn = (Button) findViewById(R.id.left_btn);
-    	mute_btn = (Button) findViewById(R.id.mute_btn);
+    	left_btn = (ImageButton) findViewById(R.id.left_btn);
+    	mute_btn = (ImageButton) findViewById(R.id.mute_btn);
     	enter_btn = (Button) findViewById(R.id.enter_btn);
-    	down_btn = (Button) findViewById(R.id.down_btn);
+    	down_btn = (ImageButton) findViewById(R.id.down_btn);
     	info_btn = (Button) findViewById(R.id.info_btn);
-    	right_btn = (Button) findViewById(R.id.right_btn);
-    	return_btn = (Button) findViewById(R.id.return_btn);
-    	pgup_btn = (Button) findViewById(R.id.pgup_btn);
-    	pgdn_btn = (Button) findViewById(R.id.pgdn_btn);
+    	right_btn = (ImageButton) findViewById(R.id.right_btn);
+    	return_btn = (ImageButton) findViewById(R.id.return_btn);
+    	pgup_btn = (ImageButton) findViewById(R.id.pgup_btn);
+    	pgdn_btn = (ImageButton) findViewById(R.id.pgdn_btn);
     	guide_btn = (Button) findViewById(R.id.guide_btn);
     	exit_btn = (Button) findViewById(R.id.exit_btn);
-    	move_right_btn = (Button) findViewById(R.id.move_right_btn);
-    	move_left_btn = (Button) findViewById(R.id.move_left_btn);
-    	pause_btn = (Button) findViewById(R.id.pause_btn);
-    	btn_up = (Button) findViewById(R.id.btn_up);
-    	
-        //btn_volume_up.setOnLongClickListener(l);
+    	move_right_btn = (ImageButton) findViewById(R.id.move_right_btn);
+    	move_left_btn = (ImageButton) findViewById(R.id.move_left_btn);
+    	pause_btn = (ImageButton) findViewById(R.id.pause_btn);
+    	btn_up = (ImageButton) findViewById(R.id.btn_up);
+    	fav_btn = (ImageButton) findViewById(R.id.fav_btn);
+
         btn_volume_up.setOnTouchListener(buttonTouch);
         btn_volume_up.setOnClickListener(buttonClick);
         btn_volume_down.setOnTouchListener(buttonTouch);
@@ -588,40 +553,43 @@ public class Droidmote extends Activity {
         move_right_btn.setOnTouchListener(buttonTouch);
         pause_btn.setOnClickListener(buttonClick);
         pause_btn.setOnTouchListener(buttonTouch);
+        fav_btn.setOnTouchListener(buttonTouch);
+    	fav_btn.setOnClickListener(buttonClick);
         
         //set bundle of associated button properties
         // order is : Button name, database string identifier for btn, graphic for unpressed, graphic for pushed         
-        Object[] btn_1 = {btn_volume_up, "btn_volume_up", R.drawable.vol_up, R.drawable.vol_up};
-        Object[] btn_2 = {btn_volume_down, "btn_volume_down", R.drawable.vol_down, R.drawable.vol_down};
-        Object[] btn_3 = {btn_channel_up, "btn_channel_up", R.drawable.ch_up, R.drawable.ch_up};
-        Object[] btn_4 = {btn_channel_down, "btn_channel_down", R.drawable.ch_down, R.drawable.ch_down};
-        Object[] btn_5 = {btn_input, "btn_input", R.drawable.av_input, R.drawable.av_input};
-        Object[] btn_6 = {btn_pwr, "btn_pwr", R.drawable.power_48_gray, R.drawable.power_48_gray};
-        Object[] btn_7 = {power2_btn, "power2_btn", R.drawable.power_green, R.drawable.power_green};
-        Object[] btn_8 = {back_skip_btn, "back_skip_btn", R.drawable.back_skip, R.drawable.back_skip};
-        Object[] btn_9 = {back_btn, "back_btn", R.drawable.back, R.drawable.back};
-        Object[] btn_10 = {forward_btn, "forward_btn", R.drawable.forward, R.drawable.forward};
-        Object[] btn_11 = {skip_forward_btn, "skip_forward_btn", R.drawable.forward_skip, R.drawable.forward_skip};
-        Object[] btn_12 = {record_btn, "record_btn", R.drawable.record_square, R.drawable.record_square};
-        Object[] btn_13 = {stop_btn, "stop_btn", R.drawable.stop, R.drawable.stop};
-        Object[] btn_14 = {play_btn, "play_btn", R.drawable.play, R.drawable.play};
-        Object[] btn_15 = {pause_btn, "pause_btn", R.drawable.pause, R.drawable.pause};
-        Object[] btn_16 = {eject_btn, "eject_btn", R.drawable.eject_square, R.drawable.eject_square};
-        Object[] btn_17 = {disc_btn, "disc_btn", R.drawable.disc_menu, R.drawable.disc_menu};
-        Object[] btn_18 = {left_btn, "left_btn", R.drawable.left, R.drawable.left};
-        Object[] btn_19 = {mute_btn, "mute_btn", R.drawable.mute, R.drawable.mute};
-        Object[] btn_20 = {btn_up, "btn_up", R.drawable.up, R.drawable.up};
-        Object[] btn_21 = {enter_btn, "enter_btn", R.drawable.enter, R.drawable.enter};
-        Object[] btn_22 = {down_btn, "down_btn", R.drawable.down, R.drawable.down};
-        Object[] btn_23 = {info_btn, "info_btn", R.drawable.info_display, R.drawable.info_display};
-        Object[] btn_24 = {right_btn, "right_btn", R.drawable.right, R.drawable.right};
-        Object[] btn_25 = {return_btn, "return_btn", R.drawable.return_back, R.drawable.return_back};
-        Object[] btn_26 = {pgup_btn, "pgup_btn", R.drawable.pgup, R.drawable.pgup};
-        Object[] btn_27 = {pgdn_btn, "pgdn_btn", R.drawable.pgdn, R.drawable.pgdn};
-        Object[] btn_28 = {guide_btn, "guide_btn", R.drawable.guide, R.drawable.guide};
-        Object[] btn_29 = {exit_btn, "exit_btn", R.drawable.exit, R.drawable.exit};
-        Object[] btn_30 = {move_right_btn, "move_right_btn", R.drawable.move_right, R.drawable.move_right};
-        Object[] btn_31 = {move_left_btn, "move_left_btn", R.drawable.move_left, R.drawable.move_left};
+        Object[] btn_1 = {btn_volume_up, "btn_volume_up"};
+        Object[] btn_2 = {btn_volume_down, "btn_volume_down"};
+        Object[] btn_3 = {btn_channel_up, "btn_channel_up"};
+        Object[] btn_4 = {btn_channel_down, "btn_channel_down"};
+        Object[] btn_5 = {btn_input, "btn_input"};
+        Object[] btn_6 = {btn_pwr, "btn_pwr"};
+        Object[] btn_7 = {power2_btn, "power2_btn"};
+        Object[] btn_8 = {back_skip_btn, "back_skip_btn"};
+        Object[] btn_9 = {back_btn, "back_btn"};
+        Object[] btn_10 = {forward_btn, "forward_btn"};
+        Object[] btn_11 = {skip_forward_btn, "skip_forward_btn"};
+        Object[] btn_12 = {record_btn, "record_btn"};
+        Object[] btn_13 = {stop_btn, "stop_btn"};
+        Object[] btn_14 = {play_btn, "play_btn"};
+        Object[] btn_15 = {pause_btn, "pause_btn"};
+        Object[] btn_16 = {eject_btn, "eject_btn"};
+        Object[] btn_17 = {disc_btn, "disc_btn"};
+        Object[] btn_18 = {left_btn, "left_btn"};
+        Object[] btn_19 = {mute_btn, "mute_btn"};
+        Object[] btn_20 = {btn_up, "btn_up"};
+        Object[] btn_21 = {enter_btn, "enter_btn"};
+        Object[] btn_22 = {down_btn, "down_btn"};
+        Object[] btn_23 = {info_btn, "info_btn"};
+        Object[] btn_24 = {right_btn, "right_btn"};
+        Object[] btn_25 = {return_btn, "return_btn"};
+        Object[] btn_26 = {pgup_btn, "pgup_btn"};
+        Object[] btn_27 = {pgdn_btn, "pgdn_btn"};
+        Object[] btn_28 = {guide_btn, "guide_btn"};
+        Object[] btn_29 = {exit_btn, "exit_btn"};
+        Object[] btn_30 = {move_right_btn, "move_right_btn"};
+        Object[] btn_31 = {move_left_btn, "move_left_btn"};
+        Object[] btn_32 = {fav_btn, "fav_btn"};
         
         // bundle all the button data into a big hashtable
         button_map = new HashMap<Integer,Object[]>();
@@ -656,14 +624,15 @@ public class Droidmote extends Activity {
         button_map.put(R.id.exit_btn,btn_29);
         button_map.put(R.id.move_right_btn,btn_30);
         button_map.put(R.id.move_left_btn,btn_31);
+        button_map.put(R.id.fav_btn, btn_32);
                 
     }
     
     // Same as SetupButtons but called when user goes into number selection view
     private void setupNumbers() {
-        led_btn = (Button) findViewById(R.id.led_btn);
-    	move_right_btn = (Button) findViewById(R.id.move_right_btn);
-    	move_left_btn = (Button) findViewById(R.id.move_left_btn);
+//        led_btn = (ImageButton) findViewById(R.id.led_btn);
+    	move_right_btn = (ImageButton) findViewById(R.id.move_right_btn);
+    	move_left_btn = (ImageButton) findViewById(R.id.move_left_btn);
     	btn_n0 = (Button) findViewById(R.id.btn_n0);
     	btn_n1 = (Button) findViewById(R.id.btn_n1);
     	btn_n2 = (Button) findViewById(R.id.btn_n2);
@@ -678,7 +647,7 @@ public class Droidmote extends Activity {
     	btn_enter = (Button) findViewById(R.id.btn_enter);
     	btn_exit = (Button) findViewById(R.id.btn_exit);
     	btn_last = (Button) findViewById(R.id.btn_last);
-    	btn_home = (Button) findViewById(R.id.btn_home);
+    	btn_home = (ImageButton) findViewById(R.id.btn_home);
     	
     	// action listeners
     	btn_n0.setOnTouchListener(buttonTouch);
@@ -718,23 +687,23 @@ public class Droidmote extends Activity {
         
     	//set bundle of associated button properties
         // order is : Button name, String database id for btn, graphic for unpressed, graphic for pushed 
-        Object[] btn_1 = {btn_n0, "btn_n0", R.drawable.n0, R.drawable.n0};
-        Object[] btn_2 = {btn_n1, "btn_n1", R.drawable.n1, R.drawable.n1};
-        Object[] btn_3 = {btn_n2, "btn_n2", R.drawable.n2, R.drawable.n2};
-        Object[] btn_4 = {btn_n3, "btn_n3", R.drawable.n3, R.drawable.n3};
-        Object[] btn_5 = {btn_n4, "btn_n4", R.drawable.n4, R.drawable.n4};
-        Object[] btn_6 = {btn_n5, "btn_n5", R.drawable.n5, R.drawable.n5};
-        Object[] btn_7 = {btn_n6, "btn_n6", R.drawable.n6, R.drawable.n6};
-        Object[] btn_8 = {btn_n7, "btn_n7", R.drawable.n7, R.drawable.n7};
-        Object[] btn_9 = {btn_n8, "btn_n8", R.drawable.n8, R.drawable.n8};
-        Object[] btn_10 = {btn_n9, "btn_n9", R.drawable.n9, R.drawable.n9};
-        Object[] btn_11 = {btn_dash, "btn_dash", R.drawable.dash, R.drawable.dash};
-        Object[] btn_12 = {btn_enter, "btn_enter", R.drawable.enter_square, R.drawable.enter_square};
-        Object[] btn_13 = {btn_exit, "btn_exit", R.drawable.exit, R.drawable.exit};
-        Object[] btn_14 = {btn_last, "btn_last", R.drawable.last, R.drawable.last};
-        Object[] btn_15 = {btn_home, "btn_home", R.drawable.home, R.drawable.home};
-        Object[] btn_16 = {move_right_btn, "move_right_btn", R.drawable.move_right, R.drawable.move_right};
-        Object[] btn_17 = {move_left_btn, "move_left_btn", R.drawable.move_left, R.drawable.move_left};
+        Object[] btn_1 = {btn_n0, "btn_n0"};
+        Object[] btn_2 = {btn_n1, "btn_n1"};
+        Object[] btn_3 = {btn_n2, "btn_n2"};
+        Object[] btn_4 = {btn_n3, "btn_n3"};
+        Object[] btn_5 = {btn_n4, "btn_n4"};
+        Object[] btn_6 = {btn_n5, "btn_n5"};
+        Object[] btn_7 = {btn_n6, "btn_n6"};
+        Object[] btn_8 = {btn_n7, "btn_n7"};
+        Object[] btn_9 = {btn_n8, "btn_n8"};
+        Object[] btn_10 = {btn_n9, "btn_n9"};
+        Object[] btn_11 = {btn_dash, "btn_dash"};
+        Object[] btn_12 = {btn_enter, "btn_enter"};
+        Object[] btn_13 = {btn_exit, "btn_exit"};
+        Object[] btn_14 = {btn_last, "btn_last"};
+        Object[] btn_15 = {btn_home, "btn_home"};
+        Object[] btn_16 = {move_right_btn, "move_right_btn"};
+        Object[] btn_17 = {move_left_btn, "move_left_btn"};
         
         // bundle all the button data into a big hashtable
         button_map = new HashMap<Integer,Object[]>();
@@ -845,52 +814,62 @@ public class Droidmote extends Activity {
                     		}                    	                    	
                     	}
                     	mEditor.putString("knownDevices",prefs_table);
-                    	// DEBUG - remove this clear after we get it working right
-                    	//mEditor.remove("knownDevices"); 
                     	// commit changes to the database
                     	mEditor.commit();    
                     }
                     break;
+                    
                 case BluetoothChatService.STATE_CONNECTING:
                     mTitle.setText(R.string.title_connecting);
                     break;
+                    
                 case BluetoothChatService.STATE_LISTEN:
                 case BluetoothChatService.STATE_NONE:
                     mTitle.setText(R.string.title_not_connected);
                     break;
                 }
                 break;
+                
             case MESSAGE_WRITE:
                 break;
+                
             case MESSAGE_READ:
             	// arg1 is the # of bytes read
                 byte[] readBuf = (byte[]) msg.obj;
                 interpretResponse(readBuf, msg.arg1);
                 break;
+                
             case MESSAGE_DEVICE_NAME:
                 // save the connected device's name
                 mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
                 Toast.makeText(getApplicationContext(), "Connected to "
                                + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                 break;
+                
             case MESSAGE_TOAST:
                 Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
                                Toast.LENGTH_SHORT).show();
                 break;
+                
             case MESSAGE_KEY_PRESSED:
             	// called when a touch event is registered on a button
             	// check if button is still depressed, if so, then generate a touch event
             	NUM_MESSAGES--;
-            	if ((int)msg.arg1 == last_button && LOOP_KEY) {
-            		
-            			Button toclick;
+            	if ((int)msg.arg1 == last_button && LOOP_KEY) {            		            			
             			Object[] payload = button_map.get(msg.arg1);
             			if (payload != null) {
-            				toclick = (Button)payload[BTN_NAME];
-            				toclick.performClick();
+            				try {
+            					Button toclick;
+            					toclick = (Button)payload[BTN_NAME];
+            					toclick.performClick();
+            				} catch (Exception e) {
+            					// must be an imagebutton then
+            					ImageButton toclick;
+            					toclick = (ImageButton)payload[BTN_NAME];
+            					toclick.performClick();
+            				}
             			}        		        		
             	}
-
             	break;
             }
         }
@@ -941,18 +920,6 @@ public class Droidmote extends Activity {
         		populateDropDown();
         	}
         	break;
-//        case REQUEST_RENAME_POD:
-//        	// when the rename pod activity returns
-//        	Bundle return_bundle;
-//        	if (resultCode == Activity.RESULT_OK) {
-//        		// add the new item to the database
-//        		return_bundle = data.getExtras();
-//        		if ( return_bundle != null ) {
-//        			Codes.new_name = return_bundle.getString("returnStr");
-//        			sendCode(Codes.Commands.RENAME_DEVICE);
-//        		}        		
-//        	}
-//        	break;
         }
     }
 
@@ -975,33 +942,32 @@ public class Droidmote extends Activity {
             Intent serverIntent = new Intent(this, DeviceListActivity.class);
             startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
             return true;
+            
         case R.id.discoverable:
             // Ensure this device is discoverable by others
             ensureDiscoverable();
             return true;
+            
         // this is to manage the button configurations in database
         case R.id.manage_devices:
         	// need to launch the manage devices view now
     		Intent i = new Intent(this, ManageDevices.class);
             startActivityForResult(i, REQUEST_MANAGE_DEVICE);
         	return true;
-//        case R.id.rename_pod:
-//        	// Launch the function to ask for a name for device
-//        	Intent intent = new Intent(this, EnterDevice.class);
-//            startActivityForResult(intent, REQUEST_RENAME_POD);
-//        	return true;
+        	
         case R.id.get_info:
         	sendCode(Codes.Commands.GET_VERSION);
         	return true;
+        	
         case R.id.learn_button:
         	Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
         	STATE = Codes.Commands.LEARN;
         	return true;
+        	
         case R.id.stop_learn:        
         	Toast.makeText(this, "Stopped Learning", Toast.LENGTH_SHORT).show();
-        	STATE = Codes.Commands.IDLE;
-        	// reset all images to unpressed state
-        	resetButtons();
+        	sendCode(Codes.Commands.ABORT_LEARN);
+        	STATE = Codes.Commands.ABORT_LEARN;
         	return true;        		
         }
         return false;
@@ -1095,72 +1061,58 @@ public class Droidmote extends Activity {
     	byte[] toSend;
     	switch (code) {
     	case Codes.Commands.LEARN:
-    		toSend = new byte[2];
+    		toSend = new byte[1];
     		toSend[0] = Codes.Commands.LEARN; // DEBUG , should be LEARN
     		toSend[0] = (byte)toSend[0];
-    		toSend[1] = 0x00; // Reserved
     		STATE = Codes.Commands.LEARN;
     		sendMessage(toSend); 
     		break;
+    		
     	case Codes.Commands.ABORT_LEARN:
-    		toSend = new byte[2];
+    		toSend = new byte[1];
     		toSend[0] = Codes.Commands.ABORT_LEARN;
-    		toSend[0] = (byte)toSend[0];
-    		toSend[1] = 0x00; // Reserved
+    		toSend[0] = (byte)toSend[0];    		
     		STATE = Codes.Commands.ABORT_LEARN;
     		sendMessage(toSend);
     		break;
+    		
     	case Codes.Commands.GET_VERSION:
     		STATE = Codes.Commands.GET_VERSION;
-    		toSend = new byte[2];
+    		toSend = new byte[1];
     		toSend[0] = Codes.Commands.GET_VERSION;
-    		toSend[0] = (byte)toSend[0];
-    		toSend[1] = 0x00; // Reserved
+    		toSend[0] = (byte)toSend[0];    		
     		sendMessage(toSend);
     		break;
-//    	case Codes.Commands.RENAME_DEVICE:
-//    		STATE = Codes.Commands.RENAME_DEVICE;
-//    		toSend = new byte[Codes.new_name.length()+2];
-//    		toSend[0] = Codes.Commands.RENAME_DEVICE;
-//    		toSend[0] = (byte)toSend[0];
-//    		toSend[1] = 0x00; // Reserved
-//    		// load new names to the toSend byte[]
-//    		byte[] new_name = Codes.new_name.getBytes();
-//    		System.arraycopy(new_name, 0, toSend, 2, new_name.length);
-//    		
-//    		sendMessage(toSend);
-//    		break;
     	}
     }
     
     // called after learn mode is finished and has data to store
     public void storeButton() {
-    	Button btn = null;
 		Object[] payload = null;
 		payload = button_map.get(BUTTON_ID);
 		
 		if (payload != null) {
-			btn = (Button)payload[BTN_NAME];
-			btn.setBackgroundDrawable(getResources().getDrawable((Integer)payload[BTN_GRAPHIC_UNPRESSED]));
 			device_data.insertButton(cur_table, (String)payload[BTN_TEXT], cur_context, Codes.pod_data);
 		}
 	    		    
 		// refresh the local Cursor with new database updates
 		fetchButtons();
 		STATE = Codes.Commands.IDLE; // reset state, drop out of learn mode		
+		Codes.learn_started = false; // ready to start a new learn command now
 		Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
     }
     
-    // returns true if the data to be inserted is more bytes than array is setup for, 
+    // returns false if the data to be inserted is more bytes than array is setup for, 
     // this should not happen unless pod screwed up
     public boolean checkPodDataBounds(int bytes) {
     	if (bytes > (Codes.pod_data.length - Codes.learn_data_index)) {
 			// toast an error, drop out of learn mode, and break
     		Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
-    		STATE = Codes.Commands.IDLE;    		
-    		return true;
+    		STATE = Codes.Commands.IDLE;    
+    		Codes.learn_started = false;
+    		return false;
 		}
-    	return false;
+    	return true;
     }
     
     // store data from bluetooth packet into the Codes.pod_data array
@@ -1179,12 +1131,14 @@ public class Droidmote extends Activity {
     // the bytes argument tells us how many bytes were received and stored in response[]
     public void interpretResponse(byte[] response, int bytes) {    	
     	switch (STATE) {
-    	case Codes.Commands.LEARN:
+    	case Codes.Commands.LEARN:    		
     		// learn data may not come all together, so need to process data in chunks
-    		if (response[0] == Codes.Return.ACK) { // check if beginning of data stream
+    		if (response[0] == Codes.Return.ACK && Codes.learn_started == false) { // check if beginning of data stream
+    			Codes.learn_started = true; // signal we have now started a valid transfer
+    			
     			//TODO test that new code to pull off num of bytes of payload is working...
     			// byte 2 of response data is defined as the # of bytes is going to be sent 
-    			int num_bytes = response[2]; // right now response[1] is reserved
+    			byte num_bytes = (byte)response[2]; // right now response[1] is reserved
     			
     			// create a new learn_data array of the appropriate size
     			Codes.pod_data = new byte[num_bytes + 2];
@@ -1196,31 +1150,30 @@ public class Droidmote extends Activity {
     			Codes.learn_data_index = 2;
     			
     			// check that data will not over-run the learn_data array
-    			if (checkPodDataBounds(bytes) ) // if true then break
-    			{
-    				// something screwed up, abort
-    				Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
-    	    		STATE = Codes.Commands.IDLE;
-    				break;
-    			}
-    			storeResponseData(response, bytes);	
+    			if (checkPodDataBounds(bytes) ) // if true then continue
+    			{    				
+    				storeResponseData(response, bytes);
+    			}    			
     		}
-    		else {
+    		else if (Codes.learn_started == true) {
     			// if not beginning of packet, means some data was straggling in a new packet,
         		// need to aggregate it
         		
     			// check that data will not over-run the learn_data array
-    			if (checkPodDataBounds(bytes) ) // if true then break
-    			{
-    				// something screwed up, abort
-    				Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
-    	    		STATE = Codes.Commands.IDLE;
-    				break;
+    			if (checkPodDataBounds(bytes) ) // if true then continue
+    			{    				
+    				// append to end of Codes.pod_data
+        			storeResponseData(response, bytes);
     			}
-    			// append to end of Codes.pod_data
-    			storeResponseData(response, bytes);
-    		}    		
+    			
+    		}
+    		else //if (response[0] == Codes.Return.NACK) 
+    		{
+    			Toast.makeText(this, "Error occured, exiting learn mode! NACK", Toast.LENGTH_SHORT).show();
+    			STATE = Codes.Commands.IDLE;
+    		}
     		break;
+    		
     	case Codes.Commands.GET_VERSION:
     		if (response[0] == Codes.Return.ACK) {
     			STATE = Codes.Commands.IDLE; // reset state
@@ -1230,21 +1183,18 @@ public class Droidmote extends Activity {
     			showDialog(DIALOG_SHOW_INFO);
     		}
     		break;
+    		
     	case Codes.Commands.ABORT_LEARN:
     		if (response[0] == Codes.Return.ACK) {
     			STATE = Codes.Commands.IDLE; // reset state
     		}
     		break;
-//    	case Codes.Commands.RENAME_DEVICE:
-//    		if (response[0] == Codes.Return.ACK) {
-//    			STATE = Codes.Commands.IDLE; // reset state
-//    		}
-//    		break;
+    		
     	case Codes.Commands.IR_TRANSMIT:
     		if (response[0] == Codes.Return.ACK) {
     			STATE = Codes.Commands.IDLE; // reset state
     		}
-    		break;
+    		break;    		
     	}	
     }
 

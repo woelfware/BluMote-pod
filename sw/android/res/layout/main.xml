@@ -2,7 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@drawable/background">
     
 	<Spinner 	
 		android:id="@+id/device_spinner" 
@@ -11,115 +12,41 @@
 		android:layout_height = "wrap_content"
 		android:layout_gravity="center"
 		android:background="@drawable/spinner_look"
-		android:textColor="#FFFFFF"
-		>
+		android:textColor="#FFFFFF" >
 	</Spinner>
 		
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
-		android:layout_gravity="center">     
-         	<Button
-        		android:id="@+id/move_left_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/move_left" 
-		        android:visibility="invisible"/>
-		    <Button                  	     
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/spacer" />
-         	<Button
-        		android:id="@+id/power_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/power_48_gray" />         	
-         	<Button                  	     
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/spacer" />
-         	<Button         		
-         		android:id="@+id/led_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/led_off" />
- 			<Button 			             
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/spacer" />
-			<Button
-        		android:id="@+id/power2_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/power_green" />
-		    <Button                  	     
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/spacer" />
-		    <Button
-        		android:id="@+id/move_right_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/move_right" />			     
+		android:layout_gravity="center_vertical" >     
+		<ImageButton android:id="@+id/move_left_btn"  android:background="@drawable/move_left" android:layout_width="50dp" android:layout_height="65dp" android:scaleType="fitXY" android:visibility="invisible"/>
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_blue" android:id="@+id/power_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginRight="40dp" android:layout_width="65dp" android:layout_height="65dp"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_green" android:id="@+id/power2_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginLeft="40dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
+		<ImageButton android:id="@+id/move_right_btn"  android:background="@drawable/move_right" android:layout_width="50dp" android:layout_height="65dp" android:scaleType="fitXY"/>
+	</LinearLayout>
+	<LinearLayout
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:layout_gravity="center"
+		android:paddingTop="2dp" >
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_skip_backward" android:id="@+id/back_skip_btn" android:scaleType="centerInside"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_seek_backward" android:id="@+id/back_btn" android:scaleType="centerInside"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_seek_forward" android:id="@+id/forward_btn" android:scaleType="centerInside"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_skip_forward" android:id="@+id/skip_forward_btn" android:scaleType="centerInside"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_record" android:id="@+id/record_btn" android:scaleType="centerInside"></ImageButton>    		
 	</LinearLayout>
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="center"
-		android:paddingTop="10px">    
-			<Button
-        		android:id="@+id/back_skip_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/back_skip" />
-		    <Button
-        		android:id="@+id/back_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/back" />
-		    <Button
-        		android:id="@+id/forward_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/forward" />
-		    <Button
-        		android:id="@+id/skip_forward_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/forward_skip" />
-		   	<Button
-        		android:id="@+id/record_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/record_square" />
-	</LinearLayout>
-	<LinearLayout
-		android:orientation="horizontal"
-		android:layout_width="wrap_content" 
-		android:layout_height="wrap_content"
-		android:layout_gravity="center">    
-			<Button
-        		android:id="@+id/stop_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/stop" />
-		    <Button
-        		android:id="@+id/play_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/play" />
-		    <Button
-        		android:id="@+id/pause_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/pause" />
-		    <Button
-        		android:id="@+id/eject_btn"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/eject_square" />
+		android:paddingTop="2dp" >    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_playback_stop" android:id="@+id/stop_btn" android:scaleType="fitXY"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_playback_start" android:id="@+id/play_btn" android:scaleType="fitXY"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_playback_pause" android:id="@+id/pause_btn" android:scaleType="fitXY"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_eject" android:id="@+id/eject_btn" android:scaleType="centerInside"></ImageButton>    
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/emblem_favorite" android:id="@+id/fav_btn" android:scaleType="centerInside"></ImageButton>    		
 	</LinearLayout>	
 	<LinearLayout
 		android:orientation="horizontal"
@@ -131,126 +58,59 @@
 				android:layout_width="wrap_content" 
 				android:layout_height="wrap_content"
 				android:layout_gravity="left">
-		    <Button
-		    	android:id="@+id/btn_volume_up"				   
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/vol_up" />
-		    <Button
-    			android:id="@+id/btn_volume_down"
-    		 	android:layout_width="wrap_content"
-       			android:layout_height="wrap_content"
-       			android:background="@drawable/vol_down" />						    
+				<ImageButton style="@style/TopRockerStyle" android:src="@drawable/plus" android:id="@+id/btn_volume_up" android:scaleType="centerInside"></ImageButton> 		    				    
+				<ImageButton style="@style/BottomRockerStyle" android:src="@drawable/minus" android:id="@+id/btn_volume_down" android:scaleType="centerInside"></ImageButton> 		    				    
 			</LinearLayout>	    
 		    <LinearLayout
 				android:orientation="vertical"
 				android:layout_width="wrap_content" 
 				android:layout_height="wrap_content"
-				android:layout_gravity="left">
-				    <Button
-				    	android:id="@+id/disc_btn"
-				        android:layout_width="wrap_content"
-				        android:layout_height="wrap_content"
-				        android:background="@drawable/disc_menu" />
-				    <Button
-				    	android:id="@+id/left_btn"
-		    		 	android:layout_width="wrap_content"
-		       			android:layout_height="wrap_content"
-		       			android:background="@drawable/left" />
-		    		<Button
-		    			android:id="@+id/mute_btn"
-				        android:layout_width="wrap_content"
-				        android:layout_height="wrap_content"
-				        android:background="@drawable/mute" />					    
+				android:layout_gravity="left"
+				android:paddingTop="2dp" >
+				<Button android:id="@+id/disc_btn" android:text="Disc Menu" style="@style/CustomBtnText"></Button>			
+				<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_previous" android:id="@+id/left_btn" android:scaleType="centerInside"></ImageButton>    
+				<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/audio_volume_muted" android:id="@+id/mute_btn" android:scaleType="centerInside"></ImageButton>				    	    
 			</LinearLayout>
 			<LinearLayout
 				android:orientation="vertical"
 				android:layout_width="wrap_content" 
 				android:layout_height="wrap_content"
-				android:layout_gravity="left">	
-					<Button
-						android:id="@+id/btn_up"
-		       			android:layout_width="wrap_content"
-		       			android:layout_height="wrap_content"
-		       			android:background="@drawable/up" />											
-				    <Button
-				    	android:id="@+id/enter_btn"
-				        android:layout_width="wrap_content"
-				        android:layout_height="wrap_content"
-				        android:background="@drawable/enter" />
-				    <Button
-				    	android:id="@+id/down_btn"
-		       			android:layout_width="wrap_content"
-		       			android:layout_height="wrap_content"
-		       			android:background="@drawable/down" />					    					    
+				android:layout_gravity="left"
+				android:paddingTop="2dp" >	
+				<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_up" android:id="@+id/btn_up" android:scaleType="centerInside"></ImageButton>								    					    
+				<Button android:id="@+id/enter_btn" android:text="Enter" style="@style/CustomBtnText"></Button>			
+				<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_down" android:id="@+id/down_btn" android:scaleType="centerInside"></ImageButton>
+			</LinearLayout>
+			<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="wrap_content" 
+				android:layout_height="wrap_content"
+				android:layout_gravity="left"
+				android:paddingTop="2dp" >
+				<Button android:id="@+id/info_btn" android:text="Info/ Display" style="@style/CustomBtnText" android:textSize="13sp"></Button>			
+				<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_next" android:id="@+id/right_btn" android:scaleType="centerInside"></ImageButton>								    					    
+				<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/edit_redo" android:id="@+id/return_btn" android:scaleType="centerInside"></ImageButton>								    				    					    
 			</LinearLayout>
 			<LinearLayout
 				android:orientation="vertical"
 				android:layout_width="wrap_content" 
 				android:layout_height="wrap_content"
 				android:layout_gravity="left">
-					<Button
-						android:id="@+id/info_btn"
-				        android:layout_width="wrap_content"
-				        android:layout_height="wrap_content"
-				        android:background="@drawable/info_display" />
-		    		<Button
-		    			android:id="@+id/right_btn"
-		       			android:layout_width="wrap_content"
-				        android:layout_height="wrap_content"
-		    		    android:background="@drawable/right" />
-		       		<Button
-		       			android:id="@+id/return_btn"
-				        android:layout_width="wrap_content"
-				        android:layout_height="wrap_content"
-				        android:background="@drawable/return_back" />			    		    				    					    
-			</LinearLayout>
-			<LinearLayout
-				android:orientation="vertical"
-				android:layout_width="wrap_content" 
-				android:layout_height="wrap_content"
-				android:layout_gravity="left">
-				    <Button
-						android:id="@+id/btn_channel_up"
-				        android:layout_width="wrap_content"
-				        android:layout_height="wrap_content"
-				        android:background="@drawable/ch_up" />
-				    <Button
-		    			android:id="@+id/btn_channel_down"
-		    		 	android:layout_width="wrap_content"
-		       			android:layout_height="wrap_content"
-		       			android:background="@drawable/ch_down" />						
+				<ImageButton style="@style/TopRockerStyle" android:src="@drawable/plus" android:id="@+id/btn_channel_up" android:scaleType="centerInside"></ImageButton> 		    				    
+				<ImageButton style="@style/BottomRockerStyle" android:src="@drawable/minus" android:id="@+id/btn_channel_down" android:scaleType="centerInside"></ImageButton>				    					
 			</LinearLayout>
 		</LinearLayout>
 		<LinearLayout
-		android:orientation="horizontal"
-		android:layout_width="wrap_content" 
-		android:layout_height="wrap_content"
-		android:layout_gravity="center"> 			
-		    <Button
-		    	android:id="@+id/pgup_btn"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/pgup" />
-			<Button
-				android:id="@+id/pgdn_btn"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/pgdn" />	
-			<Button
-				android:id="@+id/guide_btn"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/guide" />							    
-		    <Button
-		    	android:id="@+id/exit_btn"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/exit" />	    
-			<Button
-		    	android:id="@+id/btn_input"
-		        android:layout_width="wrap_content"
-		        android:layout_height="wrap_content"
-		        android:background="@drawable/av_input" />
+			android:orientation="horizontal"
+			android:layout_width="wrap_content" 
+			android:layout_height="wrap_content"
+			android:layout_gravity="center"
+			android:baselineAligned="false" > 			
+			<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_top" android:id="@+id/pgup_btn" android:scaleType="center" ></ImageButton>								    					    
+		  	<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_bottom" android:id="@+id/pgdn_btn" android:scaleType="center"></ImageButton>								    					    
+			<Button android:id="@+id/guide_btn" android:text="Guide" style="@style/CustomBtnText"></Button>			
+			<Button android:id="@+id/btn_input" android:text="AV/ Input" style="@style/CustomBtnText" ></Button>			
+			<Button android:id="@+id/exit_btn" android:text="Exit" style="@style/CustomBtnText"></Button>			
+					  	
 		</LinearLayout>
 </LinearLayout>
