@@ -37,11 +37,9 @@ static bool blumote_process_cmd()
 		break;
 
 	case BLUMOTE_IR_TRANSMIT:
-		/* pop the reserved and length fields and let
-		 * the ir handle the code
-		 */
-		(void)buf_deque(&gp_rx_tx, NULL);	/* reserved */
-		(void)buf_deque(&gp_rx_tx, NULL);	/* length */
+		/* pop the 2-byte length field and let the ir handle the code */
+		(void)buf_deque(&gp_rx_tx, NULL);	/* length, upper */
+		(void)buf_deque(&gp_rx_tx, NULL);	/* length, lower */
 		tx_ir_code = true;
 		break;
 	
@@ -454,8 +452,9 @@ bool tx_learned_code()
 	switch (current_state) {
 	case tx_status:
 		if (!buf_deque(&gp_rx_tx, &c)) {
-			char str[4] = {BLUMOTE_ACK, 0};
-			str[2] = gp_rx_tx.cnt;
+			char str[4] = {BLUMOTE_ACK};
+			str[1] = (gp_rx_tx.cnt >> 8) & 0xFF;
+			str[2] = (gp_rx_tx.cnt >> 0) & 0xFF;
 			str[3] = c;
 			bluetooth_puts(str, sizeof(str));
 			current_state = tx_code;
