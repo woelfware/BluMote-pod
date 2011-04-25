@@ -455,7 +455,7 @@ bool tx_learned_code()
 	case tx_status:
 		if (!buf_deque(&gp_rx_tx, &c)) {
 			char str[4] = {BLUMOTE_ACK, 0};
-			str[2] = gp_rx_tx.cnt;
+			str[2] = gp_rx_tx.cnt + 1;
 			str[3] = c;
 			bluetooth_puts(str, sizeof(str));
 			current_state = tx_code;
