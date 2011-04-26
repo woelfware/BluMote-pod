@@ -185,7 +185,7 @@ bool init_blumote(int ms)
 
 		if (ttl >= 0) {
 			if (m_strcmp("BluMote\r\n", &gp_rx_tx) == m_strcmp_match) {
-				current_state = tx_exit_cmd_mode;
+				current_state = tx_get_low_latency;
 				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
@@ -207,9 +207,9 @@ bool init_blumote(int ms)
 		break;
 
 	case tx_get_low_latency: {
-		char const *str = "GSQ\r";
+		char const *str = "GQ\r";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_get_name;
+			current_state = rx_get_low_latency;
 			ttl = 50;
 		}
 		}
@@ -224,14 +224,14 @@ bool init_blumote(int ms)
 		}
 
 		if (ttl >= 0) {
-			if (m_strcmp("16\r\n", &gp_rx_tx) == m_strcmp_match) {
-				current_state = tx_exit_cmd_mode;
+			if (m_strcmp("10\r\n", &gp_rx_tx) == m_strcmp_match) {
+				current_state = tx_get_low_power;
 				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
 			}
-		} else {	/* no response or invalid name */
+		} else {	/* no response or invalid setting */
 			current_state = tx_set_low_latency;
 			buf_clear(&gp_rx_tx);
 		}
@@ -247,9 +247,9 @@ bool init_blumote(int ms)
 		break;
 
 	case tx_get_low_power: {
-		char const *str = "GSQ\r";
+		char const *str = "GW\r";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_get_name;
+			current_state = rx_get_low_power;
 			ttl = 50;
 		}
 		}
@@ -264,7 +264,7 @@ bool init_blumote(int ms)
 		}
 
 		if (ttl >= 0) {
-			if (m_strcmp("0050\r\n", &gp_rx_tx) == m_strcmp_match) {
+			if (m_strcmp("50\r\n", &gp_rx_tx) == m_strcmp_match) {
 				current_state = tx_exit_cmd_mode;
 				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
@@ -278,7 +278,7 @@ bool init_blumote(int ms)
 		break;
 
 	case tx_set_low_power: {
-		char const *str = "SW,0050\r\n";
+		char const *str = "SW,8050\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_set_low_power;
 			ttl = 50;

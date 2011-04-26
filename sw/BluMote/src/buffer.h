@@ -10,8 +10,8 @@
 #include <stdint.h>
 
 struct circular_buffer {
-	size_t size,
-		wr_ptr,
+	size_t size;
+	volatile size_t wr_ptr,
 		rd_ptr,
 		cnt;
 	volatile uint8_t *buf;
