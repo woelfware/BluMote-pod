@@ -43,6 +43,7 @@ static bool blumote_process_cmd()
 		(void)buf_deque(&gp_rx_tx, NULL);	/* reserved */
 		(void)buf_deque(&gp_rx_tx, NULL);	/* length */
 		tx_ir_code = true;
+		gp_buf_owner = gp_buf_owner_none;
 		break;
 	
 	default: {
