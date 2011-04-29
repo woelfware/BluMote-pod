@@ -1,3 +1,4 @@
+#include "bluetooth.h"
 #include "blumote.h"
 #include "config.h"
 #include "hw.h"
@@ -12,11 +13,11 @@ static inline bool is_space()
 
 static void carrier_freq(bool on)
 {
-	if (on){
+	if (on) {
 		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */		
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
-		P1OUT &= ~(BIT4 + BIT5);	/* Turn off IR LED */
+		P1OUT &= ~(BIT4 | BIT5);	/* Turn off IR LED */
 	}
 }
 
@@ -31,7 +32,7 @@ int ir_getchar()
 	return c;
 }
 
-bool ir_learn(int us)
+bool ir_learn(int_fast32_t us)
 {
 	enum state {
 		default_state = 0,
@@ -39,16 +40,16 @@ bool ir_learn(int us)
 		rx_start_of_pkt2,
 		rx_pulses,
 		rx_spaces,
-		handle_timeout
+		handle_cleanup
 	};
 	static enum state current_state = default_state;
-	static int32_t ttl = IR_LEARN_CODE_TIMEOUT;
+	static int_fast32_t ttl = IR_LEARN_CODE_TIMEOUT;
 	static uint16_t duration = 0;
 	bool run_again = true;
 
 	ttl -= us;
 	if (ttl < 0) {
-		current_state = handle_timeout;
+		current_state = handle_cleanup;
 	}
 
 	switch (current_state) {
@@ -86,10 +87,11 @@ bool ir_learn(int us)
 		if (is_space()) {
 			duration += us;
 			if (duration > MAX_SPACE_WAIT_TIME) {
-				run_again = false;
+				/* done */
+				current_state = default_state;
 				duration = 0;
 				ttl = IR_LEARN_CODE_TIMEOUT;
-				current_state = default_state;
+				run_again = false;
 			}
 		} else {
 			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
@@ -99,7 +101,7 @@ bool ir_learn(int us)
 		}
 		break;
 
-	case handle_timeout:
+	case handle_cleanup:
 	default:
 		current_state = default_state;
 		duration = 0;
@@ -112,76 +114,96 @@ bool ir_learn(int us)
 	return run_again;
 }
 
-bool ir_main(int us)
+bool ir_main(int_fast32_t us)
 {
 	enum state {
 		default_state = 0,
-		tx_start = 0,
+		wait_for_code = 0,
 		tx_pulses,
-		tx_spaces
+		tx_spaces,
+		handle_cleanup
 	};
 	static enum state current_state = default_state;
-	static uint16_t duration = 0;
-	static uint16_t stop_time_us = 0;
+	static int_fast32_t ttl;
 	bool run_again = true;
-	bool get_next = false;
+	uint8_t c;
 
 	if (!own_gp_buf(gp_buf_owner_ir)) {
 		return run_again;
 	}	
 
-	if (!buf_empty(&gp_rx_tx)) {
-		switch (current_state) {
-		case tx_start:
-			carrier_freq(true);	/*Start pulse clock*/
-			get_next = true;
-			break;
-
-		case tx_pulses:
-			if (duration < stop_time_us) {
-				duration += us;
-			} else {
-				carrier_freq(false);	/*Stop Pulse Clock*/
-				get_next = true;
-				current_state = tx_spaces;
-			}
-			break;
-	
-		case tx_spaces:
-			if (duration < stop_time_us) {
-				duration += us;
-			} else {
-				carrier_freq(true);	/*Start pulse clock*/
-				get_next = true;
-				current_state = tx_pulses;
-			}
-			break;
-	
-		default:
-			current_state = default_state;
+	switch (current_state) {
+	case wait_for_code:
+		if (buf_deque(&gp_rx_tx, &c)) {
+			gp_buf_owner = gp_buf_owner_none;
 			run_again = false;
-			carrier_freq(false);	/*Stop Pulse Clock*/
-			buf_clear(&gp_rx_tx);
-			break;
-		}
-		
-		if (get_next) {
-			stop_time_us = ir_getchar() << 8;
-			stop_time_us += ir_getchar();
-			if ((int)stop_time_us == EOF) {
-				carrier_freq(false);	/*Stop Pulse Clock*/
-				run_again = false;
-				current_state = default_state;
+		} else {
+			/* have a code to tx */
+			carrier_freq(true);
+			ttl = (int_fast32_t)c << 8;
+			if (!buf_deque(&gp_rx_tx, &c)) {
+				ttl += c;
+				current_state = tx_pulses;
+			} else {
+				/* incomplete ir code */
+				(void)bluetooth_putchar(BLUMOTE_NAK);
+				current_state = handle_cleanup;
 			}
-			get_next = false;
-			duration = 0;
 		}
-	} else {
-		carrier_freq(false);	/*Stop Pulse Clock*/
-		current_state = default_state;
+		break;
+
+	case tx_pulses:
+		ttl -= us;
+		if (ttl < 0) {
+			carrier_freq(false);
+			if (!buf_deque(&gp_rx_tx, &c)) {
+				ttl = (int_fast32_t)c << 8;
+				if (!buf_deque(&gp_rx_tx, &c)) {
+					ttl += c;
+					current_state = tx_spaces;
+				} else {
+					/* incomplete ir code */
+					(void)bluetooth_putchar(BLUMOTE_NAK);
+					current_state = handle_cleanup;
+				}
+			} else {
+				/* done */
+				(void)bluetooth_putchar(BLUMOTE_ACK);
+				current_state = handle_cleanup;
+			}
+		}
+		break;
+
+	case tx_spaces:
+		ttl -= us;
+		if (ttl < 0) {
+			carrier_freq(true);
+			if (!buf_deque(&gp_rx_tx, &c)) {
+				ttl = (int_fast32_t)c << 8;
+				if (!buf_deque(&gp_rx_tx, &c)) {
+					ttl += c;
+					current_state = tx_pulses;
+				} else {
+					/* incomplete ir code */
+					(void)bluetooth_putchar(BLUMOTE_NAK);
+					current_state = handle_cleanup;
+				}
+			} else {
+				/* incomplete ir code */
+				(void)bluetooth_putchar(BLUMOTE_NAK);
+				current_state = handle_cleanup;
+			}
+		}
+		break;
+
+	case handle_cleanup:
+	default:
+		/* shouldn't get here */
+		carrier_freq(false);
 		gp_buf_owner = gp_buf_owner_none;
-		tx_ir_code = false;
+		current_state = default_state;
 		run_again = false;
+		break;
 	}
 
 	return run_again;

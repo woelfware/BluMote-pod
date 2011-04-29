@@ -127,8 +127,9 @@ if __name__ == "__main__":
 			try:
 				nearby_devices = discover_devices(lookup_names = True)
 			except:
+				print 'failed to find a blumote... retrying'
 				nearby_devices = ()
-			print 'found %d devices' % len(nearby_devices)
+			print 'found %d device(s)' % len(nearby_devices)
 			for addr, name in nearby_devices:
 				if name[:len('BluMote')] == 'BluMote':
 					print 'connecting to', addr, name

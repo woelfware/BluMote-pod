@@ -5,11 +5,9 @@
 #ifndef BLUETOOTH_H_
 #define BLUETOOTH_H_
 
+#include "config.h"
 #include <stdbool.h>
-
-#ifndef EOF
-#define EOF	(-1)
-#endif
+#include <stdint.h>
 
 /*
  * The character read is returned as an int value.
@@ -34,8 +32,8 @@ int bluetooth_puts(char const *str, int nbr_chars);
  * retval true run again
  * retval false done
  */
-bool issue_bluetooth_reset(int ms);
+bool issue_bluetooth_reset(int_fast32_t us);
 
-bool bluetooth_main(int ms);
+bool bluetooth_main(int_fast32_t us);
 
 #endif /*BLUETOOTH_H_*/

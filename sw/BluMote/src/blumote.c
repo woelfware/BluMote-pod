@@ -84,7 +84,7 @@ static enum m_strcmp_rc m_strcmp(char const *str, struct circular_buffer *que)
 	return rc;
 }
 
-bool init_blumote(int ms)
+bool init_blumote(int_fast32_t us)
 {
 	enum state {
 		default_state = 0,
@@ -109,14 +109,14 @@ bool init_blumote(int ms)
 		reset_bluetooth
 	};
 	static enum state current_state = default_state;
-	static int ttl;	/* time to live */
+	static int_fast32_t ttl;	/* time to live */
 	int c;
 	bool run_again = true;
 	static bool reset_bt = false;
 
 	switch (current_state) {
 	case wait_one_sec1:
-		ttl = 1000;
+		ttl = 1000000;
 		current_state = wait_one_sec2;
 
 		/* clear out the rx buffers */
@@ -125,7 +125,7 @@ bool init_blumote(int ms)
 		break;
 
 	case wait_one_sec2:
-		ttl -= ms;
+		ttl -= us;
 		if (ttl < 0) {
 			current_state = tx_cmd_mode;
 		} 
@@ -135,17 +135,17 @@ bool init_blumote(int ms)
 		char const *str = "$$$";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_cmd_mode;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
 
 	case rx_cmd_mode:
-		ttl -= ms;
+		ttl -= us;
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			(void)buf_enque(&gp_rx_tx, c);
-			ttl = 20;
+			ttl = 20000;
 		}
 		
 		if (ttl >= 0) {
@@ -171,17 +171,17 @@ bool init_blumote(int ms)
 		char const *str = "GS-\r";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_get_name;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
 
 	case rx_get_name:
-		ttl -= ms;
+		ttl -= us;
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			(void)buf_enque(&gp_rx_tx, c);
-			ttl = 20;
+			ttl = 20000;
 		}
 
 		if (ttl >= 0) {
@@ -202,7 +202,7 @@ bool init_blumote(int ms)
 		char const *str = "S-,BluMote\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_set_name;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
@@ -211,17 +211,17 @@ bool init_blumote(int ms)
 		char const *str = "GQ\r";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_get_low_latency;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
 
 	case rx_get_low_latency:
-		ttl -= ms;
+		ttl -= us;
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			(void)buf_enque(&gp_rx_tx, c);
-			ttl = 20;
+			ttl = 20000;
 		}
 
 		if (ttl >= 0) {
@@ -242,7 +242,7 @@ bool init_blumote(int ms)
 		char const *str = "SQ,16\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_set_low_latency;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
@@ -251,17 +251,17 @@ bool init_blumote(int ms)
 		char const *str = "GW\r";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_get_low_power;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
 
 	case rx_get_low_power:
-		ttl -= ms;
+		ttl -= us;
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			(void)buf_enque(&gp_rx_tx, c);
-			ttl = 20;
+			ttl = 20000;
 		}
 
 		if (ttl >= 0) {
@@ -282,7 +282,7 @@ bool init_blumote(int ms)
 		char const *str = "SW,8050\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_set_low_power;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
@@ -290,11 +290,11 @@ bool init_blumote(int ms)
 	case rx_set_name:
 	case rx_set_low_latency:
 	case rx_set_low_power:
-		ttl -= ms;
+		ttl -= us;
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			(void)buf_enque(&gp_rx_tx, c);
-			ttl = 20;
+			ttl = 20000;
 		}
 
 		if (ttl >= 0) {
@@ -329,17 +329,17 @@ bool init_blumote(int ms)
 		char const *str = "---\r\n";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_exit_cmd_mode;
-			ttl = 50;
+			ttl = 50000;
 		}
 		}
 		break;
 
 	case rx_exit_cmd_mode:
-		ttl -= ms;
+		ttl -= us;
 
 		while ((c = bluetooth_getchar()) != EOF) {
 			(void)buf_enque(&gp_rx_tx, c);
-			ttl = 20;
+			ttl = 20000;
 		}
 
 		if (ttl >= 0) {
@@ -361,7 +361,7 @@ bool init_blumote(int ms)
 		break;
 
 	case reset_bluetooth:
-		if (issue_bluetooth_reset(ms) == false) {
+		if (issue_bluetooth_reset(us) == false) {
 			current_state = default_state;
 			reset_bt = false;
 		}
@@ -378,7 +378,7 @@ bool init_blumote(int ms)
 	return run_again;
 }
 
-bool blumote_main(int ms)
+bool blumote_main(int_fast32_t us)
 {
 	enum state {
 		default_state = 0,
@@ -388,7 +388,7 @@ bool blumote_main(int ms)
 		handle_buf_overflow
 	};
 	static enum state current_state = default_state;
-	static int ttl;
+	static int_fast32_t ttl;
 	int c;
 	bool run_again = false;
 
@@ -403,16 +403,16 @@ bool blumote_main(int ms)
 			} else {
 				(void)buf_enque(&gp_rx_tx, c);
 			}
-			ttl = 20;
+			ttl = 20000;
 			run_again = true;
 		}
 		break;
 
 	case rx_cmd2:
-		ttl -= ms;
+		ttl -= us;
 		while ((c = bluetooth_getchar()) != EOF) {
 			(void)buf_enque(&gp_rx_tx, c);
-			ttl = 20;
+			ttl = 20000;
 		}
 
 		if (ttl < 0) {

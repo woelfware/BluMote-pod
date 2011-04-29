@@ -15,8 +15,7 @@ static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
 	buf_gp[GP_BUF_SIZE];
 
-static volatile int ir_tick = 0;
-static volatile int sys_tick = 0;
+static volatile int_fast32_t sys_tick = 0;
 volatile bool got_pulse = false;
 
 static volatile uint16_t duration = 0;
@@ -30,8 +29,7 @@ static void init_bufs()
 
 void init_hw()
 {
-	WDTCTL = WDT_MDLY_32;	/* Set Watchdog interval to 2ms @ 16MHz */
-	IE1 |= WDTIE;		/* Enable WDT interrupt */
+	WDTCTL = WDTPW + WDTHOLD;	/* stop WDT */
 	BCSCTL1 = CALBC1_16MHZ;	/* Set DCO */
 	DCOCTL = CALDCO_16MHZ;
 	P1DIR = BIT4 | BIT5;    /* P1.4,5 = IR_OUT1, IR_OUT2 */
@@ -48,7 +46,7 @@ void init_hw()
 	/* IR configs */
 	P1SEL |= BIT5;  /* Set as alternate function */
 	CCTL1 = CCIE;	/* CCR1 interrupt enabled */
- 	CCR1 = (SYS_CLK * US_PER_IR_TICK) - 1;
+ 	CCR1 = (SYS_CLK * US_PER_SYS_TICK) - 1;
 	CCTL0 = OUTMOD_4;  /* CCR0 interrupt disabled and Toggle */
 	CCR0 = ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);
 	TACTL = TASSEL_2 +  MC_2; /* SMCLK, continuous */
@@ -58,22 +56,12 @@ void init_hw()
 	init_bufs();
 }
 
-int get_ms()
+int_fast32_t get_us()
 {
-	int elapsed_time;
+	int_fast32_t elapsed_time;
 	__disable_interrupt();
-	elapsed_time = sys_tick << 1;
+	elapsed_time = sys_tick * US_PER_SYS_TICK;
 	sys_tick = 0;
-	__enable_interrupt();
-	return elapsed_time;
-}
-
-int get_us()
-{
-	int elapsed_time;
-	__disable_interrupt();
-	elapsed_time = ir_tick * US_PER_IR_TICK;
-	ir_tick = 0;
 	__enable_interrupt();
 	return elapsed_time;
 }
@@ -108,14 +96,8 @@ __interrupt void TIMERA1_ISR(void)
 {
  	switch (TAIV) {
  	case 2:
-		CCR1 += ((SYS_CLK * US_PER_IR_TICK) - 1);	/* Add Offset to CCR1 */
- 		ir_tick++;	
+		CCR1 += ((SYS_CLK * US_PER_SYS_TICK) - 1);	/* Add Offset to CCR1 */
+ 		sys_tick++;	
 		break;
 	}
-}
-
-#pragma vector = WDT_VECTOR
-__interrupt void watchdog_timer(void)
-{
-	sys_tick++;
 }
