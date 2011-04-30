@@ -3,6 +3,7 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:background="@drawable/background"
     >
     <TextView android:id="@+id/devices_textview"
         android:layout_width="fill_parent"
@@ -11,11 +12,14 @@
         android:background="#666"
         android:textColor="#fff"
         android:paddingLeft="5dp"
+        android:textSize="18sp"
     />
     <ListView android:id="@+id/devices_list"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:divider="#555"
+        android:dividerHeight="1dp"
     />
     <Button
       	android:id="@+id/add_config_btn"

@@ -28,13 +28,15 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 import com.woelfware.database.MyDB;
-import com.woelfware.droidmote.Codes.Commands;
 
 public class Droidmote extends Activity {
 	// Debugging
@@ -95,7 +97,6 @@ public class Droidmote extends Activity {
     private Button disc_btn;
     private ImageButton left_btn;
     private ImageButton mute_btn;
-    private Button enter_btn;
     private ImageButton down_btn;
     private Button info_btn;
     private ImageButton right_btn;
@@ -122,6 +123,14 @@ public class Droidmote extends Activity {
     private Button btn_exit;
     private Button btn_last;
     private ImageButton btn_home;
+    private Button btn_misc1;
+    private Button btn_misc2;
+    private Button btn_misc3;
+    private Button btn_misc4;
+    private Button btn_misc5;
+    private Button btn_misc6;
+    private Button btn_misc7;
+    private Button btn_misc8;
     
     // Name of the connected device
     private String mConnectedDeviceName = null;
@@ -158,7 +167,7 @@ public class Droidmote extends Activity {
     private int BUTTON_ID = 0; 
     
     // current State of the pod communication
-    private byte STATE = Codes.Commands.IDLE;
+    private byte STATE = Codes.IDLE;
     
     // Sets the delay in-between repeated sending of the keys on the interface
     private static int DELAY_TIME = 250; 
@@ -177,10 +186,18 @@ public class Droidmote extends Activity {
     // Hash map to keep track of all the buttons on the interface and associated properties
     HashMap<Integer,Object[]> button_map;
             
+    // These are used for activities display window
+	private ArrayAdapter<String> mActivitiesArrayAdapter;
+    private static final int ACTIVITY_ADD=5;
+    private static final int ACTIVITY_RENAME=6;
+    private static final int ID_DELETE = 0;
+    private static final int ID_RENAME = 1;
+    private Button add_activity_btn;
+    ListView activitiesListView;
     
     // keep track of what the active page of buttons is
     public enum Pages {
-        MAIN,NUMBERS 
+        MAIN,NUMBERS,ACTIVITIES 
     }
     private Pages page = Pages.MAIN;
     
@@ -188,6 +205,9 @@ public class Droidmote extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	
+    	// get preferences file    	
+    	prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
     	
     	// Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -235,7 +255,8 @@ public class Droidmote extends Activity {
     @Override
     public synchronized void onResume() {
         super.onResume();
-
+        device_data.open(); // make sure database open
+        
         // Performing this check in onResume() covers the case in which BT was
         // not enabled during onStart(), so we were paused to enable it...
         // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
@@ -248,10 +269,13 @@ public class Droidmote extends Activity {
         }
         
         // setup spinner (need this in case we removed the spinner item from a call to managedevices)
-        setupSpinner();
-        
-        // populate Buttons from DB
-		fetchButtons();
+        if (page == Pages.MAIN) {
+            setupSpinner();  // update spinner items
+            fetchButtons();  // update buttons from DB
+        }
+        else if (page == Pages.NUMBERS) {
+        	// reserved for future use....
+        }
 		
 		// See if the bluetooth device is connected, if not try to connect
 		if (mBluetoothAdapter.isEnabled()) {
@@ -290,9 +314,9 @@ public class Droidmote extends Activity {
         if (mChatService != null) mChatService.stop();
         //device_data.close();
         //save the last table in preferences for next time we launch
-        Editor mEditor =  prefs.edit();
-        mEditor.putString("lastDevice",cur_table);
-        mEditor.commit();   
+//        Editor mEditor =  prefs.edit();
+//        mEditor.putString("lastDevice",cur_table);
+//        mEditor.commit();   
                 
     }
     
@@ -361,7 +385,7 @@ public class Droidmote extends Activity {
     				LOOP_KEY = false;
     				switch (page) {
     				case MAIN:
-    					setContentView(R.layout.number_screen_test);
+    					setContentView(R.layout.number_screen);
     					page = Pages.NUMBERS;
     					setupNumbers();
     					return;
@@ -397,19 +421,18 @@ public class Droidmote extends Activity {
     	public boolean onTouch(View v, MotionEvent e) {
     		//only execute this one time and only if not in learn mode
     		// if we don't have !LOOP_KEY you can hit button multiple times
-    		// and hold finger on button and you'll get duplicates
-    		
+    		// and hold finger on button and you'll get duplicates    		
     		if (e.getAction() == MotionEvent.ACTION_DOWN) {
     			// even in learn mode should buzz button if action-down happens
     			v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);    
     		}
-    		// don't want to execute touchButton when in learn mode
-    		if (STATE != Codes.Commands.LEARN) { 
+    		
+    		if (STATE != Codes.LEARN && STATE != Codes.ACTIVITY) {     		
+        		// don't want to execute touchButton when in learn mode or activity mode
     			if (e.getAction() == MotionEvent.ACTION_DOWN) {  
     	    		LOOP_KEY = true; // start looping until we lift finger off key
     	    		
-    				touchButton(v.getId());
-    				return false;  //allows XML to consume
+    				touchButton(v.getId());    		
     			}   
     			else if (e.getAction() == MotionEvent.ACTION_UP) {
     				// turn off LED
@@ -418,7 +441,7 @@ public class Droidmote extends Activity {
     				LOOP_KEY = false;	// reset loop key global
     			}
     		}
-    		return false;   		
+    		return false; // allows XML to consume
     	}
     };
     
@@ -426,8 +449,11 @@ public class Droidmote extends Activity {
         public void onClick(View v) {
         	BUTTON_ID = v.getId();
         	
-        	if (STATE == Codes.Commands.LEARN) {
-    	    		sendCode(Commands.LEARN);  	    	    	    	    	    	 			
+        	if (STATE == Codes.ACTIVITY) {
+        		//TODO implement appending/saving button to the activity list item.... 
+        	}
+        	else if (STATE == Codes.LEARN) {
+    	    		sendCode(Codes.LEARN);  	    	    	    	    	    	 			
     		}
         	else { // skip this handler if we are in learn button mode
         		// send message to handler after the delay expires, allows for repeating event
@@ -451,7 +477,7 @@ public class Droidmote extends Activity {
         }
     };
     
-    // called to setup the buttons on the screen
+    // called to setup the buttons on the main screen
     private void setupDefaultButtons() {
     	
     	setupSpinner();
@@ -474,12 +500,8 @@ public class Droidmote extends Activity {
     	play_btn = (ImageButton) findViewById(R.id.play_btn);
     	eject_btn = (ImageButton) findViewById(R.id.eject_btn);
     	disc_btn = (Button) findViewById(R.id.disc_btn);
-    	left_btn = (ImageButton) findViewById(R.id.left_btn);
     	mute_btn = (ImageButton) findViewById(R.id.mute_btn);
-    	enter_btn = (Button) findViewById(R.id.enter_btn);
-    	down_btn = (ImageButton) findViewById(R.id.down_btn);
     	info_btn = (Button) findViewById(R.id.info_btn);
-    	right_btn = (ImageButton) findViewById(R.id.right_btn);
     	return_btn = (ImageButton) findViewById(R.id.return_btn);
     	pgup_btn = (ImageButton) findViewById(R.id.pgup_btn);
     	pgdn_btn = (ImageButton) findViewById(R.id.pgdn_btn);
@@ -488,9 +510,8 @@ public class Droidmote extends Activity {
     	move_right_btn = (ImageButton) findViewById(R.id.move_right_btn);
     	move_left_btn = (ImageButton) findViewById(R.id.move_left_btn);
     	pause_btn = (ImageButton) findViewById(R.id.pause_btn);
-    	btn_up = (ImageButton) findViewById(R.id.btn_up);
     	fav_btn = (ImageButton) findViewById(R.id.fav_btn);
-
+    	btn_last = (Button) findViewById(R.id.btn_last);
         btn_volume_up.setOnTouchListener(buttonTouch);
         btn_volume_up.setOnClickListener(buttonClick);
         btn_volume_down.setOnTouchListener(buttonTouch);
@@ -522,21 +543,11 @@ public class Droidmote extends Activity {
         eject_btn.setOnClickListener(buttonClick);
         eject_btn.setOnTouchListener(buttonTouch);
         disc_btn.setOnClickListener(buttonClick);
-        disc_btn.setOnTouchListener(buttonTouch);
-        left_btn.setOnClickListener(buttonClick);
-        left_btn.setOnTouchListener(buttonTouch);
+        disc_btn.setOnTouchListener(buttonTouch);        
         mute_btn.setOnClickListener(buttonClick);
-        mute_btn.setOnTouchListener(buttonTouch);
-        btn_up.setOnClickListener(buttonClick);
-        btn_up.setOnTouchListener(buttonTouch);
-        enter_btn.setOnClickListener(buttonClick);
-        enter_btn.setOnTouchListener(buttonTouch);
-        down_btn.setOnClickListener(buttonClick);
-        down_btn.setOnTouchListener(buttonTouch);
+        mute_btn.setOnTouchListener(buttonTouch);;
         info_btn.setOnClickListener(buttonClick);
         info_btn.setOnTouchListener(buttonTouch);
-        right_btn.setOnClickListener(buttonClick);
-        right_btn.setOnTouchListener(buttonTouch);
         return_btn.setOnClickListener(buttonClick);
         return_btn.setOnTouchListener(buttonTouch);
         pgup_btn.setOnClickListener(buttonClick);
@@ -555,6 +566,8 @@ public class Droidmote extends Activity {
         pause_btn.setOnTouchListener(buttonTouch);
         fav_btn.setOnTouchListener(buttonTouch);
     	fav_btn.setOnClickListener(buttonClick);
+        btn_last.setOnTouchListener(buttonTouch);
+        btn_last.setOnClickListener(buttonClick);
         
         //set bundle of associated button properties
         // order is : Button name, database string identifier for btn, graphic for unpressed, graphic for pushed         
@@ -574,14 +587,9 @@ public class Droidmote extends Activity {
         Object[] btn_14 = {play_btn, "play_btn"};
         Object[] btn_15 = {pause_btn, "pause_btn"};
         Object[] btn_16 = {eject_btn, "eject_btn"};
-        Object[] btn_17 = {disc_btn, "disc_btn"};
-        Object[] btn_18 = {left_btn, "left_btn"};
+        Object[] btn_17 = {disc_btn, "disc_btn"};        
         Object[] btn_19 = {mute_btn, "mute_btn"};
-        Object[] btn_20 = {btn_up, "btn_up"};
-        Object[] btn_21 = {enter_btn, "enter_btn"};
-        Object[] btn_22 = {down_btn, "down_btn"};
         Object[] btn_23 = {info_btn, "info_btn"};
-        Object[] btn_24 = {right_btn, "right_btn"};
         Object[] btn_25 = {return_btn, "return_btn"};
         Object[] btn_26 = {pgup_btn, "pgup_btn"};
         Object[] btn_27 = {pgdn_btn, "pgdn_btn"};
@@ -590,6 +598,8 @@ public class Droidmote extends Activity {
         Object[] btn_30 = {move_right_btn, "move_right_btn"};
         Object[] btn_31 = {move_left_btn, "move_left_btn"};
         Object[] btn_32 = {fav_btn, "fav_btn"};
+        Object[] btn_33 = {btn_last, "btn_last"};
+
         
         // bundle all the button data into a big hashtable
         button_map = new HashMap<Integer,Object[]>();
@@ -610,13 +620,8 @@ public class Droidmote extends Activity {
         button_map.put(R.id.pause_btn, btn_15);
         button_map.put(R.id.eject_btn, btn_16);
         button_map.put(R.id.disc_btn, btn_17);
-        button_map.put(R.id.left_btn, btn_18);
         button_map.put(R.id.mute_btn,btn_19);
-        button_map.put(R.id.btn_up,btn_20);
-        button_map.put(R.id.enter_btn,btn_21);
-        button_map.put(R.id.down_btn,btn_22);
         button_map.put(R.id.info_btn,btn_23);
-        button_map.put(R.id.right_btn,btn_24);
         button_map.put(R.id.return_btn,btn_25);
         button_map.put(R.id.pgup_btn,btn_26);
         button_map.put(R.id.pgdn_btn,btn_27);
@@ -625,6 +630,7 @@ public class Droidmote extends Activity {
         button_map.put(R.id.move_right_btn,btn_30);
         button_map.put(R.id.move_left_btn,btn_31);
         button_map.put(R.id.fav_btn, btn_32);
+        button_map.put(R.id.btn_last, btn_33);
                 
     }
     
@@ -646,8 +652,19 @@ public class Droidmote extends Activity {
     	btn_dash = (Button) findViewById(R.id.btn_dash);
     	btn_enter = (Button) findViewById(R.id.btn_enter);
     	btn_exit = (Button) findViewById(R.id.btn_exit);
-    	btn_last = (Button) findViewById(R.id.btn_last);
     	btn_home = (ImageButton) findViewById(R.id.btn_home);
+    	left_btn = (ImageButton) findViewById(R.id.left_btn);
+    	right_btn = (ImageButton) findViewById(R.id.right_btn);
+    	btn_up = (ImageButton) findViewById(R.id.btn_up);
+    	down_btn = (ImageButton) findViewById(R.id.down_btn);
+    	btn_misc1 = (Button) findViewById(R.id.btn_misc1);
+    	btn_misc2 = (Button) findViewById(R.id.btn_misc2);
+    	btn_misc3 = (Button) findViewById(R.id.btn_misc3);
+    	btn_misc4 = (Button) findViewById(R.id.btn_misc4);
+    	btn_misc5 = (Button) findViewById(R.id.btn_misc5);
+    	btn_misc6 = (Button) findViewById(R.id.btn_misc6);
+    	btn_misc7 = (Button) findViewById(R.id.btn_misc7);
+    	btn_misc8 = (Button) findViewById(R.id.btn_misc8);
     	
     	// action listeners
     	btn_n0.setOnTouchListener(buttonTouch);
@@ -675,15 +692,37 @@ public class Droidmote extends Activity {
         btn_enter.setOnTouchListener(buttonTouch);
         btn_enter.setOnClickListener(buttonClick);
         btn_exit.setOnTouchListener(buttonTouch);
-        btn_exit.setOnClickListener(buttonClick);
-        btn_last.setOnTouchListener(buttonTouch);
-        btn_last.setOnClickListener(buttonClick);
+        btn_exit.setOnClickListener(buttonClick); 
         btn_home.setOnTouchListener(buttonTouch);
         btn_home.setOnClickListener(buttonClick);
         move_left_btn.setOnClickListener(buttonClick);
         move_left_btn.setOnTouchListener(buttonTouch);
         move_right_btn.setOnClickListener(buttonClick);
         move_right_btn.setOnTouchListener(buttonTouch);
+        left_btn.setOnClickListener(buttonClick);
+        left_btn.setOnTouchListener(buttonTouch);
+        right_btn.setOnClickListener(buttonClick);
+        right_btn.setOnTouchListener(buttonTouch);
+        btn_up.setOnClickListener(buttonClick);
+        btn_up.setOnTouchListener(buttonTouch);
+        down_btn.setOnClickListener(buttonClick);
+        down_btn.setOnTouchListener(buttonTouch);
+        btn_misc1.setOnClickListener(buttonClick);
+        btn_misc1.setOnTouchListener(buttonTouch);
+        btn_misc2.setOnClickListener(buttonClick);
+        btn_misc2.setOnTouchListener(buttonTouch);
+        btn_misc3.setOnClickListener(buttonClick);
+        btn_misc3.setOnTouchListener(buttonTouch);
+        btn_misc4.setOnClickListener(buttonClick);
+        btn_misc4.setOnTouchListener(buttonTouch);
+        btn_misc5.setOnClickListener(buttonClick);
+        btn_misc5.setOnTouchListener(buttonTouch);
+        btn_misc6.setOnClickListener(buttonClick);
+        btn_misc6.setOnTouchListener(buttonTouch);
+        btn_misc7.setOnClickListener(buttonClick);
+        btn_misc7.setOnTouchListener(buttonTouch);
+        btn_misc8.setOnClickListener(buttonClick);
+        btn_misc8.setOnTouchListener(buttonTouch);
         
     	//set bundle of associated button properties
         // order is : Button name, String database id for btn, graphic for unpressed, graphic for pushed 
@@ -700,10 +739,21 @@ public class Droidmote extends Activity {
         Object[] btn_11 = {btn_dash, "btn_dash"};
         Object[] btn_12 = {btn_enter, "btn_enter"};
         Object[] btn_13 = {btn_exit, "btn_exit"};
-        Object[] btn_14 = {btn_last, "btn_last"};
         Object[] btn_15 = {btn_home, "btn_home"};
         Object[] btn_16 = {move_right_btn, "move_right_btn"};
         Object[] btn_17 = {move_left_btn, "move_left_btn"};
+        Object[] btn_18 = {left_btn, "left_btn"};
+        Object[] btn_19 = {right_btn, "right_btn"};
+        Object[] btn_20 = {btn_up, "btn_up"};
+        Object[] btn_21 = {down_btn, "down_btn"};
+        Object[] btn_22 = {btn_misc1, "btn_misc1"};
+        Object[] btn_23 = {btn_misc2, "btn_misc2"};
+        Object[] btn_24 = {btn_misc3, "btn_misc3"};
+        Object[] btn_25 = {btn_misc4, "btn_misc4"};
+        Object[] btn_26 = {btn_misc5, "btn_misc5"};
+        Object[] btn_27 = {btn_misc6, "btn_misc6"};
+        Object[] btn_28 = {btn_misc7, "btn_misc7"};
+        Object[] btn_29 = {btn_misc8, "btn_misc8"};
         
         // bundle all the button data into a big hashtable
         button_map = new HashMap<Integer,Object[]>();
@@ -720,10 +770,65 @@ public class Droidmote extends Activity {
         button_map.put(R.id.btn_dash, btn_11);
         button_map.put(R.id.btn_enter, btn_12);
         button_map.put(R.id.btn_exit, btn_13);
-        button_map.put(R.id.btn_last, btn_14);
         button_map.put(R.id.btn_home, btn_15);
         button_map.put(R.id.move_right_btn, btn_16);
         button_map.put(R.id.move_left_btn, btn_17);
+        button_map.put(R.id.left_btn, btn_18);
+        button_map.put(R.id.right_btn,btn_19);
+        button_map.put(R.id.btn_up,btn_20);
+        button_map.put(R.id.down_btn,btn_21);
+        button_map.put(R.id.btn_misc1,btn_22);
+        button_map.put(R.id.btn_misc2,btn_23);
+        button_map.put(R.id.btn_misc3,btn_24);
+        button_map.put(R.id.btn_misc4,btn_25);
+        button_map.put(R.id.btn_misc5,btn_26);
+        button_map.put(R.id.btn_misc6,btn_27);
+        button_map.put(R.id.btn_misc7,btn_28);
+        button_map.put(R.id.btn_misc8,btn_29);
+    }
+    
+    // This is for the left-most screen - for activities view
+    private void setupActivities() {
+    	// Initialize array adapters. One for already paired devices and
+        // one for newly discovered devices
+        mActivitiesArrayAdapter = new ArrayAdapter<String>(this, R.layout.manage_devices_item);
+        
+        // Find and set up the ListView for paired devices
+        activitiesListView = (ListView) findViewById(R.id.activities_list);
+        activitiesListView.setAdapter(mActivitiesArrayAdapter);
+        activitiesListView.setOnItemClickListener(mDeviceClickListener);
+        
+        add_activity_btn = (Button) findViewById(R.id.add_activity_btn);
+        add_activity_btn.setOnClickListener( new OnClickListener() {
+            public void onClick(View v) {
+            	// Launch the function to ask for a name for device
+            	Intent i = new Intent(getApplicationContext(), EnterDevice.class);
+                startActivityForResult(i, ACTIVITY_ADD);
+            }
+        });
+        
+        //TODO this is just a placeholder below, implement working with preferences file
+        Cursor cursor1;
+        String str1;
+        cursor1 = device_data.getTables();
+        cursor1.moveToFirst();
+        mActivitiesArrayAdapter.clear(); // always clear before adding items
+        if (cursor1.getCount() > 0) {
+        	do {
+        		// need to exclude android_metadata and sqlite_sequence tables from results
+        		str1 = cursor1.getString(0);
+        		if (!(str1.equals("android_metadata")) 
+        				&& !(str1.equals("sqlite_sequence"))) {
+        			// convert underscores to spaces
+        			str1 = str1.replace("_", " ");
+        			mActivitiesArrayAdapter.add(str1);
+        		}
+        	} while (cursor1.moveToNext());
+        }
+        
+        // context menu on array list
+        registerForContextMenu(findViewById(R.id.activities_list));
+        
     }
     
     // sets up the spinner at the top of each screen
@@ -738,7 +843,7 @@ public class Droidmote extends Activity {
     	populateDropDown();
 
     	// set spinner to default from last session if possible
-    	prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
+ //   	prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
     	String prefs_table = prefs.getString("lastDevice", null);
     	if (prefs_table != null) {
     		for(int i=0; i<device_spinner.getCount(); i++) {
@@ -836,7 +941,7 @@ public class Droidmote extends Activity {
             case MESSAGE_READ:
             	// arg1 is the # of bytes read
                 byte[] readBuf = (byte[]) msg.obj;
-                interpretResponse(readBuf, msg.arg1);
+                interpretResponse(readBuf, msg.arg1, msg.arg2);
                 break;
                 
             case MESSAGE_DEVICE_NAME:
@@ -901,6 +1006,7 @@ public class Droidmote extends Activity {
                 //device.getName(); // grab the friendly name, a rename command can change this
             }
             break;
+            
         case REQUEST_ENABLE_BT:
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
@@ -912,14 +1018,46 @@ public class Droidmote extends Activity {
                 finish();
             }
             break;
+            
         case REQUEST_MANAGE_DEVICE:
         	// when the manage devices activity returns
         	if (resultCode == Activity.RESULT_OK) {
         		// re-populate the drop-down menu and set selection to the first item
-        		device_data.open();	// onActivityResult() is called BEFORE onResume() so need this!
-        		populateDropDown();
+        		//device_data.open();	// onActivityResult() is called BEFORE onResume() so need this!
+        		//TODO add check to prevent this from crashing us
+        		//populateDropDown();
         	}
         	break;
+        	
+        case ACTIVITY_ADD:
+        	//TODO implement working with preferences file
+        	if (resultCode == Activity.RESULT_OK) {
+        		// add the new item to the database
+        		Bundle return_bundle = data.getExtras();
+        		if ( return_bundle != null ) {
+        			String return_string = return_bundle.getString("returnStr");
+        			// spaces don't work for table names, so replace with underscore
+        			return_string = return_string.replace(" ", "_");
+            		device_data.createTable(return_string);
+        		}
+            	// refresh the display of items
+        		setupActivities(); 
+        	}
+        	break;
+        case ACTIVITY_RENAME:
+        	//TODO implement working with prefernces file
+        	if (resultCode == Activity.RESULT_OK) {
+        		Bundle return_bundle = data.getExtras();
+        		if ( return_bundle != null ) {
+        			String return_string = return_bundle.getString("returnStr");
+            		//device_data.renameTable(table_name, return_string);
+            		
+        		}
+            	// refresh the display of items
+        		setupActivities(); 
+        	}
+        	break;
+        	
         }
     }
 
@@ -956,18 +1094,18 @@ public class Droidmote extends Activity {
         	return true;
         	
         case R.id.get_info:
-        	sendCode(Codes.Commands.GET_VERSION);
+        	sendCode(Codes.GET_VERSION);
         	return true;
         	
         case R.id.learn_button:
         	Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
-        	STATE = Codes.Commands.LEARN;
+        	STATE = Codes.LEARN;
         	return true;
         	
         case R.id.stop_learn:        
         	Toast.makeText(this, "Stopped Learning", Toast.LENGTH_SHORT).show();
-        	sendCode(Codes.Commands.ABORT_LEARN);
-        	STATE = Codes.Commands.ABORT_LEARN;
+        	sendCode(Codes.ABORT_LEARN);
+        	STATE = Codes.ABORT_LEARN;
         	return true;        		
         }
         return false;
@@ -985,6 +1123,9 @@ public class Droidmote extends Activity {
 
     		// populate the keys from database	  		
     		fetchButtons();
+    		Editor mEditor =  prefs.edit();
+            mEditor.putString("lastDevice",cur_table);
+            mEditor.commit();
     	}
 
         public void onNothingSelected(AdapterView<?> parent) {
@@ -994,16 +1135,25 @@ public class Droidmote extends Activity {
     
     @Override
 	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
+		String table_name;
 		switch(item.getItemId()) {
-		case ID_TRAIN:
-			BUTTON_ID = item.getGroupId();
-			// call function to send to pod that we want to train
-			sendCode(Codes.Commands.LEARN);
+		case ID_DELETE:
+			//TODO this should delete an activity from the preferences file
+//			// need to remove this table and repopulate list
+//			table_name = mActivitiesArrayAdapter.getItem((int)(info.id));
+//			// replace spaces with underscores
+//			table_name = table_name.replace(" ", "_");
+//			device_data.removeTable(table_name);
+//			setupActivities(); // repopulate the display now
 			return true;
-		case ID_UNTRAIN:
-			BUTTON_ID = 0; // reset value of button id
-			// tell pod to abort train
-			sendCode(Codes.Commands.ABORT_LEARN);
+		case ID_RENAME:
+			//TODO this should delete an activity from the preferences file
+//			// need to remove this table and repopulate list
+//			table_name = mActivitiesArrayAdapter.getItem((int)(info.id));
+//			//launch window to get new name to use
+//			Intent i = new Intent(this, EnterDevice.class);
+//            startActivityForResult(i, ACTIVITY_RENAME);
 			return true;
 		}
 		return super.onContextItemSelected(item);
@@ -1012,9 +1162,21 @@ public class Droidmote extends Activity {
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenuInfo menuInfo) {
-
+		if (v.getId() == R.id.devices_list) {
+//			AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
+			menu.setHeaderTitle("Menu");
+			menu.add(0, ID_DELETE, 0, "Delete");
+			menu.add(0, ID_RENAME, 0, "Rename");
+		}
 		super.onCreateContextMenu(menu, v, menuInfo);
 	}
+    
+	  // The on-click listener for all devices in the ListViews
+    private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
+        public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
+        	//TODO implement execution of the activity that was selected
+        }
+    };
 	
     // this function updates the current table with what is selected in drop-down
 	// it then grabs the button keys from that table into local devices Cursor
@@ -1039,15 +1201,14 @@ public class Droidmote extends Activity {
     			column = devices.getString(1);
     			if (column.equals(buttonCode)) {
     				byte[] code = devices.getBlob(2);    			
-    				byte command = (byte)(Codes.Commands.IR_TRANSMIT);
-    				byte[] toSend = new byte[code.length+2]; // 2 extra bytes for command byte and 0x00
+    				byte command = (byte)(Codes.IR_TRANSMIT);
+    				byte[] toSend = new byte[code.length+1]; // 1 extra bytes for command byte
     				toSend[0] = command;
-    				toSend[1] = 0x00;
-    				for (int j=2; j < toSend.length; j++) {
-    					toSend[j] = code[j-2];
+    				for (int j=1; j < toSend.length; j++) {
+    					toSend[j] = code[j-1];
     				}
     				//{command, 0x00, code}; // 0x00 is reserved byte
-    				STATE = Codes.Commands.IR_TRANSMIT;
+    				STATE = Codes.IR_TRANSMIT;
     				sendMessage(toSend); // send data if matches 
     			}
     			// move to next button
@@ -1060,26 +1221,26 @@ public class Droidmote extends Activity {
     public void sendCode(int code) {
     	byte[] toSend;
     	switch (code) {
-    	case Codes.Commands.LEARN:
+    	case Codes.LEARN:
     		toSend = new byte[1];
-    		toSend[0] = Codes.Commands.LEARN; // DEBUG , should be LEARN
+    		toSend[0] = Codes.LEARN;
     		toSend[0] = (byte)toSend[0];
-    		STATE = Codes.Commands.LEARN;
+    		STATE = Codes.LEARN;
     		sendMessage(toSend); 
     		break;
     		
-    	case Codes.Commands.ABORT_LEARN:
+    	case Codes.ABORT_LEARN:
     		toSend = new byte[1];
-    		toSend[0] = Codes.Commands.ABORT_LEARN;
+    		toSend[0] = Codes.ABORT_LEARN;
     		toSend[0] = (byte)toSend[0];    		
-    		STATE = Codes.Commands.ABORT_LEARN;
+    		STATE = Codes.ABORT_LEARN;
     		sendMessage(toSend);
     		break;
     		
-    	case Codes.Commands.GET_VERSION:
-    		STATE = Codes.Commands.GET_VERSION;
+    	case Codes.GET_VERSION:
+    		STATE = Codes.GET_VERSION;
     		toSend = new byte[1];
-    		toSend[0] = Codes.Commands.GET_VERSION;
+    		toSend[0] = Codes.GET_VERSION;
     		toSend[0] = (byte)toSend[0];    		
     		sendMessage(toSend);
     		break;
@@ -1097,102 +1258,196 @@ public class Droidmote extends Activity {
 	    		    
 		// refresh the local Cursor with new database updates
 		fetchButtons();
-		STATE = Codes.Commands.IDLE; // reset state, drop out of learn mode		
-		Codes.learn_started = false; // ready to start a new learn command now
+		STATE = Codes.IDLE; // reset state, drop out of learn mode		
+		Codes.learn_state = Codes.LEARN_STATE.IDLE; // ready to start a new learn command now
 		Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
     }
     
     // returns false if the data to be inserted is more bytes than array is setup for, 
     // this should not happen unless pod screwed up
     public boolean checkPodDataBounds(int bytes) {
-    	if (bytes > (Codes.pod_data.length - Codes.learn_data_index)) {
-			// toast an error, drop out of learn mode, and break
-    		Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
-    		STATE = Codes.Commands.IDLE;    
-    		Codes.learn_started = false;
+    	if (bytes > (Codes.pod_data.length - Codes.data_index)) {
     		return false;
 		}
     	return true;
     }
     
-    // store data from bluetooth packet into the Codes.pod_data array
-    // if we are finished with the command then store the button data to database
-    public void storeResponseData(byte[] response, int bytes) {    			
-		for (int i=0; Codes.learn_data_index < bytes; Codes.learn_data_index++) {
-			Codes.pod_data[Codes.learn_data_index] = response[i];
-			i++;
-		}
-		if (Codes.learn_data_index == (Codes.pod_data.length - 2) ) { // then we are finished collecting data
-			storeButton();
-		}    		
+    // an error happened, Toast user and reset state machines
+    // if argument = 1 then signal learn mode error, 
+    // if argument = 2 then signal get info error
+    public void signalError(int code) {   
+    	if (code == 1) {
+    		Toast.makeText(this, "Error occured, exiting learn mode!", Toast.LENGTH_SHORT).show();
+    		STATE = Codes.IDLE;
+    		Codes.learn_state = Codes.LEARN_STATE.IDLE;
+    	}
+    	else if (code == 2) {
+    		STATE = Codes.IDLE;
+    		Codes.info_state = Codes.INFO_STATE.IDLE;
+    	}
+    }       
+    
+    // this method will perform x > y with what should be unsigned bytes
+    public boolean isGreaterThanUnsignedByte(int x, int y) {
+    	int xl = 0x00FF & x;
+    	int yl = 0x00FF & y;
+    	
+    	if (xl > yl) { return true; }
+    	else { return false; }
     }
     
     // 	this method should be called whenever we receive a byte[] from the pod
     // the bytes argument tells us how many bytes were received and stored in response[]
-    public void interpretResponse(byte[] response, int bytes) {    	
+    // note that the response array is a circular buffer, the starting index head is 'index'
+    public void interpretResponse(byte[] response, int bytes, int index) {   
     	switch (STATE) {
-    	case Codes.Commands.LEARN:    		
-    		// learn data may not come all together, so need to process data in chunks
-    		if (response[0] == Codes.Return.ACK && Codes.learn_started == false) { // check if beginning of data stream
-    			Codes.learn_started = true; // signal we have now started a valid transfer
-    			
-    			//TODO test that new code to pull off num of bytes of payload is working...
-    			// byte 2 of response data is defined as the # of bytes is going to be sent 
-    			byte num_bytes = (byte)response[2]; // right now response[1] is reserved
-    			
-    			// create a new learn_data array of the appropriate size
-    			Codes.pod_data = new byte[num_bytes + 2];
-    			
-    			// store length of data as first two bytes (used in transmitting back)
-    			Codes.pod_data[0] = response[1];
-    			Codes.pod_data[1] = response[2];
-    			// set index to 2
-    			Codes.learn_data_index = 2;
-    			
-    			// check that data will not over-run the learn_data array
-    			if (checkPodDataBounds(bytes) ) // if true then continue
-    			{    				
-    				storeResponseData(response, bytes);
-    			}    			
-    		}
-    		else if (Codes.learn_started == true) {
-    			// if not beginning of packet, means some data was straggling in a new packet,
-        		// need to aggregate it
-        		
-    			// check that data will not over-run the learn_data array
-    			if (checkPodDataBounds(bytes) ) // if true then continue
-    			{    				
-    				// append to end of Codes.pod_data
-        			storeResponseData(response, bytes);
-    			}
-    			
-    		}
-    		else //if (response[0] == Codes.Return.NACK) 
-    		{
-    			Toast.makeText(this, "Error occured, exiting learn mode! NACK", Toast.LENGTH_SHORT).show();
-    			STATE = Codes.Commands.IDLE;
+    	case Codes.LEARN:  
+    		try { // catch any unforseen state machine errors.....
+    			// learn data may not come all together, so need to process data in chunks
+    			while (bytes > 0) {
+    				switch (Codes.learn_state) {
+    				case IDLE: 
+    					if (response[index] == Codes.ACK) {
+    						Codes.learn_state = Codes.LEARN_STATE.BYTE1;
+    						index = (index + 1) % (BluetoothChatService.buffer_size - 1);
+    						bytes--;
+    						Codes.data_index = 0;
+    					}
+    					else {
+    						signalError(1);
+    						return;
+    					}
+    					break;
+    					
+    				case BYTE1:
+    					// first byte after ACK should be a zero
+    					if (response[index] == 0) {
+    						Codes.learn_state = Codes.LEARN_STATE.INITIALIZED;
+    						bytes--;
+    						index = (index + 1) % (BluetoothChatService.buffer_size - 1);
+    					}
+    					else {
+    						signalError(1);
+    						return;
+    					}
+    					break;
+    					
+    				case INITIALIZED:
+    					// if we got here then we are on the third byte of data
+    					if ( isGreaterThanUnsignedByte(response[index], 0) ) {
+    						Codes.pod_data = new byte[(0x00FF & response[index]) + 2];
+    						// store length of data as first two bytes (used in transmitting back)
+        					Codes.pod_data[Codes.data_index++] = 0;
+        					Codes.pod_data[Codes.data_index++] = response[index];
+    						bytes--;
+        					index = (index + 1) % (BluetoothChatService.buffer_size - 1);
+    						Codes.learn_state = Codes.LEARN_STATE.COLLECTING;
+    					}
+    					else {
+    						signalError(1);
+    						return;
+    					}    					
+    					break;
+    					
+    				case COLLECTING:    					
+    					if (checkPodDataBounds(bytes)) {
+    						Codes.pod_data[Codes.data_index++] = response[index];
+    						// first check to see if this is the last byte
+    						if ( isGreaterThanUnsignedByte(Codes.data_index,Codes.pod_data[1]) ) {
+    							// if we got here then we are done, pod_data[1] is the expected message length
+    							storeButton();    
+    							return;
+    						}
+    						bytes--;
+        					index = (index + 1) % (BluetoothChatService.buffer_size - 1);
+    					}
+    					else {
+    						signalError(1);
+    						return;
+    					}
+    					break;
+    				} // end switch/case		    				    				
+    			} // end while loop
+    		} catch (Exception e) {  //something unexpected occurred....exit gracefully
+    			Toast.makeText(this, "Communication error, exiting learn mode", Toast.LENGTH_SHORT).show();
+    			STATE = Codes.IDLE;
+    			return;
     		}
     		break;
     		
-    	case Codes.Commands.GET_VERSION:
-    		if (response[0] == Codes.Return.ACK) {
-    			STATE = Codes.Commands.IDLE; // reset state
+    	case Codes.GET_VERSION:
+    		if (response[index] == Codes.ACK) {    			
     			// convert data into a String
-    			Codes.pod_data = response;
+    			//TODO need to create state machine to gather data like the learn command
+    			try { // catch any unforseen state machine errors.....
+    				while (bytes > 0) {
+    					switch (Codes.info_state) {
+    					case IDLE: 
+    						if (response[index] == Codes.ACK) {
+    							Codes.pod_data = new byte[4];
+    							Codes.info_state = Codes.INFO_STATE.BYTE0;
+    							index = (index + 1) % (BluetoothChatService.buffer_size - 1);
+    							bytes--;
+    							Codes.data_index = 0;
+    						}
+    						else {
+    							signalError(2);
+    							return;	    						
+    						}
+    						break;
+
+    					case BYTE0:
+    						Codes.pod_data[0] = response[index];
+    						Codes.info_state = Codes.INFO_STATE.BYTE1;
+    						bytes--;
+    						index = (index + 1) % (BluetoothChatService.buffer_size - 1);    					    			
+    						break;
+    						
+    					case BYTE1:
+    						Codes.pod_data[1] = response[index];
+    						Codes.info_state = Codes.INFO_STATE.BYTE2;
+    						bytes--;
+    						index = (index + 1) % (BluetoothChatService.buffer_size - 1);    					    			
+    						break;
+    						
+    					case BYTE2:
+    						Codes.pod_data[2] = response[index];
+    						Codes.info_state = Codes.INFO_STATE.BYTE3;
+    						bytes--;
+    						index = (index + 1) % (BluetoothChatService.buffer_size - 1);    					    			
+    						break;
+    						
+    					case BYTE3:
+    						Codes.pod_data[3] = response[index];
+    						Codes.info_state = Codes.INFO_STATE.IDLE;
+    						bytes--;
+    						index = (index + 1) % (BluetoothChatService.buffer_size - 1);    					    			
+    						break;
+    					}
+    				}
+    			}
+    			catch (Exception e) {
+    				Toast.makeText(this, "Communication error, exiting learn mode", Toast.LENGTH_SHORT).show();
+        			STATE = Codes.IDLE;
+        			return;
+    			}
+    					
     			// need to launch window to dump the data to
     			showDialog(DIALOG_SHOW_INFO);
     		}
     		break;
     		
-    	case Codes.Commands.ABORT_LEARN:
-    		if (response[0] == Codes.Return.ACK) {
-    			STATE = Codes.Commands.IDLE; // reset state
+    	case Codes.ABORT_LEARN:
+			STATE = Codes.IDLE; // reset state
+    		if (response[index] == Codes.ACK) {
+
     		}
     		break;
     		
-    	case Codes.Commands.IR_TRANSMIT:
-    		if (response[0] == Codes.Return.ACK) {
-    			STATE = Codes.Commands.IDLE; // reset state
+    	case Codes.IR_TRANSMIT:
+			STATE = Codes.IDLE; // reset state
+    		if (response[index] == Codes.ACK) {
+
     		}
     		break;    		
     	}	
@@ -1207,13 +1462,13 @@ public class Droidmote extends Activity {
 			// define dialog
 			StringBuilder podData = new StringBuilder();
 			podData.append("Component ID: ");
-			podData.append(Codes.pod_data[1]+"\n"); // first byte is ACK, throw away
+			podData.append(Codes.pod_data[0]+"\n"); 
 			podData.append("Major Revision: ");
-			podData.append(Codes.pod_data[2]+"\n");
+			podData.append(Codes.pod_data[1]+"\n");
 			podData.append("Minor Revision: ");
-			podData.append(Codes.pod_data[3]+"\n");
+			podData.append(Codes.pod_data[2]+"\n");
 			podData.append("Revision: ");
-			podData.append(Codes.pod_data[4]);
+			podData.append(Codes.pod_data[3]);
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 			//.setCancelable(false)
 			builder.setMessage(podData).setTitle("Pod Information");

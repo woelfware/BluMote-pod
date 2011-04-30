@@ -42,6 +42,8 @@ public class BluetoothChatService {
     private ConnectedThread mConnectedThread;
     private int mState;
 
+    public static final int buffer_size = 256;  // size of BT buffer
+    
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;       // we're doing nothing
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
@@ -386,18 +388,27 @@ public class BluetoothChatService {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[buffer_size];
+            byte[] circ_buffer = new byte[buffer_size];
             int bytes;
-
+            int index = 0; // for circular buffer index
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
-
+                    int local_index = index; // working copy of circ buffer index
+                    for (int i= 0; i < bytes; i++) {
+                    	circ_buffer[local_index] = buffer[i];
+                    	local_index = (local_index + 1) % 255;
+                    }
+                    //System.arraycopy(buffer, 0, circ_buffer, index, bytes);
+                    
                     // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(Droidmote.MESSAGE_READ, bytes, -1, buffer)
+                    mHandler.obtainMessage(Droidmote.MESSAGE_READ, bytes, index, circ_buffer)
                             .sendToTarget();
+                    // increment starting circular buffer index
+                    index = (index + bytes) % 255;
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();

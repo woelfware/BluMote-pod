@@ -10,24 +10,27 @@ import android.view.View;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.AdapterView.OnItemClickListener;
 
 import com.woelfware.database.MyDB;
 
 
-public class ManageDevices extends Activity {
-	private MyDB device_data;
-	private ArrayAdapter<String> mDevicesArrayAdapter;
+public class Activities extends Activity {
+	private MyDB device_data;  //TODO see if we can share this from Droidmote.java
+	private ArrayAdapter<String> mActivitiesArrayAdapter;
     private static final int ACTIVITY_ADD=0;
     private static final int ACTIVITY_RENAME=1;
     private static final int ID_DELETE = 0;
     private static final int ID_RENAME = 1;
-    private Button add_config_btn;
+    private Button add_activity_btn;
     
-    ListView devicesListView;
+    ListView activitiesListView;
 	String table_name; // holds table that we were working on (like when rename is called)
 
 	@Override
@@ -39,15 +42,15 @@ public class ManageDevices extends Activity {
         
         // Initialize array adapters. One for already paired devices and
         // one for newly discovered devices
-        mDevicesArrayAdapter = new ArrayAdapter<String>(this, R.layout.manage_devices_item);
+        mActivitiesArrayAdapter = new ArrayAdapter<String>(this, R.layout.manage_devices_item);
         
         // Find and set up the ListView for paired devices
-        devicesListView = (ListView) findViewById(R.id.devices_list);
-        devicesListView.setAdapter(mDevicesArrayAdapter);
-//        devicesListView.setOnItemClickListener(mDeviceClickListener);
+        activitiesListView = (ListView) findViewById(R.id.activities_list);
+        activitiesListView.setAdapter(mActivitiesArrayAdapter);
+        activitiesListView.setOnItemClickListener(mDeviceClickListener);
         
-        add_config_btn = (Button) findViewById(R.id.add_config_btn);
-        add_config_btn.setOnClickListener( new OnClickListener() {
+        add_activity_btn = (Button) findViewById(R.id.add_activity_btn);
+        add_activity_btn.setOnClickListener( new OnClickListener() {
             public void onClick(View v) {
             	// Launch the function to ask for a name for device
             	Intent i = new Intent(getApplicationContext(), EnterDevice.class);
@@ -59,7 +62,7 @@ public class ManageDevices extends Activity {
         device_data.open();
         populateDisplay();
         
-        registerForContextMenu(findViewById(R.id.devices_list));
+        registerForContextMenu(findViewById(R.id.activities_list));
         Intent i = getIntent();
         setResult(RESULT_OK,i);       
 	}
@@ -69,7 +72,7 @@ public class ManageDevices extends Activity {
         String str1;
         cursor1 = device_data.getTables();
         cursor1.moveToFirst();
-        mDevicesArrayAdapter.clear(); // always clear before adding items
+        mActivitiesArrayAdapter.clear(); // always clear before adding items
         if (cursor1.getCount() > 0) {
         	do {
         		// need to exclude android_metadata and sqlite_sequence tables from results
@@ -78,7 +81,7 @@ public class ManageDevices extends Activity {
         				&& !(str1.equals("sqlite_sequence"))) {
         			// convert underscores to spaces
         			str1 = str1.replace("_", " ");
-        			mDevicesArrayAdapter.add(str1);
+        			mActivitiesArrayAdapter.add(str1);
         		}
         	} while (cursor1.moveToNext());
         }
@@ -94,26 +97,7 @@ public class ManageDevices extends Activity {
 	protected void onResume() {
 		super.onResume();
         device_data.open();
-	}
-	
-//	@Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        MenuInflater inflater = getMenuInflater();
-//        inflater.inflate(R.menu.md_options_menu, menu);
-//        return true;
-//    }
-	
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        switch (item.getItemId()) {
-//        case R.id.menu_add_item:
-//            // Launch the function to ask for a name for device
-//        	Intent i = new Intent(this, EnterDevice.class);
-//            startActivityForResult(i, ACTIVITY_ADD);
-//            return true;
-//        }
-//        return false;
-//    }
+	}	
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
@@ -153,7 +137,7 @@ public class ManageDevices extends Activity {
 		switch(item.getItemId()) {
 		case ID_DELETE:
 			// need to remove this table and repopulate list
-			table_name = mDevicesArrayAdapter.getItem((int)(info.id));
+			table_name = mActivitiesArrayAdapter.getItem((int)(info.id));
 			// replace spaces with underscores
 			table_name = table_name.replace(" ", "_");
 			device_data.removeTable(table_name);
@@ -161,7 +145,7 @@ public class ManageDevices extends Activity {
 			return true;
 		case ID_RENAME:
 			// need to remove this table and repopulate list
-			table_name = mDevicesArrayAdapter.getItem((int)(info.id));
+			table_name = mActivitiesArrayAdapter.getItem((int)(info.id));
 			//launch window to get new name to use
 			Intent i = new Intent(this, EnterDevice.class);
             startActivityForResult(i, ACTIVITY_RENAME);
@@ -182,6 +166,11 @@ public class ManageDevices extends Activity {
 		super.onCreateContextMenu(menu, v, menuInfo);
 	}
     
-    
+	  // The on-click listener for all devices in the ListViews
+    private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
+        public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
+
+        }
+    };
 
 }
