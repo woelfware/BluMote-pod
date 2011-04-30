@@ -14,6 +14,7 @@ static inline bool is_space()
 static void carrier_freq(bool on)
 {
 	if (on) {
+		CCR0 = TAR + ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);  /* Reset timing */
 		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */		
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
@@ -139,11 +140,11 @@ bool ir_main(int_fast32_t us)
 			run_again = false;
 		} else {
 			/* have a code to tx */
-			carrier_freq(true);
 			ttl = (int_fast32_t)c << 8;
 			if (!buf_deque(&gp_rx_tx, &c)) {
 				ttl += c;
 				current_state = tx_pulses;
+				carrier_freq(true);
 			} else {
 				/* incomplete ir code */
 				(void)bluetooth_putchar(BLUMOTE_NAK);
@@ -154,7 +155,7 @@ bool ir_main(int_fast32_t us)
 
 	case tx_pulses:
 		ttl -= us;
-		if (ttl < 0) {
+		if (ttl <= 0) {
 			carrier_freq(false);
 			if (!buf_deque(&gp_rx_tx, &c)) {
 				ttl = (int_fast32_t)c << 8;
@@ -176,12 +177,12 @@ bool ir_main(int_fast32_t us)
 
 	case tx_spaces:
 		ttl -= us;
-		if (ttl < 0) {
-			carrier_freq(true);
+		if (ttl <= 0) {
 			if (!buf_deque(&gp_rx_tx, &c)) {
 				ttl = (int_fast32_t)c << 8;
 				if (!buf_deque(&gp_rx_tx, &c)) {
 					ttl += c;
+					carrier_freq(true);
 					current_state = tx_pulses;
 				} else {
 					/* incomplete ir code */
