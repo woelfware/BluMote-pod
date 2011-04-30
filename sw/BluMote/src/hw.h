@@ -33,15 +33,10 @@ extern volatile bool got_pulse;
 void init_hw();
 
 /*
- * The number of milliseconds elapsed since the last call to get_ms.
- */
-int get_ms();
-
-/*
  * The number of microseconds elapsed since the last call to get_us.
  * Don't use while in rx mode.
  */
-int get_us();
+int_fast32_t get_us();
 
 /*
  * return true if the requesting owner already owns or

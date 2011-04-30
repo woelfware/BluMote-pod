@@ -2,6 +2,7 @@
 #define BLUMOTE_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
 enum command_codes {
 	BLUMOTE_GET_VERSION,
@@ -24,9 +25,9 @@ enum component_codes {
 extern bool learn_ir_code,
 	tx_ir_code;
 
-bool init_blumote(int ms);
+bool init_blumote(int_fast32_t us);
 
-bool blumote_main(int ms);
+bool blumote_main(int_fast32_t us);
 
 /*
  * \return bool

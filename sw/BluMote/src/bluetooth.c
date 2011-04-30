@@ -35,7 +35,7 @@ int bluetooth_puts(char const *str, int nbr_chars)
 	return 1;
 }
 
-bool issue_bluetooth_reset(int ms)
+bool issue_bluetooth_reset(int_fast32_t us)
 {
 	enum state {
 		default_state = 0,
@@ -44,27 +44,27 @@ bool issue_bluetooth_reset(int ms)
 		wait_for_power_up
 	};
 	static enum state current_state = default_state;
-	static int ttl;
+	static int_fast32_t ttl;
 	bool run_again = true;
 
 	switch (current_state) {
 	case issue_reset:
 		P3OUT &= ~BIT0;
-		ttl = 10;
+		ttl = 10000;
 		current_state = remove_reset;
 		break;
 
 	case remove_reset:
-		ttl -= ms;
+		ttl -= us;
 		if (ttl < 0) {
 			P3OUT |= BIT0;
-			ttl = 10;
+			ttl = 10000;
 			current_state = wait_for_power_up;
 		}
 		break;
 
 	case wait_for_power_up:
-		ttl -= ms;
+		ttl -= us;
 		if (ttl < 0) {
 			current_state = default_state;
 			run_again = false;
@@ -80,7 +80,7 @@ bool issue_bluetooth_reset(int ms)
 	return run_again;
 }
 
-bool bluetooth_main(int ms)
+bool bluetooth_main(int_fast32_t us)
 {
 	bool run_again = true;
 

@@ -9,47 +9,53 @@
 
 #define N_ELEMENTS(arr)	(sizeof(arr)/sizeof((arr)[0]))
 
-typedef bool (*task)(int ms);
+typedef bool (*task)(int_fast32_t us);
 
 static task const tasks[] = {
 	bluetooth_main,
-	ir_main,
 	blumote_main
 };
 
 void main()
 {
-	int ms,
-		i;
+	int_fast32_t us;
+	int i;
 	bool run_again;
 
 	init_hw();
 
-	(void)get_ms();
+	(void)get_us();
 	do {
-		ms = get_ms();
-		run_again = init_blumote(ms);
-		while (bluetooth_main(ms) == true);
+		us = get_us();
+		run_again = init_blumote(us);
+		while (bluetooth_main(us) == true);
 	} while (run_again == true);
 
-	(void)get_ms();
+	(void)get_us();
 	do {
-		ms = get_ms();
+		us = get_us();
 		run_again = false;
 		for (i = 0; i < N_ELEMENTS(tasks); i++) {
-			if ((*tasks[i])(ms)) {
+			if ((*tasks[i])(us)) {
 				run_again = true;
 			}
 		}
-		if (learn_ir_code) {
+		
+		if (tx_ir_code) {
+			(void)get_us();
+			while (ir_main(get_us()));
+			tx_ir_code = false;
+			(void)get_us();
+			run_again = true;
+		} else if (learn_ir_code) {
 			gp_buf_owner = gp_buf_owner_none;
 			buf_clear(&gp_rx_tx);
 			(void)get_us();
 			while (ir_learn(get_us()));
 			learn_ir_code = false;
-			(void)get_ms();
+			(void)get_us();
 			while (tx_learned_code()) {
-				(void)bluetooth_main(get_ms());
+				(void)bluetooth_main(get_us());
 			}
 			run_again = true;
 		}

@@ -4,6 +4,7 @@
 from bluetooth import *
 import bluemote
 import os
+import time
 
 class Bluemote_Client(bluemote.Services):
 	def __init__(self):
@@ -32,18 +33,49 @@ class Bluemote_Client(bluemote.Services):
 		pass
 
 	def _learn_unpack_msg(self, msg):
-		key_code = []
-		buf = struct.pack(">H", 0)
-		full_msg = struct.unpack(len(msg) * "B", msg)
-		flags = full_msg[0]
-		key_codes = full_msg[1:]
-
+		return_msg = msg
+		pkt_nbr = 0
 		i = 0
-		while i < len(key_codes):
-			key_code.append((key_codes[i] << 8) + key_codes[i + 1])
-			i += 2
+		print 'pkt %i len %i' % (pkt_nbr, len(msg))
+		print 'ack/nak:', hex(ord(msg[i]))
+		i += 1
+		if len(msg) <= i:
+			msg = self.client_sock.recv(256)
+			return_msg += msg
+			i = 0
+			pkt_nbr += 1
+			print 'pkt %i len %i' % (pkt_nbr, len(msg))
+		print 'reserved:', hex(ord(msg[i]))
+		i += 1
+		if len(msg) <= i:
+			msg = self.client_sock.recv(256)
+			return_msg += msg
+			i = 0
+			pkt_nbr += 1
+			print 'pkt %i len %i' % (pkt_nbr, len(msg))
+		code_len = int(ord(msg[i]))
+		print 'length:', code_len
+		i += 1
+		while code_len > 0:
+			while i + 1 < len(msg):
+				print int(ord(msg[i]) * 256 + ord(msg[i + 1]))
+				i += 2
+				code_len -= 2
+			if i < len(msg):
+				code_len -= 1
+			if code_len:
+				if code_len & 1 == 1:
+					tmp = msg[i]
+				msg = self.client_sock.recv(256)
+				return_msg += msg
+				pkt_nbr += 1
+				print 'pkt %i len %i' % (pkt_nbr, len(msg))
+				if code_len & 1 == 1:
+					msg = tmp + msg
+				i = 0
+				code_len += 1
 
-		return key_code
+		return return_msg[1:]	# strip the ack
 
 	def learn(self):
 		self.transport_tx(self.cmd_codes.learn, "")
@@ -71,11 +103,11 @@ class Bluemote_Client(bluemote.Services):
 
 	def get_version(self):
 		self.transport_tx(self.cmd_codes.get_version, "")
-		msg = self.client_sock.recv(1024)
+		msg = self.client_sock.recv(256)
 		return self._get_version_unpack_msg(msg)
 
-	def ir_transmit(self):
-		#self.transport_tx(self.cmd_codes.ir_transmit, "")
+	def ir_transmit(self, msg):
+		self.transport_tx(self.cmd_codes.ir_transmit, msg)
 		pass
 
 	def _debug_unpack_msg(self, msg):
@@ -83,52 +115,42 @@ class Bluemote_Client(bluemote.Services):
 
 	def debug(self, msg = ""):
 		self.transport_tx(self.cmd_codes.debug, msg)
-		msg = self.client_sock.recv(1024)
+		msg = self.client_sock.recv(256)
 		return self._debug_unpack_msg(msg)
 
 if __name__ == "__main__":
 	bm_remote = Bluemote_Client()
 
 	try:
-		nearby_devices = discover_devices(lookup_names = True)
-		print 'found %d devices' % len(nearby_devices)
-		for addr, name in nearby_devices:
-			if name[:len('BluMote')] == 'BluMote':
-				print 'connecting to', addr, name
-				bm_remote.connect_to_bluemote_pod(addr)
+		found = False
+		while found == False:
+			try:
+				nearby_devices = discover_devices(lookup_names = True)
+			except:
+				print 'failed to find a blumote... retrying'
+				nearby_devices = ()
+			print 'found %d device(s)' % len(nearby_devices)
+			for addr, name in nearby_devices:
+				if name[:len('BluMote')] == 'BluMote':
+					print 'connecting to', addr, name
+					bm_remote.connect_to_bluemote_pod(addr)
+					found = True
+					break
 
 		print 'getting version info'
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
 
-		print "Please push key \"1\" on your remote."
+		print "Please push a button on your remote."
 		key_code = bm_remote.learn()
-		print key_code
 
-		"""
-		print "Trying out debug message to get a precanned button press."
-		for i in range(10):
-			print "Requesting button \"%d\"." % (i)
-			key_code = bm_remote.debug(struct.pack('B', i))
-			print key_code
-		"""
-		'''
-		new_pod_name = "indigomote"
-		print "Renaming pod to \"%s\"." % (new_pod_name)
-		bm_remote.rename_device(new_pod_name)
-		'''
+		for i in range(5):
+			print 'transmitting the button code.'
+			bm_remote.ir_transmit(key_code)
+			time.sleep(2)
 
 		bm_remote.client_sock.close()
-
-		'''
-		bm_pods = bm_remote.find_bluemote_pods(new_pod_name)
-		bm_remote.connect_to_bluemote_pod(bm_pods[0])
-
-		version = bm_remote.get_version()
-		for component in version:
-			print "%s version: %s" % component
-		'''
 	except IOError:
 		pass
 	finally:
