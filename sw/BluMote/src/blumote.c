@@ -161,14 +161,13 @@ bool init_blumote(int_fast32_t us)
 				current_state = reset_bluetooth;
 				break;
 			}
-		} else {	/* invalid/no response; already in CMD mode? */
-			current_state = tx_get_name;
-			buf_clear(&gp_rx_tx);
+		} else {	/* invalid/no response */
+			current_state = reset_bluetooth;
 		}
 		break;
 
 	case tx_get_name: {
-		char const *str = "GS-\r";
+		char const *str = "GN\r";
 		if (bluetooth_puts(str, strlen(str)) != EOF) {
 			current_state = rx_get_name;
 			ttl = 50000;
@@ -184,16 +183,16 @@ bool init_blumote(int_fast32_t us)
 			ttl = 20000;
 		}
 
-		if (ttl >= 0) {
-			if (m_strcmp("BluMote\r\n", &gp_rx_tx) == m_strcmp_match) {
+		if (ttl < 0) {
+			if (m_strcmp("BluMote", &gp_rx_tx) == m_strcmp_match) {
 				current_state = tx_get_low_latency;
 				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
 				current_state = reset_bluetooth;
+			} else {
+				current_state = tx_set_name;
 			}
-		} else {	/* no response or invalid name */
-			current_state = tx_set_name;
 			buf_clear(&gp_rx_tx);
 		}
 		break;
@@ -314,7 +313,6 @@ bool init_blumote(int_fast32_t us)
 					current_state = tx_exit_cmd_mode;
 					break;
 				}
-				run_again = false;
 				buf_clear(&gp_rx_tx);
 			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
 					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
