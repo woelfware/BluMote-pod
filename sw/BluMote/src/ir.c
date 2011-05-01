@@ -15,7 +15,7 @@ static void carrier_freq(bool on)
 {
 	if (on) {
 		CCR0 = TAR + ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);  /* Reset timing */
-		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */		
+		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
 		P1OUT &= ~(BIT4 | BIT5);	/* Turn off IR LED */
@@ -125,6 +125,8 @@ bool ir_main(int_fast32_t us)
 		handle_cleanup
 	};
 	static enum state current_state = default_state;
+	static struct circular_buffer m_ir_buf;
+	static int repeat_cnt = 3;
 	static int_fast32_t ttl;
 	bool run_again = true;
 	uint8_t c;
@@ -141,6 +143,9 @@ bool ir_main(int_fast32_t us)
 		} else {
 			/* have a code to tx */
 			ttl = (int_fast32_t)c << 8;
+			buf_undeque(&gp_rx_tx, c);
+			memcpy(&m_ir_buf, &gp_rx_tx, sizeof(gp_rx_tx));
+			buf_deque(&gp_rx_tx, NULL);
 			if (!buf_deque(&gp_rx_tx, &c)) {
 				ttl += c;
 				current_state = tx_pulses;
@@ -169,8 +174,14 @@ bool ir_main(int_fast32_t us)
 				}
 			} else {
 				/* done */
-				(void)bluetooth_putchar(BLUMOTE_ACK);
-				current_state = handle_cleanup;
+				repeat_cnt--;
+				if (repeat_cnt) {
+					memcpy(&gp_rx_tx, &m_ir_buf, sizeof(gp_rx_tx));
+					current_state = wait_for_code;
+				} else {
+					(void)bluetooth_putchar(BLUMOTE_ACK);
+					current_state = handle_cleanup;
+				}
 			}
 		}
 		break;
@@ -204,6 +215,7 @@ bool ir_main(int_fast32_t us)
 		gp_buf_owner = gp_buf_owner_none;
 		current_state = default_state;
 		run_again = false;
+		repeat_cnt = 3;
 		break;
 	}
 

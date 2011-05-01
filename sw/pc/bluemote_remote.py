@@ -145,10 +145,8 @@ if __name__ == "__main__":
 		print "Please push a button on your remote."
 		key_code = bm_remote.learn()
 
-		for i in range(5):
+		for i in range(15):
 			print 'transmitting the button code.'
-			bm_remote.ir_transmit(key_code)
-			bm_remote.ir_transmit(key_code)
 			bm_remote.ir_transmit(key_code)
 			time.sleep(2)
 
