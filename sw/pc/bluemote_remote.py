@@ -108,7 +108,7 @@ class Bluemote_Client(bluemote.Services):
 
 	def ir_transmit(self, msg):
 		self.transport_tx(self.cmd_codes.ir_transmit, msg)
-		pass
+		return self.client_sock.recv(128)
 
 	def _debug_unpack_msg(self, msg):
 		return self._learn_unpack_msg(msg)
@@ -147,6 +147,8 @@ if __name__ == "__main__":
 
 		for i in range(5):
 			print 'transmitting the button code.'
+			bm_remote.ir_transmit(key_code)
+			bm_remote.ir_transmit(key_code)
 			bm_remote.ir_transmit(key_code)
 			time.sleep(2)
 
