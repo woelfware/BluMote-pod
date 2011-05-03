@@ -22,17 +22,6 @@ static void carrier_freq(bool on)
 	}
 }
 
-int ir_getchar()
-{
-	int c;
-
-	if (buf_deque(&gp_rx_tx, (uint8_t *)&c)) {
-		c = EOF;
-	}
-
-	return c;
-}
-
 bool ir_learn(int_fast32_t us)
 {
 	enum state {
@@ -75,7 +64,17 @@ bool ir_learn(int_fast32_t us)
 
 	case rx_pulses:
 		if (!is_space()) {
-			duration += us;
+			if (duration > MAX_SPACE_WAIT_TIME) {
+				/* done */
+				(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
+				(void)buf_enque(&gp_rx_tx, duration & 0xFF);
+				current_state = default_state;
+				duration = 0;
+				ttl = IR_LEARN_CODE_TIMEOUT;
+				run_again = false;
+			} else {
+				duration += us;
+			}
 		} else {
 			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
 			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
@@ -87,13 +86,6 @@ bool ir_learn(int_fast32_t us)
 	case rx_spaces:
 		if (is_space()) {
 			duration += us;
-			if (duration > MAX_SPACE_WAIT_TIME) {
-				/* done */
-				current_state = default_state;
-				duration = 0;
-				ttl = IR_LEARN_CODE_TIMEOUT;
-				run_again = false;
-			}
 		} else {
 			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
 			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
