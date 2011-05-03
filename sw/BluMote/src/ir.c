@@ -64,22 +64,12 @@ bool ir_learn(int_fast32_t us)
 
 	case rx_pulses:
 		if (!is_space()) {
-			if (duration > MAX_SPACE_WAIT_TIME) {
-				/* done */
-				(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
-				(void)buf_enque(&gp_rx_tx, duration & 0xFF);
-				current_state = default_state;
-				duration = 0;
-				ttl = IR_LEARN_CODE_TIMEOUT;
-				run_again = false;
-			} else {
-				duration += us;
-			}
+			duration += us;
 		} else {
 			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
 			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
-			duration = 0;
 			current_state = rx_spaces;
+			duration = 0;
 		}
 		break;
 
@@ -89,8 +79,16 @@ bool ir_learn(int_fast32_t us)
 		} else {
 			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
 			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
-			duration = 0;
-			current_state = rx_pulses;
+			if (duration < MAX_SPACE_WAIT_TIME) {
+				current_state = rx_pulses;
+				duration = 0;
+			} else {
+				/* done */
+				current_state = default_state;
+				duration = 0;
+				ttl = IR_LEARN_CODE_TIMEOUT;
+				run_again = false;
+			}
 		}
 		break;
 
