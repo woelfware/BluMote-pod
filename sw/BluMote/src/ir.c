@@ -191,9 +191,15 @@ bool ir_main(int_fast32_t us)
 					current_state = handle_cleanup;
 				}
 			} else {
-				/* incomplete ir code */
-				(void)bluetooth_putchar(BLUMOTE_NAK);
-				current_state = handle_cleanup;
+				/* done */
+				repeat_cnt--;
+				if (repeat_cnt) {
+					memcpy(&gp_rx_tx, &m_ir_buf, sizeof(gp_rx_tx));
+					current_state = wait_for_code;
+				} else {
+					(void)bluetooth_putchar(BLUMOTE_ACK);
+					current_state = handle_cleanup;
+				}
 			}
 		}
 		break;
