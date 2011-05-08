@@ -19,6 +19,8 @@ public class Codes {
     }
     public static INFO_STATE info_state = INFO_STATE.IDLE;
     
+    public static int debug_send = 0;
+    
     // some of these are are pod commands, others are used just for state logic
     public static final byte IDLE = (byte)0xFE; // Default state - nothing going on
     public static final byte RENAME_DEVICE = 0x01; // Unused pod command

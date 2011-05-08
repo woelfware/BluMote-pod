@@ -95,25 +95,6 @@ public class ManageDevices extends Activity {
 		super.onResume();
         device_data.open();
 	}
-	
-//	@Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        MenuInflater inflater = getMenuInflater();
-//        inflater.inflate(R.menu.md_options_menu, menu);
-//        return true;
-//    }
-	
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        switch (item.getItemId()) {
-//        case R.id.menu_add_item:
-//            // Launch the function to ask for a name for device
-//        	Intent i = new Intent(this, EnterDevice.class);
-//            startActivityForResult(i, ACTIVITY_ADD);
-//            return true;
-//        }
-//        return false;
-//    }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {

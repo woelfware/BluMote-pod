@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/flipper"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@drawable/background">
+    <include android:id="@+id/activitiesView" layout="@layout/activities_screen" />
+    <include android:id="@+id/mainView"  layout="@layout/main_screen" />
+    <include android:id="@+id/numbersView"  layout="@layout/number_screen" />    
+</ViewFlipper>
