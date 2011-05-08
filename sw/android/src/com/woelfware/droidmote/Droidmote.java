@@ -25,6 +25,7 @@ import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -155,7 +156,13 @@ public class Droidmote extends Activity implements OnClickListener,OnTouchListen
 	private Pages page = Pages.MAIN;
 
 	private MainInterface mainScreen = null;
-
+	
+	// viewflipper animations
+	private Animation slide_right_anim;
+	private Animation slide_left_anim;
+	private Animation slide_right_out_anim;
+	private Animation slide_left_out_anim;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -191,7 +198,10 @@ public class Droidmote extends Activity implements OnClickListener,OnTouchListen
 				R.layout.custom_title);
 		flip=(ViewFlipper)findViewById(R.id.flipper); // flips between our screens
 		
-
+		slide_right_anim = AnimationUtils.loadAnimation(this, R.anim.slide_right);
+		slide_left_anim = AnimationUtils.loadAnimation(this, R.anim.slide_left);
+		slide_left_out_anim = AnimationUtils.loadAnimation(this, R.anim.slide_left_out);
+		slide_right_out_anim = AnimationUtils.loadAnimation(this, R.anim.slide_right_out);
 		
 		// Set up the custom title
 		mTitle = (TextView) findViewById(R.id.title_left_text);
@@ -314,8 +324,8 @@ public class Droidmote extends Activity implements OnClickListener,OnTouchListen
 					LOOP_KEY = false;
 					
 					// setup flipper animations
-					flip.setInAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_right));
-					//flip.setOutAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_left));
+					flip.setInAnimation(slide_right_anim); // -100 -> 0
+					flip.setOutAnimation(slide_left_out_anim); // 0 -> 100
 					
 					switch (page) {
 					case MAIN:
@@ -344,7 +354,8 @@ public class Droidmote extends Activity implements OnClickListener,OnTouchListen
 					LOOP_KEY = false;
 					
 					// setup flipper animations
-					flip.setInAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_left));
+					flip.setInAnimation(slide_left_anim); // 100 -> 0
+					flip.setOutAnimation(slide_right_out_anim); // 0 -> -100
 					//flip.setOutAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_right));
 					
 					switch (page) {
