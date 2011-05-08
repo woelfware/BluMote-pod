@@ -22,17 +22,6 @@ static void carrier_freq(bool on)
 	}
 }
 
-int ir_getchar()
-{
-	int c;
-
-	if (buf_deque(&gp_rx_tx, (uint8_t *)&c)) {
-		c = EOF;
-	}
-
-	return c;
-}
-
 bool ir_learn(int_fast32_t us)
 {
 	enum state {
@@ -79,26 +68,27 @@ bool ir_learn(int_fast32_t us)
 		} else {
 			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
 			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
-			duration = 0;
 			current_state = rx_spaces;
+			duration = 0;
 		}
 		break;
 
 	case rx_spaces:
 		if (is_space()) {
 			duration += us;
-			if (duration > MAX_SPACE_WAIT_TIME) {
+		} else {
+			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
+			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
+			if (duration < MAX_SPACE_WAIT_TIME) {
+				current_state = rx_pulses;
+				duration = 0;
+			} else {
 				/* done */
 				current_state = default_state;
 				duration = 0;
 				ttl = IR_LEARN_CODE_TIMEOUT;
 				run_again = false;
 			}
-		} else {
-			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
-			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
-			duration = 0;
-			current_state = rx_pulses;
 		}
 		break;
 
@@ -201,9 +191,15 @@ bool ir_main(int_fast32_t us)
 					current_state = handle_cleanup;
 				}
 			} else {
-				/* incomplete ir code */
-				(void)bluetooth_putchar(BLUMOTE_NAK);
-				current_state = handle_cleanup;
+				/* done */
+				repeat_cnt--;
+				if (repeat_cnt) {
+					memcpy(&gp_rx_tx, &m_ir_buf, sizeof(gp_rx_tx));
+					current_state = wait_for_code;
+				} else {
+					(void)bluetooth_putchar(BLUMOTE_ACK);
+					current_state = handle_cleanup;
+				}
 			}
 		}
 		break;

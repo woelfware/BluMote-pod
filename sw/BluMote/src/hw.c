@@ -32,10 +32,10 @@ void init_hw()
 	WDTCTL = WDTPW + WDTHOLD;	/* stop WDT */
 	BCSCTL1 = CALBC1_16MHZ;	/* Set DCO */
 	DCOCTL = CALDCO_16MHZ;
-	P1DIR = BIT4 | BIT5;    /* P1.4,5 = IR_OUT1, IR_OUT2 */
-	P3SEL = BIT4 | BIT5;	/* P3.4,5 = USCI_A0 TXD/RXD */
-	P3DIR = BIT0 | BIT1 | BIT3;	/* reset, baud_rate, PIO3 */ 
-	P3OUT = BIT0;
+	P1DIR |= BIT4 | BIT5;    /* P1.4,5 = IR_OUT1, IR_OUT2 */
+	P3SEL |= BIT4 | BIT5;	/* P3.4,5 = USCI_A0 TXD/RXD */
+	P3DIR |= BIT0 | BIT1 | BIT3;	/* reset, baud_rate, PIO3 */ 
+	P3OUT |= BIT0;
 	UCA0CTL1 |= UCSSEL_2;	/* SMCLK */
 	UCA0BR0 = 138;		/* 16MHz 115200 */
 	UCA0BR1 = 0;		/* 16MHz 115200 */
@@ -45,6 +45,7 @@ void init_hw()
 
 	/* IR configs */
 	P1SEL |= BIT5;  /* Set as alternate function */
+	P1OUT &= ~(BIT4 | BIT5);	/* Turn off IR LED */
 	CCTL1 = CCIE;	/* CCR1 interrupt enabled */
  	CCR1 = (SYS_CLK * US_PER_SYS_TICK) - 1;
 	CCTL0 = OUTMOD_4;  /* CCR0 interrupt disabled and Toggle */
