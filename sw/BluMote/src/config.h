@@ -13,6 +13,7 @@
 #define US_PER_SYS_TICK		(8)
 #define MAX_SPACE_WAIT_TIME	(20000)	/* us */
 #define IR_LEARN_CODE_TIMEOUT	(10000000)	/* us */
+#define NBR_IR_BURSTS	(3)
 
 /* Buffer Sizes
  * Note: must be powers of 2

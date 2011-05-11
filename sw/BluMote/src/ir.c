@@ -116,7 +116,7 @@ bool ir_main(int_fast32_t us)
 	};
 	static enum state current_state = default_state;
 	static struct circular_buffer m_ir_buf;
-	static int repeat_cnt = 3;
+	static int repeat_cnt = NBR_IR_BURSTS;
 	static int_fast32_t ttl;
 	bool run_again = true;
 	uint8_t c;
