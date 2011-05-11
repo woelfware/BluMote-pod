@@ -21,6 +21,12 @@
 #define UART_RX_BUF_SIZE	(32)
 #define UART_TX_BUF_SIZE	(32)
 
+#define BLUETOOTH_RESET_HOLD_TIME	(10000)	/* us */
+#define BLUETOOTH_STARTUP_TIME	(10000)	/* us */
+
+#define MAX_UART_WAIT_TIME	(50000)	/* us - time to wait for the first char to arrive */
+#define MIN_UART_WAIT_TIME	(20000) /* us - time to wait after the first char has been rx'ed */
+
 #ifndef EOF
 #define EOF	(-1)
 #endif
