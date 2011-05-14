@@ -13,6 +13,7 @@
 #define US_PER_SYS_TICK		(8)
 #define MAX_SPACE_WAIT_TIME	(20000)	/* us */
 #define IR_LEARN_CODE_TIMEOUT	(10000000)	/* us */
+#define NBR_IR_BURSTS	(3)
 
 /* Buffer Sizes
  * Note: must be powers of 2
@@ -20,6 +21,12 @@
 #define GP_BUF_SIZE	(256)	/* blumote, ir */
 #define UART_RX_BUF_SIZE	(32)
 #define UART_TX_BUF_SIZE	(32)
+
+#define BLUETOOTH_RESET_HOLD_TIME	(10000)	/* us */
+#define BLUETOOTH_STARTUP_TIME	(10000)	/* us */
+
+#define MAX_UART_WAIT_TIME	(50000)	/* us - time to wait for the first char to arrive */
+#define MIN_UART_WAIT_TIME	(20000) /* us - time to wait after the first char has been rx'ed */
 
 #ifndef EOF
 #define EOF	(-1)
