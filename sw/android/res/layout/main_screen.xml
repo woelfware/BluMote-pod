@@ -25,9 +25,9 @@
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="center">     
-		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_blue" android:id="@+id/power_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginRight="30dp" android:layout_width="65dp" android:layout_height="65dp"></ImageButton>
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_green" android:id="@+id/power2_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginRight="30dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
 		<Button android:id="@+id/btn_input" android:text="Input" style="@style/CustomBtnText" android:layout_width="85dp"></Button>					  
-		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_green" android:id="@+id/power2_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginLeft="30dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_off" android:id="@+id/power_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginLeft="30dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
 	</LinearLayout>
 	<LinearLayout
 		android:orientation="horizontal"

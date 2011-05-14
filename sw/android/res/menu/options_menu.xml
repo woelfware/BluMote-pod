@@ -17,10 +17,12 @@
     <item android:id="@+id/scan"
           android:icon="@android:drawable/ic_menu_search"
           android:title="@string/connect" />
-    
     <item android:id="@+id/manage_devices"
-          android:icon="@android:drawable/ic_menu_edit"
+          android:icon="@android:drawable/ic_menu_manage"
           android:title="@string/manage_devices" ></item>
+    <item android:id="@+id/rename_misc"
+          android:icon="@android:drawable/ic_menu_edit"
+          android:title="Rename Misc Button" ></item>
     <item android:id="@+id/learn_button"
           android:icon="@android:drawable/ic_input_add"
           android:title="@string/learn_button" ></item>
