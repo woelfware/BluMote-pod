@@ -78,9 +78,11 @@ public final class R {
         public static final int activitiesView=0x7f09000a;
         public static final int activities_list=0x7f090003;
         public static final int activities_textview=0x7f090002;
+        public static final int activity_associate_btn=0x7f09004f;
+        public static final int activity_edit_init=0x7f09004e;
         public static final int add_activity_btn=0x7f090004;
         public static final int add_config_btn=0x7f09002c;
-        public static final int advanced=0x7f090054;
+        public static final int advanced=0x7f090056;
         public static final int back_btn=0x7f090014;
         public static final int back_skip_btn=0x7f090013;
         public static final int btn_channel_down=0x7f090029;
@@ -113,13 +115,13 @@ public final class R {
         public static final int btn_volume_down=0x7f09001e;
         public static final int btn_volume_up=0x7f09001d;
         public static final int button_scan=0x7f09004d;
-        public static final int clear_devices=0x7f09004e;
+        public static final int clear_devices=0x7f090051;
         public static final int device_name=0x7f090007;
         public static final int device_spinner=0x7f09000e;
         public static final int devices_list=0x7f09002b;
         public static final int devices_textview=0x7f09002a;
         public static final int disc_btn=0x7f09001f;
-        public static final int discoverable=0x7f090055;
+        public static final int discoverable=0x7f090057;
         public static final int down_btn=0x7f090047;
         public static final int eject_btn=0x7f09001b;
         public static final int enter_button=0x7f090008;
@@ -127,10 +129,10 @@ public final class R {
         public static final int fav_btn=0x7f09001c;
         public static final int flipper=0x7f090009;
         public static final int forward_btn=0x7f090015;
-        public static final int get_info=0x7f090056;
+        public static final int get_info=0x7f090058;
         public static final int guide_btn=0x7f090025;
         public static final int info_btn=0x7f090020;
-        public static final int learn_button=0x7f090052;
+        public static final int learn_button=0x7f090054;
         public static final int left_btn=0x7f090043;
         public static final int mainView=0x7f09000b;
         public static final int manage_devices=0x7f090050;
@@ -151,13 +153,13 @@ public final class R {
         public static final int power2_btn=0x7f090010;
         public static final int power_btn=0x7f090012;
         public static final int record_btn=0x7f090017;
-        public static final int rename_misc=0x7f090051;
+        public static final int rename_misc=0x7f090053;
         public static final int return_btn=0x7f090024;
         public static final int right_btn=0x7f090045;
-        public static final int scan=0x7f09004f;
+        public static final int scan=0x7f090052;
         public static final int skip_forward_btn=0x7f090016;
         public static final int stop_btn=0x7f090018;
-        public static final int stop_learn=0x7f090053;
+        public static final int stop_learn=0x7f090055;
         public static final int title_left_text=0x7f090005;
         public static final int title_new_devices=0x7f09004b;
         public static final int title_paired_devices=0x7f090049;
@@ -181,8 +183,9 @@ public final class R {
         public static final int spinner_entry=0x7f03000b;
     }
     public static final class menu {
-        public static final int device_list_options=0x7f080000;
-        public static final int options_menu=0x7f080001;
+        public static final int activities_menu=0x7f080000;
+        public static final int device_list_options=0x7f080001;
+        public static final int options_menu=0x7f080002;
     }
     public static final class string {
         public static final int add_device_text=0x7f070013;

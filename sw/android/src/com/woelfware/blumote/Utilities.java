@@ -12,11 +12,11 @@ public class Utilities {
     
 	// returns integer from two bytes
 	// a is upper nibble, b is lower nibble	q
-	private int bytesToInt(byte a, byte b) {  
+	public int bytesToInt(byte a, byte b) {  
 		int i = 0;
 	    i |= a & 0xFF;
 	    i <<= 8;
 	    i |= b & 0xFF;
 	    return i;  
-	}   
+	}  
 }

@@ -23,7 +23,7 @@ import android.util.Log;
  * incoming connections, a thread for connecting with a device, and a
  * thread for performing data transmissions when connected.
  */
-public class BluetoothChatService {
+class BluetoothChatService {
     // Debugging
     private static final String TAG = "BluetoothChatService";
     private static final boolean D = true;
@@ -42,20 +42,20 @@ public class BluetoothChatService {
     private ConnectedThread mConnectedThread;
     private int mState;
 
-    public static final int buffer_size = 256;  // size of BT buffer
+    static final int buffer_size = 256;  // size of BT buffer
     
     // Constants that indicate the current connection state
-    public static final int STATE_NONE = 0;       // we're doing nothing
-    public static final int STATE_LISTEN = 1;     // now listening for incoming connections
-    public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
-    public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    static final int STATE_NONE = 0;       // we're doing nothing
+    static final int STATE_LISTEN = 1;     // now listening for incoming connections
+    static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
+    static final int STATE_CONNECTED = 3;  // now connected to a remote device
 
     /**
      * Constructor. Prepares a new BluetoothChat session.
      * @param context  The UI Activity Context
      * @param handler  A Handler to send messages back to the UI Activity
      */
-    public BluetoothChatService(Context context, Handler handler) {
+    BluetoothChatService(Context context, Handler handler) {
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = STATE_NONE;
         mHandler = handler;
@@ -75,14 +75,14 @@ public class BluetoothChatService {
 
     /**
      * Return the current connection state. */
-    public synchronized int getState() {
+    synchronized int getState() {
         return mState;
     }
 
     /**
      * Start the chat service. Specifically start AcceptThread to begin a
      * session in listening (server) mode. Called by the Activity onResume() */
-    public synchronized void start() {
+    synchronized void start() {
         if (D) Log.d(TAG, "start");
 
         // Cancel any thread attempting to make a connection
@@ -103,7 +103,7 @@ public class BluetoothChatService {
      * Start the ConnectThread to initiate a connection to a remote device.
      * @param device  The BluetoothDevice to connect
      */
-    public synchronized void connect(BluetoothDevice device) {
+    synchronized void connect(BluetoothDevice device) {
         if (D) Log.d(TAG, "connect to: " + device);
 
         // Cancel any thread attempting to make a connection
@@ -125,7 +125,7 @@ public class BluetoothChatService {
      * @param socket  The BluetoothSocket on which the connection was made
      * @param device  The BluetoothDevice that has been connected
      */
-    public synchronized void connected(BluetoothSocket socket, BluetoothDevice device) {
+    synchronized void connected(BluetoothSocket socket, BluetoothDevice device) {
         if (D) Log.d(TAG, "connected");
 
         // Cancel the thread that completed the connection
@@ -154,7 +154,7 @@ public class BluetoothChatService {
     /**
      * Stop all threads
      */
-    public synchronized void stop() {
+    synchronized void stop() {
         if (D) Log.d(TAG, "stop");
         if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread = null;}
         if (mConnectedThread != null) {mConnectedThread.cancel(); mConnectedThread = null;}
@@ -167,7 +167,7 @@ public class BluetoothChatService {
      * @param out The bytes to write
      * @see ConnectedThread#write(byte[])
      */
-    public void write(byte[] out) {
+    void write(byte[] out) {
         // Create temporary object
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
@@ -221,7 +221,7 @@ public class BluetoothChatService {
 
             // Create a new listening server socket
             try {
-            		tmp = null;
+            	tmp = null;
                 tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
             } 
             catch (IOException e) {

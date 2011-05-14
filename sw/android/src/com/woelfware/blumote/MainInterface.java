@@ -101,7 +101,7 @@ public class MainInterface {
 	
 	// prefix to put before a new activity to prefs file to find it easier
 	// when searching through keys
-	private static final String ACTIVITY_PREFIX = "activity_";
+	static final String ACTIVITY_PREFIX = "(A)_";
 	
 	// this method will initialize the button elements
 	// it will set the button_map hashmap in blumote
@@ -385,7 +385,9 @@ public class MainInterface {
 				}
 			});
 			
-			populateActivites(); // populate activites arraylist with initial items
+			// populate activites arraylist with initial items
+			// need to pass in the arrayadapter we want to populate
+			populateActivites(mActivitiesArrayAdapter, true); 
 			
 			///////////////////////////////////////////////
 			// SPINNER setup
@@ -394,9 +396,7 @@ public class MainInterface {
 			mAdapter = new ArrayAdapter<String>(blumote, R.layout.spinner_entry);
 			mAdapter.setDropDownViewResource(R.layout.spinner_entry);
 			device_spinner.setAdapter(mAdapter);
-			device_spinner.setOnItemSelectedListener(blumote);
-			populateDropDown();
-
+			device_spinner.setOnItemSelectedListener(blumote);		
 			restoreSpinner(); // restore selection from last program invocation
 		}
 		refreshMiscBtns(); // refresh misc button text from prefs file
@@ -414,15 +414,18 @@ public class MainInterface {
 				}
 			}
 		}
+		// refresh drop down and fetch buttons
+		populateDropDown();
 	}
 	
 	public HashMap<Integer,Object[]> getButtonMap() {
 		return button_map;
 	}
 	
-	// update activity arraylist for the first time when program starts
-	private void populateActivites() {
-		mActivitiesArrayAdapter.clear();
+	// updates the arrayadapter parameter with all the activities from the
+	// prefs file.  boolean suppressPrefix is used to remove the 
+	// ACTIVITIES_PREFIX if that is desired
+	private void populateActivites(ArrayAdapter<String> adapter, boolean suppressPrefix) {
 		Map<String,?> values = blumote.prefs.getAll();
 		
 		// iterate through these values
@@ -430,11 +433,13 @@ public class MainInterface {
 			// check if prefix is an activity
 			if (item.startsWith(ACTIVITY_PREFIX)) {
 				// convert underscores to spaces
-				// remove the prefix
-				item = item.replaceFirst(ACTIVITY_PREFIX, "");
+				if (suppressPrefix == true) {
+					// remove the prefix
+					item = item.replace(ACTIVITY_PREFIX, "");
+				}			
 				item = item.replace("_", " ");
 				// add it to arraylist
-				mActivitiesArrayAdapter.add(item);
+				adapter.add(item);
 			}
 		}
 	}
@@ -446,12 +451,14 @@ public class MainInterface {
 		
 		// convert spaces to underscores
 		name = name.replace(" ", "_");
-		//TODO implement preferences file logic
 		// prepend prefix
 		name = ACTIVITY_PREFIX + name;
 		Editor mEditor = blumote.prefs.edit();
 		mEditor.remove(name); 
-		mEditor.commit();		
+		mEditor.commit();
+		
+		// refresh drop-down
+		populateDropDown();
 	}
 	
 	// add a new activity to the arraylist
@@ -464,7 +471,13 @@ public class MainInterface {
 		s = ACTIVITY_PREFIX + s;
 		Editor mEditor = blumote.prefs.edit();
 		mEditor.putString(s, null); // key, value
-		mEditor.commit();			
+		mEditor.commit();	
+		
+		// replace underscores with spaces for setDropDown()
+		s = s.replace("_", " ");
+
+		populateDropDown(); // always refresh dropdown when adding an activity
+		setDropDown(s); // always set active dropdown item to new activity
 	}
 	
 	// rename an activity , pass in new name and position in arraylist
@@ -473,7 +486,7 @@ public class MainInterface {
 		mActivitiesArrayAdapter.remove(old_name);
 		mActivitiesArrayAdapter.add(s);
 
-		// replace spaces with underscores
+		// replace spaces with underscores		
 		s = s.replace(" ", "_");
 		old_name= old_name.replace(" ", "_");
 
@@ -487,10 +500,12 @@ public class MainInterface {
 		mEditor.remove(old_name); // remove old one
 		mEditor.putString(s, activity); // add new name with old data
 		mEditor.commit();
+		
+		populateDropDown(); // always refresh dropdown when renaming an activity
 	}
 	
 	// sets up the drop-down list, pulls rows from DB to populate
-	public void populateDropDown() {
+	void populateDropDown() {
 		String str1;
 		Cursor cursor1;
 		cursor1 = blumote.device_data.getTables();
@@ -510,27 +525,67 @@ public class MainInterface {
 				}
 			} while (cursor1.moveToNext());
 		}
+		//put activities into drop-down
+		populateActivites(mAdapter, false);
+		
+		// always fetch buttons after we populate the drop down
+		fetchButtons();
 	}
 	
-	// this function updates the current table with what is selected in
-	// drop-down
-	// it then grabs the button keys from that table into local devices Cursor
-	public void fetchButtons() {
-		// first update the cur_table from spinner
-		if (device_spinner.getCount() > 0) {
-			Object table = device_spinner.getSelectedItem();
-			if (table != null) {
-				// replace spaces with underscores and then set cur_table to
-				// that
-				blumote.cur_table = table.toString().replace(" ", "_");
-				blumote.devices = blumote.device_data.getKeys(blumote.cur_table);
+	// sets dropdown to the item indicated by string parameter
+	void setDropDown(String s) {		
+		s = s.replace(" ", "_"); // need this so activity prefix startsWith works
+		blumote.cur_device = s; // set device to this
+		
+		s = s.replace("_", " "); // need this so displays right
+		for (int i = 0; i < device_spinner.getCount(); i++) {
+			if (s.equals(device_spinner.getItemAtPosition(i))) {
+				device_spinner.setSelection(i);
 			}
 		}
-		populateDropDown(); // also refresh the drop-down items
+		if (s.startsWith(ACTIVITY_PREFIX)) {
+			// if it is an activity then set program state to activities mode
+			blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;			
+		}
+		else { // must be regular device
+			blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;			
+		}
+		// otherwise scan if it is in the database of device configs and set it that way
+		
+		// update buttons
+		fetchButtons();
+	}
+	
+	// this function updates the "cur_table" with what is selected in
+	// drop-down. It then grabs the button keys from that table into "devices" Cursor
+	void fetchButtons() {
+		// first update the cur_table from spinner
+		if (device_spinner.getCount() > 0) {
+			Object table = device_spinner.getSelectedItem();			
+			if (table != null) {
+				// replace spaces with underscores and then set cur_table to
+				// that				
+				String table_s = table.toString().replace(" ", "_");
+				blumote.cur_device = table_s;
+				// check if activity or a device
+				if (table_s.startsWith(ACTIVITY_PREFIX)) {
+					blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
+				}
+				else { // must be a device
+					blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;					
+					blumote.devices = blumote.device_data.getKeys(blumote.cur_device);					
+				}
+				// store in NV memory so next program invocation has this
+				// set as default
+				Editor mEditor = blumote.prefs.edit();
+				mEditor.putString("lastDevice", blumote.cur_device);
+				mEditor.commit();
+			}
+		}
 	}
 	
 	// return_string is the new name, misc_button is the selected misc button id code
-	public void renameMisc(String return_string, String misc_button) {
+	void renameMisc(String return_string, String misc_button) {
 		// this function should rename the misc button
 		// work with the preferences file for this
 		// after update preferences then refresh the misc buttons
@@ -541,11 +596,11 @@ public class MainInterface {
 	}	
 	
 	// retrieve android resource id from a string representation
-	public int getResourceFromString(String name) {
+	int getResourceFromString(String name) {
 		return blumote.getResources().getIdentifier(name,"id",blumote.getPackageName());		
 	}
 	
-	public void refreshMiscBtns() {
+	void refreshMiscBtns() {
 		// this stub is for refreshing the misc buttons from the preferences file
 		// call this when the program first is launched and after renaming any of them
 		for (int i=1; i<= NUM_MISC_BTNS; i++) {

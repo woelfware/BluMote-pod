@@ -1,24 +1,24 @@
 package com.woelfware.blumote;
 
-public class Codes {
+class Codes {
 
 	// note to self, byte is signed datatype
-	public static String new_name;
-	public static byte[] pod_data;
+	static String new_name;
+	static byte[] pod_data;
 	// keeps track of bytes accumulated in LEARN_MODE
     //private static byte[] learn_data;
-    public static int data_index = 0;
+    static int data_index = 0;
     
-    public enum LEARN_STATE {
+    enum LEARN_STATE {
     	IDLE, STARTED, BYTE1, INITIALIZED, COLLECTING
     }
-    public static LEARN_STATE learn_state = LEARN_STATE.IDLE;
+    static LEARN_STATE learn_state = LEARN_STATE.IDLE;
     
-    public enum INFO_STATE {
+    enum INFO_STATE {
     	IDLE, BYTE0, BYTE1, BYTE2, BYTE3
     }
     
-    public class Pod {
+    class Pod {
     	public static final byte IDLE = (byte)0xFE; // Default state - nothing going on
         public static final byte RENAME_DEVICE = 0x01; // Unused pod command
         public static final byte LEARN = 0x01; // Pod Command
@@ -30,18 +30,30 @@ public class Codes {
         public static final byte NACK = (byte)0x15;
     }
     
-    public enum PROGRAM_STATE {
+    // this keeps track of what state the interface is in
+    // this is useful for how to setup the options menus
+    // and what actions buttons should take when pressed
+    enum INTERFACE_STATE {
+    	MAIN,
+    	ACTIVITY, 
+    	ACTIVITY_INIT,
+    	LEARN,
+        RENAME_STATE // renaming misc button
+    }
+    
+    // this is to keep track of state machines for example
+    // for receiving data from bluetooth interface, how that
+    // data should be interpreted
+    enum BT_STATE {
         IDLE, // not doing anything
         LEARN, // in button learn mode
         GET_VERSION, // getting pod information
         IR_TRANSMIT, // transmit an ir code
         ABORT_LEARN, // aborting the learn mode
         DEBUG, // debug mode for testing
-        ACTIVITY, // activity mode - setup/etc
-        RENAME_STATE // renaming misc button
     }
     
-    public static INFO_STATE info_state = INFO_STATE.IDLE;
+    static INFO_STATE info_state = INFO_STATE.IDLE;
     
-    public static int debug_send = 0;
+    static int debug_send = 0;
 }

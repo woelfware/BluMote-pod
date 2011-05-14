@@ -1,7 +1,6 @@
 package com.woelfware.blumote;
 
 import java.util.HashMap;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -45,29 +44,29 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 {
 	// Debugging
 	// private static final String TAG = "BlueMote";
-	public static final boolean D = true;
+	static final boolean D = true;
 
 	// Intent request codes
 	private static final int REQUEST_CONNECT_DEVICE = 1;
 	private static final int REQUEST_ENABLE_BT = 2;
 	private static final int REQUEST_MANAGE_DEVICE = 3;
 	// private static final int REQUEST_RENAME_POD = 4;
-	public static final int ACTIVITY_ADD = 5;
+	static final int ACTIVITY_ADD = 5;
 	private static final int ACTIVITY_RENAME = 6;
 	private static final int MISC_RENAME = 7;
 
 	// Message types sent from the BluetoothChatService Handler
-	public static final int MESSAGE_STATE_CHANGE = 1;
-	public static final int MESSAGE_READ = 2;
-	public static final int MESSAGE_WRITE = 3;
-	public static final int MESSAGE_DEVICE_NAME = 4;
-	public static final int MESSAGE_TOAST = 5;
+	static final int MESSAGE_STATE_CHANGE = 1;
+	static final int MESSAGE_READ = 2;
+	static final int MESSAGE_WRITE = 3;
+	static final int MESSAGE_DEVICE_NAME = 4;
+	static final int MESSAGE_TOAST = 5;
 	// Message time for repeat-key-delay
-	public static final int MESSAGE_KEY_PRESSED = 6;
+	static final int MESSAGE_KEY_PRESSED = 6;
 
 	// Key names received from the BluetoothChatService Handler
-	public static final String DEVICE_NAME = "device_name";
-	public static final String TOAST = "toast";
+	static final String DEVICE_NAME = "device_name";
+	static final String TOAST = "toast";
 
 	// button payload indexes
 	private static final int BTN_NAME = 0;
@@ -96,16 +95,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private BluetoothChatService mChatService = null;	
 
 	// SQL database class
-	public MyDB device_data;
+	MyDB device_data;
 	// Shared preferences class - for storing config settings between runs
-	public SharedPreferences prefs;
+	SharedPreferences prefs;
 
 	// This is the device database results for each button on grid
-	public Cursor devices;
+	Cursor devices;
 
-	// currently selected device (table of DB)
-	public String cur_table;
-
+	// currently selected device
+	String cur_device;
+	
 	// context of screen view, using this for categorizing in database
 	// hardcoding this for now, will need to adjust for new contexts
 	private String cur_context = "tv-dvd";
@@ -113,9 +112,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Currently selected button resource id (for training mode operations)
 	private int BUTTON_ID = 0;
 
-	// current State of the pod communication
-	private Codes.PROGRAM_STATE STATE = Codes.PROGRAM_STATE.IDLE;
-
+	// current State of the pod bluetooth communication
+	Codes.BT_STATE BT_STATE = Codes.BT_STATE.IDLE;
+	
+	// current interface State of program
+	Codes.INTERFACE_STATE INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
+	
 	// Sets the delay in-between repeated sending of the keys on the interface
 	// (in ms)
 	private static int DELAY_TIME = 750;
@@ -150,10 +152,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// These are used for activities display window
 	private static final int ID_DELETE = 0;
 	private static final int ID_RENAME = 1;
+	private static final int ID_MANAGE = 2;
 	ListView activitiesListView;
-
+	
+	// Menu object - initalized in onCreateOptionsMenu()
+	Menu myMenu;
+	
 	// keep track of what the active page of buttons is
-	public enum Pages {
+	enum Pages {
 		MAIN, NUMBERS, ACTIVITIES
 	}
 
@@ -167,7 +173,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private Animation slide_right_out_anim;
 	private Animation slide_left_out_anim;
 	
-	public GestureDetector gestureDetector;
+	GestureDetector gestureDetector;
 	View.OnTouchListener gestureListener;
 	private static final int SWIPE_MIN_DISTANCE = 120;
     private static final int SWIPE_MAX_OFF_PATH = 250;
@@ -175,7 +181,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
     
 	/** Called when the activity is first created. */
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		// get preferences file
@@ -236,7 +242,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             		if (payload != null) {            			
             			if (e.getAction() == MotionEvent.ACTION_DOWN) {
             				// check if this is a misc rename
-                			if (STATE == Codes.PROGRAM_STATE.RENAME_STATE) {
+                			if (INTERFACE_STATE == Codes.INTERFACE_STATE.RENAME_STATE) {
                 				// TODO store the button that we want to update if it is a valid misc key
                 				// if it isn't then exit and Toast user, change state back to idle
                 				if (((String)payload[BTN_TEXT]).startsWith("btn_misc")) {
@@ -251,7 +257,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 							Toast.LENGTH_SHORT).show();
                 				}
                 				
-                				STATE = Codes.PROGRAM_STATE.IDLE; // reset state in any case
+                				INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; // reset state in any case
                 				return false; 
                 			}
                 			
@@ -268,7 +274,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 		// if we don't have !LOOP_KEY you can hit button multiple times
                 		// and hold finger on button and you'll get duplicates
 
-                		if (STATE != Codes.PROGRAM_STATE.LEARN && STATE != Codes.PROGRAM_STATE.ACTIVITY) {
+                		if (INTERFACE_STATE != Codes.INTERFACE_STATE.LEARN && 
+                				INTERFACE_STATE != Codes.INTERFACE_STATE.ACTIVITY) {
                 			// don't want to execute touchButton when in learn mode or
                 			// activity mode
                 			if (e.getAction() == MotionEvent.ACTION_DOWN) {
@@ -305,7 +312,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}	
 	
 	@Override
-	public void onStart() {
+	protected void onStart() {
 		super.onStart();
 		if (mChatService == null) { // then first time this was called
 			// Initialize the BluetoothChatService to perform bluetooth
@@ -323,7 +330,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 
 	@Override
-	public synchronized void onResume() {
+	protected synchronized void onResume() {
 		super.onResume();
 		device_data.open(); // make sure database open
 
@@ -360,13 +367,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 
 	@Override
-	public synchronized void onPause() {
+	protected synchronized void onPause() {
 		super.onPause();
 
 	}
 
 	@Override
-	public void onStop() {
+	protected void onStop() {
 		super.onStop();
 
 		// if (mChatService != null) mChatService.stop();
@@ -376,7 +383,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 
 	@Override
-	public void onDestroy() {
+	protected void onDestroy() {
 		super.onDestroy();
 		// Stop the Bluetooth chat services
 		if (mChatService != null)
@@ -499,14 +506,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 	
-	// interface implementation
+	// interface implementation for buttons
 	public void onClick(View v) {
 		BUTTON_ID = v.getId();
 
-		if (STATE == Codes.PROGRAM_STATE.ACTIVITY) {
+		if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY) {
 			// TODO implement appending/saving button to the activity list
 			// item....
-		} else if (STATE == Codes.PROGRAM_STATE.LEARN) {
+		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
 			sendCode(Codes.Pod.LEARN);
 		} else { // skip this handler if we are in learn button mode
 			// send message to handler after the delay expires, allows for
@@ -529,7 +536,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}			
 
-	public void setButtonMap(HashMap<Integer, Object[]> map) {
+	protected void setButtonMap(HashMap<Integer, Object[]> map) {
 		button_map = map;
 	}
 
@@ -681,7 +688,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// called when activities finish running and return to this activity
 	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		switch (requestCode) {
 		case REQUEST_CONNECT_DEVICE:
 			// When DeviceListActivity returns with a device to connect
@@ -740,7 +747,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					String return_string = return_bundle.getString("returnStr");
 					
 					// Add item to list
-					mainScreen.addActivity(return_string);
+					mainScreen.addActivity(return_string);					
 				}				
 			}
 			break;
@@ -761,7 +768,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Bundle return_bundle = data.getExtras();
 				if (return_bundle != null) {
 					String return_string = return_bundle.getString("returnStr");
-					// TODO test that this works
 					mainScreen.renameMisc(return_string, misc_button);
 				}
 			}
@@ -770,8 +776,26 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
+		// save the menu so we can change it depending on context
+		myMenu = menu;
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.options_menu, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		// called everytime menu is shown
+		menu.clear();
+		if (INTERFACE_STATE != Codes.INTERFACE_STATE.ACTIVITY && 
+				INTERFACE_STATE != Codes.INTERFACE_STATE.ACTIVITY_INIT) {
+			MenuInflater inflater = getMenuInflater();
+			inflater.inflate(R.menu.options_menu, menu);
+		}
+		else {
+			MenuInflater inflater = getMenuInflater();
+			inflater.inflate(R.menu.activities_menu, menu);
+		}
 		return true;
 	}
 
@@ -807,32 +831,30 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case R.id.learn_button:
 			Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT)
 					.show();
-			STATE = Codes.PROGRAM_STATE.LEARN;
+			BT_STATE = Codes.BT_STATE.LEARN;
 			return true;
 
 		case R.id.stop_learn:
 			Toast.makeText(this, "Stopped Learning", Toast.LENGTH_SHORT).show();
 			sendCode(Codes.Pod.ABORT_LEARN);
-			STATE = Codes.PROGRAM_STATE.ABORT_LEARN;
+			BT_STATE = Codes.BT_STATE.ABORT_LEARN;
 			return true;
 			
 		case R.id.rename_misc:
 			Toast.makeText(this, "Select Misc Button to rename", Toast.LENGTH_SHORT).show();
-			STATE = Codes.PROGRAM_STATE.RENAME_STATE;
+			INTERFACE_STATE = Codes.INTERFACE_STATE.RENAME_STATE;
 		}
 		return false;
 	}
 
 	// OnItemSelectedListener interface definition
+	// called when user selects an item in the drop-down
 	public void onItemSelected(AdapterView<?> parent, View view, int pos,
 			long id) {
-
-		// populate the keys from database
+		INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
+		// setup interface buttons appropriately
 		mainScreen.fetchButtons();
-		Editor mEditor = prefs.edit();
-		mEditor.putString("lastDevice", cur_table);
-		mEditor.commit();
-	}
+	}	
 	// OnItemSelectedListener interface definition
 	public void onNothingSelected(AdapterView<?> parent) {
 		// Do nothing.
@@ -845,6 +867,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case ID_DELETE:
 			mainScreen.deleteActivity((int)info.id);
 			return true;
+			
 		case ID_RENAME:
 			// store ID of the item to be renamed
 			activity_rename = (int)info.id;
@@ -852,10 +875,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			Intent i = new Intent(this, EnterDevice.class);
 			startActivityForResult(i, ACTIVITY_RENAME);
 			return true;
+			
+		case ID_MANAGE:						
+			// TODO need to launch editor to change initialization
+			// parameters and things - lauch activity!
+			return true;
 		}
 		return super.onContextItemSelected(item);
 	}
 
+	// context menu is for activities list
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenuInfo menuInfo) {
@@ -863,20 +892,29 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// AdapterView.AdapterContextMenuInfo info =
 			// (AdapterView.AdapterContextMenuInfo)menuInfo;
 			menu.setHeaderTitle("Menu");
-			menu.add(0, ID_DELETE, 0, "Delete");
-			menu.add(0, ID_RENAME, 0, "Rename");
+			menu.add(0, ID_DELETE, 0, "Delete Activity");
+			menu.add(0, ID_RENAME, 0, "Rename Activity");
+			menu.add(0, ID_MANAGE, 0, "Change Startup");
 		}
 		super.onCreateContextMenu(menu, v, menuInfo);
 	}
 
-	// The on-click listener for all devices in the ListViews
-	public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
+	// The on-click listener for all devices in the activities ListViews
+	public void onItemClick(AdapterView<?> av, View v, int position, long id) {
 		// TODO implement execution of the activity that was selected
+		// Change to activities state
+		INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
+		
+		// set drop down to selected item
+		// prepend the activity_prefix since the arraylist display doesn't show it
+		String activity = ((TextView)v).getText().toString();
+		activity = MainInterface.ACTIVITY_PREFIX + activity;
+		mainScreen.setDropDown(activity);
 	}
 
 	// this function sends the code to the pod based on the button that was
 	// selected
-	public void buttonSend(String buttonCode) {
+	protected void buttonSend(String buttonCode) {
 		String column;
 		if (devices != null) {
 			devices.moveToFirst();
@@ -893,7 +931,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						toSend[j] = code[j - 1];
 					}
 					// {command, 0x00, code}; // 0x00 is reserved byte
-					STATE = Codes.PROGRAM_STATE.IR_TRANSMIT;
+					BT_STATE = Codes.BT_STATE.IR_TRANSMIT;
 
 					// increment producer/consumer, ACK received will consume,
 					// removing finger from button clears
@@ -911,14 +949,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 
 	// This function sends the command codes to the pod
-	public void sendCode(int code) {
+	protected void sendCode(int code) {
 		byte[] toSend;
 		switch (code) {
 		case Codes.Pod.LEARN:
 			toSend = new byte[1];
 			toSend[0] = Codes.Pod.LEARN;
 			toSend[0] = (byte) toSend[0];
-			STATE = Codes.PROGRAM_STATE.LEARN;
+			BT_STATE = Codes.BT_STATE.LEARN;
 			sendMessage(toSend);
 			break;
 
@@ -926,12 +964,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			toSend = new byte[1];
 			toSend[0] = Codes.Pod.ABORT_LEARN;
 			toSend[0] = (byte) toSend[0];
-			STATE = Codes.PROGRAM_STATE.ABORT_LEARN;
+			BT_STATE = Codes.BT_STATE.ABORT_LEARN;
 			sendMessage(toSend);
 			break;
 
 		case Codes.Pod.GET_VERSION:
-			STATE = Codes.PROGRAM_STATE.GET_VERSION;
+			BT_STATE = Codes.BT_STATE.GET_VERSION;
 			toSend = new byte[1];
 			toSend[0] = Codes.Pod.GET_VERSION;
 			toSend[0] = (byte) toSend[0];
@@ -941,18 +979,17 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 
 	// called after learn mode is finished and has data to store
-	public void storeButton() {
+	protected void storeButton() {
 		Object[] payload = null;
 		payload = button_map.get(BUTTON_ID);
 
-		if (payload != null) {
-			device_data.insertButton(cur_table, (String) payload[BTN_TEXT],
+		if (payload != null && INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
+			device_data.insertButton(cur_device, (String) payload[BTN_TEXT],
 					cur_context, Codes.pod_data);
 		}
-
-		// refresh the local Cursor with new database updates
-		mainScreen.fetchButtons();
-		STATE = Codes.PROGRAM_STATE.IDLE; // reset state, drop out of learn mode
+		// TODO should we not drop out of learn mode?  Would reduce menu activity
+		BT_STATE = Codes.BT_STATE.IDLE; // reset state, drop out of learn mode
+		INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
 		Codes.learn_state = Codes.LEARN_STATE.IDLE; // ready to start a new
 													// learn command now
 		Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
@@ -961,7 +998,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// returns false if the data to be inserted is more bytes than array is
 	// setup for,
 	// this should not happen unless pod screwed up
-	public boolean checkPodDataBounds(int bytes) {
+	protected boolean checkPodDataBounds(int bytes) {
 		if (bytes > (Codes.pod_data.length - Codes.data_index)) {
 			return false;
 		}
@@ -971,14 +1008,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// an error happened, Toast user and reset state machines
 	// if argument = 1 then signal learn mode error,
 	// if argument = 2 then signal get info error
-	public void signalError(int code) {
+	protected void signalError(int code) {
 		if (code == 1) {
 			Toast.makeText(this, "Error occured, exiting learn mode!",
 					Toast.LENGTH_SHORT).show();
-			STATE = Codes.PROGRAM_STATE.IDLE;
+			BT_STATE = Codes.BT_STATE.IDLE;
 			Codes.learn_state = Codes.LEARN_STATE.IDLE;
 		} else if (code == 2) {
-			STATE = Codes.PROGRAM_STATE.IDLE;
+			BT_STATE = Codes.BT_STATE.IDLE;
 			Codes.info_state = Codes.INFO_STATE.IDLE;
 		}
 	}
@@ -988,8 +1025,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// response[]
 	// note that the response array is a circular buffer, the starting index
 	// head is 'index'
-	public void interpretResponse(byte[] response, int bytes, int index) {
-		switch (STATE) {
+	protected void interpretResponse(byte[] response, int bytes, int index) {
+		switch (BT_STATE) {
 		case LEARN:
 			try { // catch any unforseen state machine errors.....
 				// learn data may not come all together, so need to process data
@@ -1066,7 +1103,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 									// gracefully
 				Toast.makeText(this, "Communication error, exiting learn mode",
 						Toast.LENGTH_SHORT).show();
-				STATE = Codes.PROGRAM_STATE.IDLE;
+				BT_STATE = Codes.BT_STATE.IDLE;
 				return;
 			}
 			break;
@@ -1127,7 +1164,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					Toast.makeText(this,
 							"Communication error, exiting learn mode",
 							Toast.LENGTH_SHORT).show();
-					STATE = Codes.PROGRAM_STATE.IDLE;
+					BT_STATE = Codes.BT_STATE.IDLE;
 					return;
 				}
 
@@ -1137,14 +1174,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			break;
 
 		case ABORT_LEARN:
-			STATE = Codes.PROGRAM_STATE.IDLE; // reset state
+			BT_STATE = Codes.BT_STATE.IDLE; // reset state
 			if (response[index] == Codes.Pod.ACK) {
 
 			}
 			break;
 
 		case IR_TRANSMIT:
-			STATE = Codes.PROGRAM_STATE.IDLE;
+			BT_STATE = Codes.BT_STATE.IDLE;
 			// decrement PKTS_SENT - we need to prevent user from flooding
 			// pod with data
 			if (PKTS_SENT > 1) {
