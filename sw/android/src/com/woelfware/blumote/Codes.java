@@ -1,7 +1,9 @@
 package com.woelfware.blumote;
 
 class Codes {
-
+	// private constructor to make this class non-instantiable
+	private Codes() { }
+	
 	// note to self, byte is signed datatype
 	static String new_name;
 	static byte[] pod_data;
@@ -17,6 +19,7 @@ class Codes {
     enum INFO_STATE {
     	IDLE, BYTE0, BYTE1, BYTE2, BYTE3
     }
+    static INFO_STATE info_state = INFO_STATE.IDLE;
     
     class Pod {
     	public static final byte IDLE = (byte)0xFE; // Default state - nothing going on
@@ -51,9 +54,7 @@ class Codes {
         IR_TRANSMIT, // transmit an ir code
         ABORT_LEARN, // aborting the learn mode
         DEBUG, // debug mode for testing
-    }
-    
-    static INFO_STATE info_state = INFO_STATE.IDLE;
+    }    
     
     static int debug_send = 0;
 }

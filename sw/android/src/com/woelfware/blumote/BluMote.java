@@ -68,10 +68,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	static final String DEVICE_NAME = "device_name";
 	static final String TOAST = "toast";
 
-	// button payload indexes
-	private static final int BTN_NAME = 0;
-	private static final int BTN_TEXT = 1;
-
 	// Dialog menu constants
 	private static final int DIALOG_SHOW_INFO = 0;
 
@@ -147,7 +143,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// Hash map to keep track of all the buttons on the interface and associated
 	// properties
-	HashMap<Integer, Object[]> button_map;
+	HashMap<Integer, String> button_map;
 
 	// These are used for activities display window
 	private static final int ID_DELETE = 0;
@@ -236,7 +232,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             		}
                 	
                 	// create object[] for button
-                	Object[] payload = null;
+                	String payload = null;
             		payload = button_map.get(v.getId());
 
             		if (payload != null) {            			
@@ -245,9 +241,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 			if (INTERFACE_STATE == Codes.INTERFACE_STATE.RENAME_STATE) {
                 				// TODO store the button that we want to update if it is a valid misc key
                 				// if it isn't then exit and Toast user, change state back to idle
-                				if (((String)payload[BTN_TEXT]).startsWith("btn_misc")) {
+                				if (payload.startsWith("btn_misc")) {
                 					// if compare works then we can go ahead and implement the rename
-                					misc_button = (String)payload[BTN_TEXT];
+                					misc_button = payload;
                     				// launch window to get new name to use
                     				Intent i = new Intent(BluMote.this, EnterDevice.class);
                     				startActivityForResult(i, MISC_RENAME);
@@ -466,17 +462,17 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 	
-	private boolean checkNavigation(Object[] payload) {
+	private boolean checkNavigation(String payload) {
 		if (payload != null) {
 			try {
 				// see if we have a navigation page move command....
-				if (payload[BTN_TEXT] == "move_left_btn") {
+				if (payload == "move_left_btn") {
 					moveLeft();
 					return true;
 				}
 				// check if the navigation move_right was pushed
 				// this only works when we are in main screen
-				if (payload[BTN_TEXT] == "move_right_btn") {
+				if (payload == "move_right_btn") {
 					moveRight();
 					return true;
 				}
@@ -489,7 +485,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 	
 	// Called when a user pushes a non-navigation button down for the first time
-	private void touchButton(Object[] payload, int rbutton) {		
+	private void touchButton(String payload, int rbutton) {		
 		if (payload != null) {
 			// if we got here it means we are a regular button, not move_left or
 			// move_right
@@ -499,7 +495,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			Message msg = new Message();
 			msg.what = MESSAGE_KEY_PRESSED;
 
-			buttonSend((String) payload[BTN_TEXT]);
+			buttonSend(payload);
 			msg.arg1 = rbutton;
 			last_button = rbutton;
 			mHandler.sendMessageDelayed(msg, LONG_DELAY_TIME);		
@@ -522,12 +518,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Message msg = new Message();
 				msg.what = MESSAGE_KEY_PRESSED;
 
-				Object[] payload = null;
+				String payload = null;
 				payload = button_map.get(BUTTON_ID);
 
 				if (payload != null) {
 					msg.arg1 = BUTTON_ID;
-					buttonSend((String) payload[BTN_TEXT]);
+					buttonSend(payload);
 				}
 
 				NUM_MESSAGES++;
@@ -536,7 +532,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}			
 
-	protected void setButtonMap(HashMap<Integer, Object[]> map) {
+	protected void setButtonMap(HashMap<Integer, String> map) {
 		button_map = map;
 	}
 
@@ -667,16 +663,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				// touch event
 				NUM_MESSAGES--;
 				if ((int) msg.arg1 == last_button && LOOP_KEY) {
-					Object[] payload = button_map.get(msg.arg1);
-					if (payload != null) {
+					String payload = button_map.get(msg.arg1);
+					if (payload != null) { // ensure we find the button in the map
 						try {
 							Button toclick;
-							toclick = (Button) payload[BTN_NAME];
+							toclick = (Button)findViewById(msg.arg1);
 							toclick.performClick();
 						} catch (Exception e) {
 							// must be an imagebutton then
 							ImageButton toclick;
-							toclick = (ImageButton) payload[BTN_NAME];
+							toclick = (ImageButton)findViewById(msg.arg1);
 							toclick.performClick();
 						}
 					}
@@ -980,11 +976,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// called after learn mode is finished and has data to store
 	protected void storeButton() {
-		Object[] payload = null;
+		String payload = null;
 		payload = button_map.get(BUTTON_ID);
 
 		if (payload != null && INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
-			device_data.insertButton(cur_device, (String) payload[BTN_TEXT],
+			device_data.insertButton(cur_device, payload,
 					cur_context, Codes.pod_data);
 		}
 		// TODO should we not drop out of learn mode?  Would reduce menu activity

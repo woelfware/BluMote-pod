@@ -1,6 +1,7 @@
 package com.woelfware.blumote;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Intent;
@@ -93,7 +94,7 @@ public class MainInterface {
     
     private  BluMote blumote;
     
-    private  HashMap<Integer,Object[]> button_map = null;
+    private  HashMap<Integer,String> button_map = null;
     
 	public MainInterface(BluMote d) {
 		blumote = d;
@@ -200,35 +201,34 @@ public class MainInterface {
 
 			//set bundle of associated button properties
 			// order is : Button name, database string identifier for btn      
-			button_map = new HashMap<Integer,Object[]>();
-			button_map.put(R.id.btn_volume_up, new Object[] {btn_volume_up, "btn_volume_up"});
-			button_map.put(R.id.btn_volume_down, new Object[] {btn_volume_down, "btn_volume_down"});
-			button_map.put(R.id.btn_channel_up, new Object[] {btn_channel_up, "btn_channel_up"});
-			button_map.put(R.id.btn_channel_down, new Object[] {btn_channel_down, "btn_channel_down"});
-			button_map.put(R.id.btn_input, new Object[] {btn_input, "btn_input"});
-			button_map.put(R.id.power_btn, new Object[] {btn_pwr, "btn_pwr"});
-			button_map.put(R.id.power2_btn, new Object[] {power2_btn, "power2_btn"});
-			button_map.put(R.id.back_skip_btn, new Object[] {back_skip_btn, "back_skip_btn"});
-			button_map.put(R.id.back_btn, new Object[] {back_btn, "back_btn"});
-			button_map.put(R.id.forward_btn, new Object[] {forward_btn, "forward_btn"});
-			button_map.put(R.id.skip_forward_btn, new Object[] {skip_forward_btn, "skip_forward_btn"});
-			button_map.put(R.id.record_btn, new Object[] {record_btn, "record_btn"});
-			button_map.put(R.id.stop_btn, new Object[] {stop_btn, "stop_btn"});
-			button_map.put(R.id.play_btn, new Object[] {play_btn, "play_btn"});
-			button_map.put(R.id.pause_btn, new Object[] {pause_btn, "pause_btn"});
-			button_map.put(R.id.eject_btn, new Object[] {eject_btn, "eject_btn"});
-			button_map.put(R.id.disc_btn, new Object[] {disc_btn, "disc_btn"});
-			button_map.put(R.id.mute_btn, new Object[] {mute_btn, "mute_btn"});
-			button_map.put(R.id.info_btn, new Object[] {info_btn, "info_btn"});
-			button_map.put(R.id.return_btn, new Object[] {return_btn, "return_btn"});
-			button_map.put(R.id.pgup_btn, new Object[] {pgup_btn, "pgup_btn"});
-			button_map.put(R.id.pgdn_btn, new Object[] {pgdn_btn, "pgdn_btn"});
-			button_map.put(R.id.guide_btn, new Object[] {guide_btn, "guide_btn"});
-			button_map.put(R.id.exit_btn, new Object[] {exit_btn, "exit_btn"});
-			button_map.put(R.id.move_right_btn, new Object[] {move_right_btn, "move_right_btn"});
-			button_map.put(R.id.move_left_btn, new Object[] {move_left_btn, "move_left_btn"});
-			button_map.put(R.id.fav_btn, new Object[] {fav_btn, "fav_btn"});
-			button_map.put(R.id.btn_last, new Object[] {btn_last, "btn_last"});
+			button_map = new HashMap<Integer,String>();
+			button_map.put(R.id.btn_volume_up, "btn_volume_up");
+			button_map.put(R.id.btn_volume_down, "btn_volume_down");
+			button_map.put(R.id.btn_channel_up, "btn_channel_up");
+			button_map.put(R.id.btn_channel_down, "input");
+			button_map.put(R.id.power_btn, "btn_pwr");
+			button_map.put(R.id.power2_btn, "power2_btn");
+			button_map.put(R.id.back_skip_btn, "back_skip_btn");
+			button_map.put(R.id.back_btn, "back_btn");
+			button_map.put(R.id.forward_btn, "forward_btn");
+			button_map.put(R.id.skip_forward_btn, "skip_forward_btn");
+			button_map.put(R.id.record_btn, "record_btn");
+			button_map.put(R.id.stop_btn, "stop_btn");
+			button_map.put(R.id.play_btn, "play_btn");
+			button_map.put(R.id.pause_btn, "pause_btn");
+			button_map.put(R.id.eject_btn, "eject_btn");
+			button_map.put(R.id.disc_btn, "disc_btn");
+			button_map.put(R.id.mute_btn, "mute_btn");
+			button_map.put(R.id.info_btn, "info_btn");
+			button_map.put(R.id.return_btn, "return_btn");
+			button_map.put(R.id.pgup_btn, "pgup_btn");
+			button_map.put(R.id.pgdn_btn, "pgdn_btn");
+			button_map.put(R.id.guide_btn, "guide_btn");
+			button_map.put(R.id.exit_btn, "exit_btn");
+			button_map.put(R.id.move_right_btn, "move_right_btn");
+			button_map.put(R.id.move_left_btn, "move_left_btn");
+			button_map.put(R.id.fav_btn, "fav_btn");
+			button_map.put(R.id.btn_last, "btn_last");
 			///////////////////////////////////////////////////////////
 			// NUMBERS SCREEN
 			move_right_n_btn = (ImageButton) blumote.findViewById(R.id.move_right_n_btn);
@@ -323,34 +323,34 @@ public class MainInterface {
 			// unpressed, graphic for pushed
 
 			// bundle all the button data into a big hashtable
-			button_map.put(R.id.btn_n0, new Object[] { btn_n0, "btn_n0" });
-			button_map.put(R.id.btn_n1, new Object[] { btn_n1, "btn_n1" });
-			button_map.put(R.id.btn_n2, new Object[] { btn_n2, "btn_n2" });
-			button_map.put(R.id.btn_n3, new Object[] { btn_n3, "btn_n3" });
-			button_map.put(R.id.btn_n4, new Object[] { btn_n4, "btn_n4" });
-			button_map.put(R.id.btn_n5, new Object[] { btn_n5, "btn_n5" });
-			button_map.put(R.id.btn_n6, new Object[] { btn_n6, "btn_n6" });
-			button_map.put(R.id.btn_n7, new Object[] { btn_n7, "btn_n7" });
-			button_map.put(R.id.btn_n8, new Object[] { btn_n8, "btn_n8" });
-			button_map.put(R.id.btn_n9, new Object[] { btn_n9, "btn_n9" });
-			button_map.put(R.id.btn_dash, new Object[] { btn_dash, "btn_dash" });
-			button_map.put(R.id.btn_enter, new Object[] { btn_enter, "btn_enter" });
-			button_map.put(R.id.btn_exit, new Object[] { btn_exit, "btn_exit" });
-			button_map.put(R.id.btn_home, new Object[] { btn_home, "btn_home" });
-			button_map.put(R.id.move_right_n_btn, new Object[] { move_right_n_btn, "move_right_btn" });
-			button_map.put(R.id.move_left_n_btn, new Object[] { move_left_n_btn, "move_left_btn" });
-			button_map.put(R.id.left_btn, new Object[] { left_btn, "left_btn" });
-			button_map.put(R.id.right_btn, new Object[] { right_btn, "right_btn" });
-			button_map.put(R.id.btn_up, new Object[] { btn_up, "btn_up" });
-			button_map.put(R.id.down_btn, new Object[] { down_btn, "down_btn" });
-			button_map.put(R.id.btn_misc1, new Object[] { btn_misc1, "btn_misc1" });
-			button_map.put(R.id.btn_misc2, new Object[] { btn_misc2, "btn_misc2" });
-			button_map.put(R.id.btn_misc3, new Object[] { btn_misc3, "btn_misc3" });
-			button_map.put(R.id.btn_misc4, new Object[] { btn_misc4, "btn_misc4" });
-			button_map.put(R.id.btn_misc5, new Object[] { btn_misc5, "btn_misc5" });
-			button_map.put(R.id.btn_misc6, new Object[] { btn_misc6, "btn_misc6" });
-			button_map.put(R.id.btn_misc7, new Object[] { btn_misc7, "btn_misc7" });
-			button_map.put(R.id.btn_misc8, new Object[] { btn_misc8, "btn_misc8" });
+			button_map.put(R.id.btn_n0, "btn_n0");
+			button_map.put(R.id.btn_n1, "btn_n1");
+			button_map.put(R.id.btn_n2, "btn_n2");
+			button_map.put(R.id.btn_n3, "btn_n3");
+			button_map.put(R.id.btn_n4, "btn_n4");
+			button_map.put(R.id.btn_n5, "btn_n5");
+			button_map.put(R.id.btn_n6, "btn_n6");
+			button_map.put(R.id.btn_n7, "btn_n7");
+			button_map.put(R.id.btn_n8, "btn_n8");
+			button_map.put(R.id.btn_n9, "btn_n9");
+			button_map.put(R.id.btn_dash, "btn_dash");
+			button_map.put(R.id.btn_enter, "btn_enter");
+			button_map.put(R.id.btn_exit, "btn_exit");
+			button_map.put(R.id.btn_home, "btn_home");
+			button_map.put(R.id.move_right_n_btn, "move_right_btn");
+			button_map.put(R.id.move_left_n_btn, "move_left_btn");
+			button_map.put(R.id.left_btn, "left_btn");
+			button_map.put(R.id.right_btn, "right_btn");
+			button_map.put(R.id.btn_up, "btn_up");
+			button_map.put(R.id.down_btn, "down_btn");
+			button_map.put(R.id.btn_misc1, "btn_misc1");
+			button_map.put(R.id.btn_misc2, "btn_misc2");
+			button_map.put(R.id.btn_misc3, "btn_misc3");
+			button_map.put(R.id.btn_misc4, "btn_misc4");
+			button_map.put(R.id.btn_misc5, "btn_misc5");
+			button_map.put(R.id.btn_misc6, "btn_misc6");
+			button_map.put(R.id.btn_misc7, "btn_misc7");
+			button_map.put(R.id.btn_misc8, "btn_misc8");
 			/////////////////////////////////////////////////////////
 			// ACTIVITY setup
 			// initialize buttons
@@ -361,8 +361,8 @@ public class MainInterface {
 			move_right_a_btn.setOnClickListener(blumote);
 			move_right_a_btn.setOnTouchListener(blumote.gestureListener);
 			
-			button_map.put(R.id.move_right_a_btn, new Object[] { move_right_a_btn, "move_right_btn" });
-			button_map.put(R.id.move_left_a_btn, new Object[] { move_left_btn, "move_left_btn" });
+			button_map.put(R.id.move_right_a_btn, "move_right_btn");
+			button_map.put(R.id.move_left_a_btn, "move_left_btn");
 
 			// Initialize array adapter
 			mActivitiesArrayAdapter = new ArrayAdapter<String>(blumote,
@@ -418,7 +418,7 @@ public class MainInterface {
 		populateDropDown();
 	}
 	
-	public HashMap<Integer,Object[]> getButtonMap() {
+	public HashMap<Integer,String> getButtonMap() {
 		return button_map;
 	}
 	
