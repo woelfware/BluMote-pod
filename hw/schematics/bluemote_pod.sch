@@ -484,3 +484,4 @@ NOTES:
 We may want to add extra cap and a limiting resistor to make sure we don't exceed 100mA from the USB port.
 We may want to add diode protection to power.
 
+
