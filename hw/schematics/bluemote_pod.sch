@@ -81,7 +81,7 @@ device=device
 T 62700 46900 5 8 0 0 0 7 1
 value=none
 T 62700 47300 5 8 0 0 0 7 1
-footprint=mj-3536ng.fp
+footprint=CON__CUI_MJ-3523-SMT.fp
 T 62700 48100 5 8 0 0 0 7 1
 symversion=1.1
 }
@@ -94,7 +94,7 @@ device=device
 T 62700 47800 5 8 0 0 0 7 1
 value=none
 T 62700 48200 5 8 0 0 0 7 1
-footprint=mj-3536ng.fp
+footprint=CON__CUI_MJ-3523-SMT.fp
 T 62700 49000 5 8 0 0 0 7 1
 symversion=1.1
 }
@@ -107,7 +107,7 @@ device=device
 T 62700 48700 5 8 0 0 0 7 1
 value=none
 T 62700 49100 5 8 0 0 0 7 1
-footprint=mj-3536ng.fp
+footprint=CON__CUI_MJ-3523-SMT.fp
 T 62700 49900 5 8 0 0 0 7 1
 symversion=1.1
 }
@@ -483,5 +483,4 @@ T 50200 49700 9 8 1 0 0 0 4
 NOTES:
 We may want to add extra cap and a limiting resistor to make sure we don't exceed 100mA from the USB port.
 We may want to add diode protection to power.
-
 
