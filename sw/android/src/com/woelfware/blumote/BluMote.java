@@ -756,8 +756,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	};	
 
 	// called when activities finish running and return to this activity
+	// strangely this is called BEFORE the onResume() function
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		// when returning from activity, make sure database is opened again
+		device_data.open();
+		
 		switch (requestCode) {
 		case REQUEST_CONNECT_DEVICE:
 			// When DeviceListActivity returns with a device to connect
@@ -804,7 +808,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case REQUEST_MANAGE_DEVICE:
 			// when the manage devices activity returns
 			if (resultCode == Activity.RESULT_OK) {
-				// do nothing as of now
+				// refresh drop-down items				
+				mainScreen.populateDropDown();
 			}
 			break;
 
