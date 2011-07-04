@@ -1,5 +1,6 @@
 package com.woelfware.blumote;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -167,7 +168,13 @@ public class Activities {
 			Editor mEditor = blumote.prefs.edit();
 
 			key = processActivityKeyForFile(key);
-			mEditor.putString(key + INIT, null); // key, value
+			// convert List to a compacted csv string
+			StringBuilder initItems = new StringBuilder();
+			for (Iterator<String> initStep = init.iterator(); initStep.hasNext();) {
+				initItems.append(initStep.next());
+			}
+			// TODO - was working on this prior to interruptions
+			mEditor.putString(key + INIT, initItems.toString()); // key, value
 
 			mEditor.commit();
 		}

@@ -526,7 +526,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	
 	// interface implementation for buttons
 	public void onClick(View v) {
-		BUTTON_ID = v.getId();
+		BUTTON_ID = v.getId(); // save Button ID - besides this function, also referenced in storeButton()
+								// when a new button is learned
 
 		if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_EDIT) {	
 			if (captureButton) {
@@ -575,6 +576,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				activityInit.add(button_map.get(BUTTON_ID));
 			}
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
+			Toast.makeText(this, "Aim remote at pod and press button...",
+					Toast.LENGTH_SHORT).show();
 			sendCode(Codes.Pod.LEARN);
 		} else { // skip this handler if we are in learn button mode
 			// send message to handler after the delay expires, allows for
@@ -921,12 +924,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT)
 					.show();
 			BT_STATE = Codes.BT_STATE.LEARN;
+			INTERFACE_STATE = Codes.INTERFACE_STATE.LEARN;
 			return true;
 
 		case R.id.stop_learn:
 			Toast.makeText(this, "Stopped Learning", Toast.LENGTH_SHORT).show();
 			sendCode(Codes.Pod.ABORT_LEARN);
 			BT_STATE = Codes.BT_STATE.ABORT_LEARN;
+			INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
 			return true;
 			
 		case R.id.rename_misc:
