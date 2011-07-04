@@ -38,7 +38,7 @@ public class MyDB {
 	public long insertButton(String curTable, String buttonID, String buttonCategory, byte[] content)
 	{
 		try {
-		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
+		Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
 				null, null, null, null);
 		if (c.getCount() > 0) { // then we already have this entry so call updateButton
 			updateButton(curTable, buttonID, buttonCategory, content);
@@ -47,9 +47,9 @@ public class MyDB {
 		else { // this must be a new entry , so try to insert it
 			try{
 				ContentValues newTaskValue = new ContentValues();
-				newTaskValue.put(Constants.BUTTON_ID, buttonID);
-				newTaskValue.put(Constants.BUTTON_DATA, content);
-				newTaskValue.put(Constants.CATEGORY, buttonCategory);
+				newTaskValue.put(Constants.DB_FIELDS.BUTTON_ID.getValue(), buttonID);
+				newTaskValue.put(Constants.DB_FIELDS.BUTTON_DATA.getValue(), content);
+				newTaskValue.put(Constants.DB_FIELDS.CATEGORY.getValue(), buttonCategory);
 				db = dbhelper.getWritableDatabase();
 				return db.insertOrThrow(curTable, null, newTaskValue);
 			} catch(SQLiteException ex) {
@@ -76,11 +76,11 @@ public class MyDB {
 	{
 		byte[] button;
 		
-		Cursor c = db.query(curTable, null, Constants.BUTTON_ID+"='"+buttonID+"'",
+		Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
 				null, null, null, null);
 		if (c != null) {
 			c.moveToFirst();
-			button = c.getBlob(c.getColumnIndex(Constants.BUTTON_DATA));
+			button = c.getBlob(c.getColumnIndex(Constants.DB_FIELDS.BUTTON_DATA.getValue()));
 			//button = c.getString(c.getColumnIndex(Constants.BUTTON_DATA));
 			return button;
 		}
@@ -93,9 +93,9 @@ public class MyDB {
 		String TABLE="create table "+
 		table+" ("+
 		Constants.KEY_ID+" integer primary key autoincrement, "+
-		Constants.BUTTON_ID+" text not null, "+
-		Constants.BUTTON_DATA+" text not null, "+
-		Constants.CATEGORY+" text not null"+
+		Constants.DB_FIELDS.BUTTON_ID.getValue()+" text not null, "+
+		Constants.DB_FIELDS.BUTTON_DATA.getValue()+" text not null, "+
+		Constants.DB_FIELDS.CATEGORY.getValue()+" text not null"+
 		");";
 		try {
 			db.execSQL(TABLE);
@@ -139,7 +139,7 @@ public class MyDB {
 	// returns true if succeeded
     public boolean deleteButton(String curTable, String buttonID) 
     {
-        return db.delete(curTable, Constants.BUTTON_ID + 
+        return db.delete(curTable, Constants.DB_FIELDS.BUTTON_ID.getValue() + 
         		"=" + buttonID, null) > 0;
     }
     
@@ -150,10 +150,10 @@ public class MyDB {
     	// DEBUG var
     	boolean debug;
         ContentValues args = new ContentValues();
-        args.put(Constants.BUTTON_DATA, content);
-        args.put(Constants.CATEGORY, buttonCategory);
+        args.put(Constants.DB_FIELDS.BUTTON_DATA.getValue(), content);
+        args.put(Constants.DB_FIELDS.CATEGORY.getValue(), buttonCategory);
         debug = db.update(curTable, args, 
-                  Constants.BUTTON_ID + "='" + buttonID+"'", null) > 0;
+                  Constants.DB_FIELDS.BUTTON_ID.getValue() + "='" + buttonID+"'", null) > 0;
         return debug;
     }
 }

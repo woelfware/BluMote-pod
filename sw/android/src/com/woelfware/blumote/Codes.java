@@ -37,10 +37,11 @@ class Codes {
     // this is useful for how to setup the options menus
     // and what actions buttons should take when pressed
     enum INTERFACE_STATE {
-    	MAIN,
-    	ACTIVITY, 
-    	ACTIVITY_INIT,
-    	LEARN,
+    	MAIN, // default program state, when we are in a device mode
+    	ACTIVITY, // when we are in a normal activity mode
+    	ACTIVITY_EDIT, // when editing an activity (associating buttons/etc)
+    	ACTIVITY_INIT, // when setting up the initialization of an activity
+    	LEARN, // when learning a new button code
         RENAME_STATE // renaming misc button
     }
     

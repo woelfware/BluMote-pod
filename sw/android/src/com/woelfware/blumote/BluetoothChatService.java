@@ -3,6 +3,7 @@ package com.woelfware.blumote;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
@@ -37,7 +38,7 @@ class BluetoothChatService {
     // Member fields
     private final BluetoothAdapter mAdapter;
     private final Handler mHandler;
-    private AcceptThread mAcceptThread;
+    //private AcceptThread mAcceptThread;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
     private int mState;
@@ -135,7 +136,7 @@ class BluetoothChatService {
         if (mConnectedThread != null) {mConnectedThread.cancel(); mConnectedThread = null;}
 
         // Cancel the accept thread because we only want to connect to one device
-        if (mAcceptThread != null) {mAcceptThread.cancel(); mAcceptThread = null;}
+        //if (mAcceptThread != null) {mAcceptThread.cancel(); mAcceptThread = null;}
 
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(socket);
@@ -158,7 +159,7 @@ class BluetoothChatService {
         if (D) Log.d(TAG, "stop");
         if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread = null;}
         if (mConnectedThread != null) {mConnectedThread.cancel(); mConnectedThread = null;}
-        if (mAcceptThread != null) {mAcceptThread.cancel(); mAcceptThread = null;}
+        //if (mAcceptThread != null) {mAcceptThread.cancel(); mAcceptThread = null;}
         setState(STATE_NONE);
     }
 
@@ -207,79 +208,6 @@ class BluetoothChatService {
         mHandler.sendMessage(msg);
     }
 
-    /**
-     * This thread runs while listening for incoming connections. It behaves
-     * like a server-side client. It runs until a connection is accepted
-     * (or until cancelled).
-     */
-    private class AcceptThread extends Thread {
-        // The local server socket
-        private final BluetoothServerSocket mmServerSocket;
-
-        public AcceptThread() {
-            BluetoothServerSocket tmp = null;
-
-            // Create a new listening server socket
-            try {
-            	tmp = null;
-                tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
-            } 
-            catch (IOException e) {
-                Log.e(TAG, "listen() failed", e);
-            }
-            mmServerSocket = tmp;
-        }
-
-        public void run() {
-            if (D) Log.d(TAG, "BEGIN mAcceptThread" + this);
-            setName("AcceptThread");
-            BluetoothSocket socket = null;
-
-            // Listen to the server socket if we're not connected
-            while (mState != STATE_CONNECTED) {
-                try {
-                    // This is a blocking call and will only return on a
-                    // successful connection or an exception
-                    socket = mmServerSocket.accept();
-                } catch (IOException e) {
-                    Log.e(TAG, "accept() failed", e);
-                    break;
-                }
-
-                // If a connection was accepted
-                if (socket != null) {
-                    synchronized (BluetoothChatService.this) {
-                        switch (mState) {
-                        case STATE_LISTEN:
-                        case STATE_CONNECTING:
-                            // Situation normal. Start the connected thread.
-                            connected(socket, socket.getRemoteDevice());
-                            break;
-                        case STATE_NONE:
-                        case STATE_CONNECTED:
-                            // Either not ready or already connected. Terminate new socket.
-                            try {
-                                socket.close();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Could not close unwanted socket", e);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-            if (D) Log.i(TAG, "END mAcceptThread");
-        }
-
-        public void cancel() {
-            if (D) Log.d(TAG, "cancel " + this);
-            try {
-                mmServerSocket.close();
-            } catch (IOException e) {
-                Log.e(TAG, "close() of server failed", e);
-            }
-        }
-    }
 
 
     /**
@@ -288,8 +216,8 @@ class BluetoothChatService {
      * succeeds or fails.
      */
     private class ConnectThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
+        private BluetoothSocket mmSocket;
+        private BluetoothDevice mmDevice;
 
         public ConnectThread(BluetoothDevice device) {
             mmDevice = device;
@@ -298,19 +226,9 @@ class BluetoothChatService {
             // Get a BluetoothSocket for a connection with the
             // given BluetoothDevice
             try {
-            	// query host for SDK level, if higher than 9 then use proper function call instead of reflection
-            	if (Build.VERSION.SDK_INT > 9) {
-            		mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
-            	}
-            	else {            	            		            	
-            		//tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
-                	Method m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});
-                	//Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
-                    tmp = (BluetoothSocket) m.invoke(device, 1);
-            	}                
-            } 
-            //catch (IOException e) {
-            catch (Exception e) {
+            	tmp = mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
+            }
+            catch (IOException e) {           
                 Log.e(TAG, "create() failed", e);
             }
             mmSocket = tmp;
@@ -325,10 +243,8 @@ class BluetoothChatService {
 
             // Make a connection to the BluetoothSocket
             try {
-                // This is a blocking call and will only return on a
-                // successful connection or an exception
-                mmSocket.connect();
-            } catch (IOException e) {
+                tryConnect();
+            } catch (Exception e) {
                 connectionFailed();
                 // Close the socket
                 try {
@@ -356,6 +272,25 @@ class BluetoothChatService {
             } catch (IOException e) {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
+        }
+        
+        public void tryConnect() {
+        	try {
+        		// This is a blocking call and will only return on a
+        		// successful connection or an exception
+        		mmSocket.connect();
+        	} catch (Exception e) {
+        		try {
+        			// could be an HTC device, try to connect that way.
+        			Method m = mmDevice.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});               
+        			mmSocket = (BluetoothSocket) m.invoke(mmDevice, 1);	
+        			mmSocket.connect();
+        		} catch (Exception e1) {
+        			Log.e(TAG, "tryConnect failed", e1);
+        		}   
+
+        	}
+        	
         }
     }
 
@@ -441,4 +376,79 @@ class BluetoothChatService {
             }
         }
     }
+    
+//  /**
+//  * This thread runs while listening for incoming connections. It behaves
+//  * like a server-side client. It runs until a connection is accepted
+//  * (or until cancelled).
+//  */
+// private class AcceptThread extends Thread {
+//     // The local server socket
+//     private final BluetoothServerSocket mmServerSocket;
+//
+//     public AcceptThread() {
+//         BluetoothServerSocket tmp = null;
+//
+//         // Create a new listening server socket
+//         try {
+//         	tmp = null;
+//             tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
+//         } 
+//         catch (IOException e) {
+//             Log.e(TAG, "listen() failed", e);
+//         }
+//         mmServerSocket = tmp;
+//     }
+//
+//     public void run() {
+//         if (D) Log.d(TAG, "BEGIN mAcceptThread" + this);
+//         setName("AcceptThread");
+//         BluetoothSocket socket = null;
+//
+//         // Listen to the server socket if we're not connected
+//         while (mState != STATE_CONNECTED) {
+//             try {
+//                 // This is a blocking call and will only return on a
+//                 // successful connection or an exception
+//                 socket = mmServerSocket.accept();
+//             } catch (IOException e) {
+//                 Log.e(TAG, "accept() failed", e);
+//                 break;
+//             }
+//
+//             // If a connection was accepted
+//             if (socket != null) {
+//                 synchronized (BluetoothChatService.this) {
+//                     switch (mState) {
+//                     case STATE_LISTEN:
+//                     case STATE_CONNECTING:
+//                         // Situation normal. Start the connected thread.
+//                         connected(socket, socket.getRemoteDevice());
+//                         break;
+//                     case STATE_NONE:
+//                     case STATE_CONNECTED:
+//                         // Either not ready or already connected. Terminate new socket.
+//                         try {
+//                             socket.close();
+//                         } catch (IOException e) {
+//                             Log.e(TAG, "Could not close unwanted socket", e);
+//                         }
+//                         break;
+//                     }
+//                 }
+//             }
+//         }
+//         if (D) Log.i(TAG, "END mAcceptThread");
+//     }
+//
+//     public void cancel() {
+//         if (D) Log.d(TAG, "cancel " + this);
+//         try {
+//             mmServerSocket.close();
+//         } catch (IOException e) {
+//             Log.e(TAG, "close() of server failed", e);
+//         }
+//     }
+// }
+
 }
