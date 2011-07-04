@@ -1,28 +1,12 @@
 # Pin name action command file
 
+# Start of element R202
+ChangePinName(R202, 2, 2)
+ChangePinName(R202, 1, 1)
+
 # Start of element R201
 ChangePinName(R201, 2, 2)
 ChangePinName(R201, 1, 1)
-
-# Start of element JP203
-ChangePinName(JP203, 2, 2)
-ChangePinName(JP203, 1, 1)
-
-# Start of element JP202
-ChangePinName(JP202, 2, 2)
-ChangePinName(JP202, 1, 1)
-
-# Start of element JP201
-ChangePinName(JP201, 2, 2)
-ChangePinName(JP201, 1, 1)
-
-# Start of element J202
-ChangePinName(J202, 6, GND)
-ChangePinName(J202, 5, PWR)
-ChangePinName(J202, 4, SPI_CS)
-ChangePinName(J202, 3, SPI_CLK)
-ChangePinName(J202, 2, SPI_MOSI)
-ChangePinName(J202, 1, SPI_MISO)
 
 # Start of element J201
 ChangePinName(J201, 6, P1.2)
@@ -114,58 +98,29 @@ ChangePinName(U201, 3, P2.5)
 ChangePinName(U201, 2, DVCC)
 ChangePinName(U201, 1, SBWTCK)
 
-# Start of element J112
-ChangePinName(J112, 2, 2)
-ChangePinName(J112, 1, 1)
+# Start of element D101
+ChangePinName(D101, 2, Cathode)
+ChangePinName(D101, 1, Anode)
 
-# Start of element J111
-ChangePinName(J111, 2, 2)
-ChangePinName(J111, 1, 1)
+# Start of element D102
+ChangePinName(D102, 2, Cathode)
+ChangePinName(D102, 1, Anode)
 
-# Start of element Q101
-ChangePinName(Q101, 3, D)
-ChangePinName(Q101, 2, S)
-ChangePinName(Q101, 1, G)
+# Start of element R102
+ChangePinName(R102, 2, 2)
+ChangePinName(R102, 1, 1)
 
-# Start of element J110
-ChangePinName(J110, 8, 8)
-ChangePinName(J110, 7, 7)
-ChangePinName(J110, 6, 6)
-ChangePinName(J110, 5, 5)
-ChangePinName(J110, 4, 4)
-ChangePinName(J110, 3, 3)
-ChangePinName(J110, 2, 2)
-ChangePinName(J110, 1, 1)
+# Start of element R105
+ChangePinName(R105, 2, 2)
+ChangePinName(R105, 1, 1)
 
-# Start of element J109
-ChangePinName(J109, 8, 8)
-ChangePinName(J109, 7, 7)
-ChangePinName(J109, 6, 6)
-ChangePinName(J109, 5, 5)
-ChangePinName(J109, 4, 4)
-ChangePinName(J109, 3, 3)
-ChangePinName(J109, 2, 2)
-ChangePinName(J109, 1, 1)
+# Start of element R106
+ChangePinName(R106, 2, 2)
+ChangePinName(R106, 1, 1)
 
-# Start of element J108
-ChangePinName(J108, 8, 8)
-ChangePinName(J108, 7, 7)
-ChangePinName(J108, 6, 6)
-ChangePinName(J108, 5, 5)
-ChangePinName(J108, 4, 4)
-ChangePinName(J108, 3, 3)
-ChangePinName(J108, 2, 2)
-ChangePinName(J108, 1, 1)
-
-# Start of element J107
-ChangePinName(J107, 8, 8)
-ChangePinName(J107, 7, 7)
-ChangePinName(J107, 6, 6)
-ChangePinName(J107, 5, 5)
-ChangePinName(J107, 4, 4)
-ChangePinName(J107, 3, 3)
-ChangePinName(J107, 2, 2)
-ChangePinName(J107, 1, 1)
+# Start of element R104
+ChangePinName(R104, 2, 2)
+ChangePinName(R104, 1, 1)
 
 # Start of element C104
 ChangePinName(C104, 2, 1)
@@ -194,20 +149,6 @@ ChangePinName(U102, 3, S\H\D\N\)
 ChangePinName(U102, 2, GND)
 ChangePinName(U102, 1, Vin)
 
-# Start of element R108
-ChangePinName(R108, 2, 2)
-ChangePinName(R108, 1, 1)
-
-# Start of element J106
-ChangePinName(J106, 3, Jack Sense)
-ChangePinName(J106, 2, Signal-)
-ChangePinName(J106, 1, Signal+)
-
-# Start of element J105
-ChangePinName(J105, 3, Jack Sense)
-ChangePinName(J105, 2, Signal-)
-ChangePinName(J105, 1, Signal+)
-
 # Start of element J104
 ChangePinName(J104, 3, Jack Sense)
 ChangePinName(J104, 2, Signal-)
@@ -230,22 +171,6 @@ ChangePinName(J101, 3, D+)
 ChangePinName(J101, 2, D-)
 ChangePinName(J101, 1, VCC)
 
-# Start of element R107
-ChangePinName(R107, 2, 2)
-ChangePinName(R107, 1, 1)
-
-# Start of element R106
-ChangePinName(R106, 2, 2)
-ChangePinName(R106, 1, 1)
-
-# Start of element R105
-ChangePinName(R105, 2, 2)
-ChangePinName(R105, 1, 1)
-
-# Start of element R104
-ChangePinName(R104, 2, 2)
-ChangePinName(R104, 1, 1)
-
 # Start of element Q102
 ChangePinName(Q102, 3, D)
 ChangePinName(Q102, 2, S)
@@ -254,18 +179,6 @@ ChangePinName(Q102, 1, G)
 # Start of element R103
 ChangePinName(R103, 2, 2)
 ChangePinName(R103, 1, 1)
-
-# Start of element R102
-ChangePinName(R102, 2, 2)
-ChangePinName(R102, 1, 1)
-
-# Start of element R101
-ChangePinName(R101, 2, 2)
-ChangePinName(R101, 1, 1)
-
-# Start of element D101
-ChangePinName(D101, 2, Cathode)
-ChangePinName(D101, 1, Anode)
 
 # Start of element U101
 ChangePinName(U101, 3, VCC)
