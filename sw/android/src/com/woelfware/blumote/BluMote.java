@@ -6,6 +6,7 @@ import java.util.HashMap;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
@@ -45,7 +46,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
-import com.woelfware.database.MyDB;
+import com.woelfware.database.DeviceDB;
 
 public class BluMote extends Activity implements OnClickListener,OnItemClickListener,OnItemSelectedListener
 {
@@ -79,6 +80,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Dialog menu constants
 	private static final int DIALOG_SHOW_INFO = 0;
 	private static final int DIALOG_INIT_DELAY = 1;
+	static final int DIALOG_INIT_PROGRESS = 2; 
 
 	// Layout Views
 	private TextView mTitle;
@@ -100,7 +102,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private BluetoothChatService mChatService = null;	
 
 	// SQL database class
-	MyDB device_data;
+	DeviceDB device_data;
 	// Shared preferences class - for storing config settings between runs
 	SharedPreferences prefs;
 
@@ -108,7 +110,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Note that when we are working with an activity then this structure
 	// is updated for the button mappings but must be refreshed with getActivityButtons()
 	// whenever a modification is performed to the activity button mappings
-	Cursor devices;
+	Cursor buttons;
 
 	// currently selected device
 	String cur_device;
@@ -322,7 +324,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		mTitle = (TextView) findViewById(R.id.title_right_text);
 
 		// get SQL database class
-		device_data = new MyDB(this);
+		device_data = new DeviceDB(this);
 		device_data.open();
 	}	
 	
@@ -572,8 +574,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			String payload = null;
 			payload = button_map.get(BUTTON_ID);
 			if (payload != null) {
-				activityInit.add(cur_device);
-				activityInit.add(button_map.get(BUTTON_ID));
+				activityInit.add(cur_device+" "+button_map.get(BUTTON_ID));
 			}
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
 			Toast.makeText(this, "Aim remote at pod and press button...",
@@ -628,7 +629,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return;
 		}
 		// check that we have a context selected and available
-		if (devices != null) {
+		if (buttons != null) {
 			// Check that there's actually something to send
 			if (message.length > 0) {
 				// Get the message bytes and tell the BluetoothChatService to
@@ -955,7 +956,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.insert_delay:
-			// TODO launch a selector window to ask for how long of a delay
+			// launch a selector window to ask for how long of a delay
 			// then store this result in the activityInit List
 			// else we want to associate a new button on the activity interface
 			showDialog(DIALOG_INIT_DELAY);
@@ -1035,53 +1036,60 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// Change to activities state after init is run
 		INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
 		
-		// set drop down to selected item
-		// prepend the activity_prefix since the arraylist display doesn't show it
+		// extract the name of activity that was selected
 		String activity = ((TextView)v).getText().toString();
-		// call the init sequence first
-		activities.executeActivityInitSequence(activity);
+				
+		// begin executing init sequence
+		activities.startActivityInitSequence(activity);
 		
 		activity = MainInterface.ACTIVITY_PREFIX + activity;
-		mainScreen.setDropDown(activity);
+		mainScreen.setDropDown(activity); // set drop down to selected item
 		
 	}
 
 	// this function sends the code to the pod based on the button that was
 	// selected
-	protected void buttonSend(String buttonCode) {
+	protected void buttonSend(String buttonCode) {		
+		// TODO - make all this code part of the DeviceDB class instead....
 		String column;
-		if (devices != null) {
-			devices.moveToFirst();
-			for (int i = 0; i < devices.getCount(); i++) {
-				column = devices.getString(1);
+		if (buttons != null) {
+			buttons.moveToFirst();
+			for (int i = 0; i < buttons.getCount(); i++) {
+				column = buttons.getString(1);
 				if (column.equals(buttonCode)) {
-					byte[] code = devices.getBlob(2);
-					byte command = (byte) (Codes.Pod.IR_TRANSMIT);
-					byte[] toSend = new byte[code.length + 1]; // 1 extra bytes
-																// for command
-																// byte
-					toSend[0] = command;
-					for (int j = 1; j < toSend.length; j++) {
-						toSend[j] = code[j - 1];
-					}
-					// {command, 0x00, code}; // 0x00 is reserved byte
-					BT_STATE = Codes.BT_STATE.IR_TRANSMIT;
-
-					// increment producer/consumer, ACK received will consume,
-					// removing finger from button clears
-					if (PKTS_SENT == 0) {
-						sendMessage(toSend); // send data if matches
-						PKTS_SENT = PKTS_SENT + 2;
-					}
+					byte[] code = buttons.getBlob(2);
+					
+					sendButton(code);
 
 					return;
 				}
 				// move to next button
-				devices.moveToNext();
+				buttons.moveToNext();
 			}
 		}
 	}
+	
+	// this function sends the byte[] for a button to the pod
+	protected void sendButton(byte[] code) {
+		byte command = (byte) (Codes.Pod.IR_TRANSMIT);
+		byte[] toSend = new byte[code.length + 1]; // 1 extra bytes
+													// for command
+													// byte
+		toSend[0] = command;
+		for (int j = 1; j < toSend.length; j++) {
+			toSend[j] = code[j - 1];
+		}
+		// {command, 0x00, code}; // 0x00 is reserved byte
+		BT_STATE = Codes.BT_STATE.IR_TRANSMIT;
 
+		// increment producer/consumer, ACK received will consume,
+		// removing finger from button clears
+		if (PKTS_SENT == 0) {
+			sendMessage(toSend); // send data if matches
+			PKTS_SENT = PKTS_SENT + 2;
+		}
+	}
+	
 	// This function sends the command codes to the pod
 	protected void sendCode(int code) {
 		byte[] toSend;
@@ -1109,7 +1117,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			toSend[0] = (byte) toSend[0];
 			sendMessage(toSend);
 			break;
-		}
+
+		} // end switch
 	}
 
 	// called after learn mode is finished and has data to store
@@ -1117,7 +1126,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		String payload = null;
 		payload = button_map.get(BUTTON_ID);
 
-		if (payload != null && INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
+		// make sure payload is not null and make sure we are in learn mode
+		if (payload != null && INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
 			device_data.insertButton(cur_device, payload,
 					cur_context, Codes.pod_data);
 		}
@@ -1234,7 +1244,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					} // end switch/case
 				} // end while loop
 			} catch (Exception e) { // something unexpected occurred....exit
-									// gracefully
 				Toast.makeText(this, "Communication error, exiting learn mode",
 						Toast.LENGTH_SHORT).show();
 				BT_STATE = Codes.BT_STATE.IDLE;
@@ -1333,11 +1342,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		super.onCreateDialog(id);
-		AlertDialog alert;
+		AlertDialog alert = null;
 		AlertDialog.Builder builder;
+		
 		switch (id) {
 		case DIALOG_SHOW_INFO:
-			// define dialog
+			// define dialog			
 			StringBuilder podData = new StringBuilder();
 			podData.append("Component ID: ");
 			podData.append(Codes.pod_data[0] + "\n");
@@ -1351,10 +1361,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// .setCancelable(false)
 			builder.setMessage(podData).setTitle("Pod Information");
 			alert = builder.create();
-			break;
+			return alert;
 			
 		case DIALOG_INIT_DELAY:
-			// create a custom alertdialog using our xml interface for it			
+			// create a custom alertdialog using our xml interface for it	
+			
 			LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
 			View layout = inflater.inflate(R.layout.dialog_init_delay,
 			                               (ViewGroup) findViewById(R.id.dialog_init_root));
@@ -1369,7 +1380,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			        	   try {
 			        		   Editable test = text.getText();
 			        		   if (Integer.parseInt(text.getText().toString()) > 0) {
-			        			   activityInit.add("DELAY,"+Integer.parseInt(
+			        			   activityInit.add("DELAY "+Integer.parseInt(
 			        					   text.getText().toString()));
 			        		   }
 			        	   }
@@ -1385,12 +1396,21 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			           }
 			    });
 			alert = builder.create();
-			break;
+			return alert;
+		
+		case DIALOG_INIT_PROGRESS:
+			// TODO
+			// should create a new progressdialog 
+			// the dialog should exit after all the initItems are processed
+			ProgressDialog progressDialog = new ProgressDialog(BluMote.this);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setCancelable(false); // don't allow back button to cancel it
+            progressDialog.setMessage("Sending commands, please wait...");
+            return progressDialog;
 			
 		default:
-			alert = null;
+			return alert;
 		}
-		return alert;
 	}
 	
 	class MyGestureDetector extends SimpleOnGestureListener {

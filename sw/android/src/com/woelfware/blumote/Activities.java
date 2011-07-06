@@ -5,14 +5,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import android.bluetooth.BluetoothAdapter;
+import android.content.Intent;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.MatrixCursor;
+import android.os.CountDownTimer;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 
 import com.woelfware.database.Constants.DB_FIELDS;
 
 public class Activities {
+	protected static boolean timerReady = true;
+	private final String TAG = "Activities";
 	private MainInterface mainint = null;
 	private BluMote blumote = null;
 	ArrayAdapter<String> mActivitiesArrayAdapter = null;
@@ -22,6 +28,11 @@ public class Activities {
 	// when searching through keys
 	static final String ACTIVITY_PREFIX = "(A)_";
 	private static final String INIT = "INIT";
+	
+	// these member variables will deal with executing all the 
+	// initialization steps
+	private int initItemsIndex = 0;	
+	private String[] initItems = null;
 	
 	// public constructor
 	// ARGUMENTS:
@@ -171,10 +182,9 @@ public class Activities {
 			// convert List to a compacted csv string
 			StringBuilder initItems = new StringBuilder();
 			for (Iterator<String> initStep = init.iterator(); initStep.hasNext();) {
-				initItems.append(initStep.next());
+				initItems.append(initStep.next()+",");
 			}
-			// TODO - was working on this prior to interruptions
-			mEditor.putString(key + INIT, initItems.toString()); // key, value
+			mEditor.putString(key + INIT, initItems.toString()); 
 
 			mEditor.commit();
 		}
@@ -186,7 +196,7 @@ public class Activities {
 	
 	// Retrieve the initialization sequence to be performed by the activity
 	// returns a String[] with the elements in order (first to last)
-	String[] getActivityInitSequence(String key) {		
+	private String[] getActivityInitSequence(String key) {		
 		key = processActivityKeyForFile(key);
 		
 		String initSequence = blumote.prefs.getString(key + INIT, null);
@@ -194,22 +204,84 @@ public class Activities {
 		return initSequence.split(","); 
 	}
 	
-	String[] getActivityInitSequence() {
+	private String[] getActivityInitSequence() {
 		return getActivityInitSequence(workingActivity);
 	}
 	
 	// this function will extract the init sequence and then execute it.
 	// note that while this is running it will pop-up a 'working' dialog
 	// that will stay up until the init sequence completes.
-	void executeActivityInitSequence(String key) {
+	void startActivityInitSequence(String key) {
 		key = processActivityKeyForFile(key);
-		// TODO implement this
 		// call getActivityInitSequence(key) to get the list of items to execute
+		initItems = getActivityInitSequence();
+		initItemsIndex = 0; // reset index
+		
+		// show progress dialog
+		blumote.showDialog(BluMote.DIALOG_INIT_PROGRESS);
+		
+		nextActivityInitSequence();
 	}
 
-	void executeActivityInitSequence() {
-		executeActivityInitSequence(workingActivity);
+	void startActivityInitSequence() {
+		startActivityInitSequence(workingActivity);
 	}
+	
+	// this should be called after startActivityInitSequence has completed
+	// this function will execute the next item in the Init sequence, if
+	// no more items are available it will dismiss the progress dialog
+	void nextActivityInitSequence() {
+		String item;
+		while (initItemsIndex < initItems.length) {
+			// use initItemIndex to deal with getting through all the items
+			// if run into a delay item then need to spawn CountDownTimer and then CountDownTimer
+			// will call this method after it finishes...			
+			item = initItems[initItemsIndex];
+			initItemsIndex++;
+			if (item == "") {
+				// log error and continue to next item
+				Log.e(TAG, "initialization item was null - malformed item");
+			}
+			// check if item is null and is a DELAY xx item
+			else if (item.startsWith("DELAY")) {
+				// extract value after the space
+				String delay = (item.split(" ")[1]);
+				try {
+					int delayTime = Integer.parseInt(delay);
+					//need to start a wait timer for this period of time
+					new CountDownTimer(delayTime, delayTime) {
+						public void onTick(long millisUntilFinished) {
+							// no need to use this function
+						}
+
+						public void onFinish() {
+							// called when timer expired
+							nextActivityInitSequence(); // continue on the quest to finish the initItems
+						}
+					}.start();					
+					break; // exit while loop while we are waiting for Delay to finish
+				} catch (Exception e) {
+					// failed, skip and go to next item in this case.
+					Log.e(TAG, "Failed to execute an initialization delay!");
+				}
+			}			
+			// else if the item is a button in format "Device Button"
+			else {
+				// extract value before the space
+				String device = (item.split(" ")[0]); 
+				// extract value after the space
+				String buttonID = (item.split(" ")[1]); 
+				byte[] toSend = blumote.device_data.getButton(device, buttonID);
+
+				// execute button code
+				blumote.sendButton(toSend);
+			}				
+		} // end while	
+		// check if we are done processing, if so dismiss the progress dialog
+		if (initItemsIndex == (initItems.length - 1)) {
+			blumote.dismissDialog(BluMote.DIALOG_INIT_PROGRESS);
+		}
+	} // end nextActivityInitSequence
 	
 	// add a new button association for an existing activity
 	// ARGUMENTS:

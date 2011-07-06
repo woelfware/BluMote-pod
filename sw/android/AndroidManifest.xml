@@ -17,6 +17,7 @@
 
 <activity android:theme="@android:style/Theme.Dialog" android:label="@string/enter_device_title" android:name="EnterDevice"></activity>
 <activity android:name="ActivityInitEdit"></activity>
+<activity android:name="ActivityInitRun" android:theme="@android:style/Theme.Dialog"></activity>
 </application>
 
 

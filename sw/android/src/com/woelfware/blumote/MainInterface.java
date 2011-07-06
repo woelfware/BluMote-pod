@@ -429,25 +429,12 @@ public class MainInterface {
 	
 	// sets up the drop-down list, pulls rows from DB to populate
 	void populateDropDown() {
-		String str1;
-		Cursor cursor1;
-		cursor1 = blumote.device_data.getTables();
-		cursor1.moveToFirst();
+		String[] devices = blumote.device_data.getDevices();
 		mAdapter.clear(); // clear before adding
-		if (cursor1.getCount() > 0) {
-			do {
-				// need to exclude android_metadata and sqlite_sequence tables
-				// from results
-				str1 = cursor1.getString(0);
-				if (!(str1.equals("android_metadata"))
-						&& !(str1.equals("sqlite_sequence"))) {
-					// spaces are removed from table names, converted to
-					// underscores, so convert them back here
-					str1 = str1.replace("_", " ");
-					mAdapter.add(str1);
-				}
-			} while (cursor1.moveToNext());
+		for (int i= 0 ; i< devices.length; i++) {
+			mAdapter.add(devices[i]);
 		}
+		
 		//put activities into drop-down
 		activities.populateActivites(false, mAdapter);
 		
@@ -517,11 +504,11 @@ public class MainInterface {
 					// check if activity or a device
 					if (table_s.startsWith(ACTIVITY_PREFIX)) {
 						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
-						blumote.devices = activities.getActivityButtons(table_s);						
+						blumote.buttons = activities.getActivityButtons(table_s);						
 					}
 					else { // must be a device
 						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;					
-						blumote.devices = blumote.device_data.getKeys(blumote.cur_device);					
+						blumote.buttons = blumote.device_data.getButtons(blumote.cur_device);					
 					}
 				}
 				// store in NV memory so next program invocation has this

@@ -283,6 +283,7 @@ class BluetoothChatService {
         		try {
         			// could be an HTC device, try to connect that way.
         			Method m = mmDevice.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});               
+        			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
         			mmSocket = (BluetoothSocket) m.invoke(mmDevice, 1);	
         			mmSocket.connect();
         		} catch (Exception e1) {

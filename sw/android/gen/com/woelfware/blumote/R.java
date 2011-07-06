@@ -178,18 +178,19 @@ public final class R {
     public static final class layout {
         public static final int activities_screen=0x7f030000;
         public static final int activity_edit=0x7f030001;
-        public static final int custom_title=0x7f030002;
-        public static final int device_name=0x7f030003;
-        public static final int dialog_init_delay=0x7f030004;
-        public static final int enter_device=0x7f030005;
-        public static final int main_interface=0x7f030006;
-        public static final int main_screen=0x7f030007;
-        public static final int manage_devices=0x7f030008;
-        public static final int manage_devices_item=0x7f030009;
-        public static final int message=0x7f03000a;
-        public static final int number_screen=0x7f03000b;
-        public static final int pod_list=0x7f03000c;
-        public static final int spinner_entry=0x7f03000d;
+        public static final int activity_init_run=0x7f030002;
+        public static final int custom_title=0x7f030003;
+        public static final int device_name=0x7f030004;
+        public static final int dialog_init_delay=0x7f030005;
+        public static final int enter_device=0x7f030006;
+        public static final int main_interface=0x7f030007;
+        public static final int main_screen=0x7f030008;
+        public static final int manage_devices=0x7f030009;
+        public static final int manage_devices_item=0x7f03000a;
+        public static final int message=0x7f03000b;
+        public static final int number_screen=0x7f03000c;
+        public static final int pod_list=0x7f03000d;
+        public static final int spinner_entry=0x7f03000e;
     }
     public static final class menu {
         public static final int activities_menu=0x7f080000;
