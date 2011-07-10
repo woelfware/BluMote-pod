@@ -2,7 +2,6 @@ package com.woelfware.blumote;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.MenuItem;

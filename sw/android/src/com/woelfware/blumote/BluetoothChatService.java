@@ -3,16 +3,13 @@ package com.woelfware.blumote;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -30,7 +27,7 @@ class BluetoothChatService {
     private static final boolean D = true;
 
     // Name for the SDP record when creating server socket
-    private static final String NAME = "BlueMote";
+    //private static final String NAME = "BlueMote";
 
     // Unique UUID for this application
     //private static final UUID MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
@@ -223,12 +220,16 @@ class BluetoothChatService {
             mmDevice = device;
             BluetoothSocket tmp = null;
 
-            // Get a BluetoothSocket for a connection with the
-            // given BluetoothDevice
+//             Get a BluetoothSocket for a connection with the
+//             given BluetoothDevice
             try {
-            	tmp = mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
+            	//tmp = mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
+            	// could be an HTC device, try to connect that way.
+    			Method m = mmDevice.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});               
+    			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
+    			tmp = (BluetoothSocket) m.invoke(mmDevice, 1);	
             }
-            catch (IOException e) {           
+            catch (Exception e) {           
                 Log.e(TAG, "create() failed", e);
             }
             mmSocket = tmp;

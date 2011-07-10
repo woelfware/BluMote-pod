@@ -5,8 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import android.bluetooth.BluetoothAdapter;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.MatrixCursor;
@@ -14,11 +13,15 @@ import android.os.CountDownTimer;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
+import com.woelfware.database.Constants;
 import com.woelfware.database.Constants.DB_FIELDS;
 
 public class Activities {
 	protected static boolean timerReady = true;
 	private final String TAG = "Activities";
+	private final int BUTTON_ID = 0;
+	private final int BUTTON_DATA = 1;
+	private final int CATEGORY = 2;
 	private MainInterface mainint = null;
 	private BluMote blumote = null;
 	ArrayAdapter<String> mActivitiesArrayAdapter = null;
@@ -50,18 +53,18 @@ public class Activities {
 	// updates the arrayadapter parameter with all the activities from the
 	// prefs file.  boolean suppressPrefix is used to remove the 
 	// ACTIVITIES_PREFIX if that is desired
-	void populateActivites(boolean suppressPrefix, ArrayAdapter<String> adapter) {
-		Map<String,?> values = blumote.prefs.getAll();
+	static void populateActivities(boolean suppressPrefix, ArrayAdapter<String> adapter, SharedPreferences prefs) {
+		Map<String,?> values = prefs.getAll();
 		
 		// iterate through these values
 		for (String item : values.keySet()) {
-			// check if prefix is an activity
-			if (item.startsWith(ACTIVITY_PREFIX)) {
-				// convert underscores to spaces
+			// check if prefix is an activity and this is not an initilialization item
+			if (item.startsWith(ACTIVITY_PREFIX) && !item.endsWith(INIT)) {				
 				if (suppressPrefix == true) {
 					// remove the prefix
 					item = item.replace(ACTIVITY_PREFIX, "");
 				}			
+				// convert underscores to spaces
 				item = item.replace("_", " ");
 				// add it to arraylist
 				adapter.add(item);
@@ -69,20 +72,26 @@ public class Activities {
 		}
 	}
 	
+	void populateActivites(boolean suppressPrefix, ArrayAdapter<String> adapter) { 
+		populateActivities(suppressPrefix, adapter, blumote.prefs);
+	}	
+	
 	// instead of continuously recreating the activity that we are working with
 	// this function allows the caller to set it once and then all functions
 	// use this handle to perform their actions
 	public void setWorkingActivity(String key) 	{
-		workingActivity = processActivityKeyForFile(key);
+		workingActivity = addActivityPrefix(key);
 	}
 	
 	public String getWorkingActivity() {
 		return workingActivity;
 	}
 	
-	// this function will convert a regular activity name
-	// into a format suitable for using as a prefs file key
-	private String processActivityKeyForFile(String key) {
+	// this function will make sure the activity prefix is 
+	// attached to the key passed in, this format is necessary for
+	// saving activity data except activity-INIT data.
+	// also ensures that spaces are converted to underscores
+	private static String addActivityPrefix(String key) {
 		// convert spaces to underscores
 		key = key.replace(" ", "_");
 		// prepend prefix if it doesn't already exist
@@ -94,17 +103,39 @@ public class Activities {
 		}
 	}
 	
+	// this function will make sure the activity prefix is 
+	// removed from the key passed in, this format is necessary for
+	// saving activity INIT data
+	// also ensures that spaces are converted to underscores
+	// appends the INIT suffix to the key
+	private static String formatActivityNameForInit(String key) {
+		// convert spaces to underscores
+		key = key.replace(" ", "_");
+		// prepend prefix if it doesn't already exist
+		if (key.startsWith(ACTIVITY_PREFIX)) {
+			// remove the prefix
+			key = key.replace(ACTIVITY_PREFIX, "") + INIT;
+			return key;
+		}
+		else {
+			return key+INIT;
+		}
+	}
+	
+	
 	// delete activity from the arraylist
 	public void deleteActivity(int position) {
 		String name = mActivitiesArrayAdapter.getItem(position);
 		mActivitiesArrayAdapter.remove(name);
 				
-		name = processActivityKeyForFile(name);
+		name = addActivityPrefix(name);
 		
 		Editor mEditor = blumote.prefs.edit();
-		mEditor.remove(name); 
-		// TODO implement removing all variations, like INIT, etc, 
-		mEditor.remove(name+INIT);
+		// delete the activity record as well as it's associated INIT routine
+		mEditor.remove(name); 	
+		name = formatActivityNameForInit(name);
+		mEditor.remove(name);
+		
 		// iterate through button_map to search for any button name suffixes
 		// to clean up and remove from prefs file
 		Set<Integer> toIterate = mainint.button_map.keySet();
@@ -124,7 +155,7 @@ public class Activities {
 		// add to arraylist
 		mActivitiesArrayAdapter.add(s);
 
-		s = processActivityKeyForFile(s);
+		s = addActivityPrefix(s);
 		Editor mEditor = blumote.prefs.edit();
 		mEditor.putString(s, null); // key, value
 		mEditor.commit();	
@@ -146,19 +177,26 @@ public class Activities {
 	}
 	
 	// rename an activity , pass in new name and position in arraylist
-	public void renameActivity(String s, int position) { 
-		String old_name = mActivitiesArrayAdapter.getItem(position);
-		mActivitiesArrayAdapter.remove(old_name);
-		mActivitiesArrayAdapter.add(s);
+	public void renameActivity(String newName, int position) { 
+		String oldName = mActivitiesArrayAdapter.getItem(position);
+		mActivitiesArrayAdapter.remove(oldName);
+		mActivitiesArrayAdapter.add(newName);
 		
-		s = processActivityKeyForFile(s);
-		old_name = processActivityKeyForFile(old_name);
-
-		// store the data from old name
-		String activity = blumote.prefs.getString(old_name, null);		
+		newName = addActivityPrefix(newName);
+		oldName = addActivityPrefix(oldName);
 		Editor mEditor = blumote.prefs.edit();
-		mEditor.remove(old_name); // remove old one
-		mEditor.putString(s, activity); // add new name with old data
+		
+		// store the data from old name
+		String activity = blumote.prefs.getString(oldName, null);				
+		mEditor.remove(oldName); // remove old one
+		mEditor.putString(newName, activity); // add new name with old data
+		// Now do the same for INIT data
+		oldName = formatActivityNameForInit(oldName);
+		newName = formatActivityNameForInit(newName);
+		String activityInit = blumote.prefs.getString(oldName, null);
+		mEditor.remove(oldName); // remove old one
+		mEditor.putString(newName, activityInit); // add new name with old data
+		
 		mEditor.commit();
 		
 		mainint.populateDropDown(); // always refresh dropdown when renaming an activity
@@ -174,20 +212,24 @@ public class Activities {
 	// Delay xx : delay of xx seconds
 	// Device button : 'device' represents one of the known devices in the database,
 	// 'button' represents the button ID on the interface that should be sent
-	void addActivityInitSequence(String key, List<String> init) {
-		if (key != null) {
-			Editor mEditor = blumote.prefs.edit();
+	static void addActivityInitSequence(String activityName, List<String> init, SharedPreferences prefs) {
+		if (activityName != null) {
+			Editor mEditor = prefs.edit();
 
-			key = processActivityKeyForFile(key);
+			activityName = formatActivityNameForInit(activityName);
 			// convert List to a compacted csv string
 			StringBuilder initItems = new StringBuilder();
 			for (Iterator<String> initStep = init.iterator(); initStep.hasNext();) {
 				initItems.append(initStep.next()+",");
 			}
-			mEditor.putString(key + INIT, initItems.toString()); 
+			mEditor.putString(activityName, initItems.toString()); 
 
 			mEditor.commit();
 		}
+	}
+	
+	void addActivityInitSequence(String activityName, List<String> init) {
+		addActivityInitSequence(activityName,init, blumote.prefs);
 	}
 	
 	void addActivityInitSequence(List<String> init) {
@@ -196,24 +238,27 @@ public class Activities {
 	
 	// Retrieve the initialization sequence to be performed by the activity
 	// returns a String[] with the elements in order (first to last)
-	private String[] getActivityInitSequence(String key) {		
-		key = processActivityKeyForFile(key);
-		
-		String initSequence = blumote.prefs.getString(key + INIT, null);
-		
-		return initSequence.split(","); 
+	static String[] getActivityInitSequence(String activityName, SharedPreferences prefs) {
+		activityName = formatActivityNameForInit(activityName);
+		String initSequence = prefs.getString(activityName, null);
+		if (initSequence == null) {
+			return null;
+		}
+		else {
+			return initSequence.split(",");
+		}
 	}
 	
 	private String[] getActivityInitSequence() {
-		return getActivityInitSequence(workingActivity);
+		return getActivityInitSequence(workingActivity, blumote.prefs);
 	}
 	
 	// this function will extract the init sequence and then execute it.
 	// note that while this is running it will pop-up a 'working' dialog
 	// that will stay up until the init sequence completes.
-	void startActivityInitSequence(String key) {
-		key = processActivityKeyForFile(key);
-		// call getActivityInitSequence(key) to get the list of items to execute
+	void startActivityInitSequence(String activityName) {
+		activityName = formatActivityNameForInit(activityName);
+		// call getActivityInitSequence(activityName) to get the list of items to execute
 		initItems = getActivityInitSequence();
 		initItemsIndex = 0; // reset index
 		
@@ -267,14 +312,36 @@ public class Activities {
 			}			
 			// else if the item is a button in format "Device Button"
 			else {
-				// extract value before the space
-				String device = (item.split(" ")[0]); 
 				// extract value after the space
 				String buttonID = (item.split(" ")[1]); 
-				byte[] toSend = blumote.device_data.getButton(device, buttonID);
-
+				byte[] toSend = null;
+				
+				// need to determine if this is an activity (A)_ 
+				if ( (item.split(" ")[0]).startsWith(Activities.ACTIVITY_PREFIX)) {
+					String activityName = (item.split(" ")[0]); // extract value before the space
+					// then need to extract lookup to real device button association..
+					try {
+						// Returns DeviceButton created from activity button and activity name
+						DeviceButton realDevice = new DeviceButton(activityName, buttonID);
+						toSend = blumote.device_data.getButton(realDevice.getDevice(), realDevice.getButton());
+					} catch (Exception e) {
+						// failed so don't send anything
+					}
+					
+				}				
+				else {
+					// 	otherwise we can just use getButton if it is a regular device
+					try {
+						String device = (item.split(" ")[0]); // extract value before the space
+						toSend = blumote.device_data.getButton(device, buttonID);
+					} catch (Exception e) {
+						// failed so don't send anything
+					}
+				}
 				// execute button code
-				blumote.sendButton(toSend);
+				if (toSend != null) {
+					blumote.sendButton(toSend);
+				}
 			}				
 		} // end while	
 		// check if we are done processing, if so dismiss the progress dialog
@@ -283,24 +350,37 @@ public class Activities {
 		}
 	} // end nextActivityInitSequence
 	
+
 	// add a new button association for an existing activity
 	// ARGUMENTS:
-	// String key: the key of the activity to associate this init sequence with
+	// String activityName: the key of the activity to associate this init sequence with
 	// String btnID : is button on interface
 	// String device :is an existing device name which is in the database, the second 
 	// String deviceBtn :is a ID for an interface button of that device  
 	// Note: when a new keybinding is added it is 'appended' to the existing bindings
 	// in the prefs file
-	void addActivityKeyBinding(String key, String btnID, String device, String deviceBtn) {
-		// TODO implement this function
-		if (key != null) {
-			key = processActivityKeyForFile(key);
-			String test = blumote.prefs.getString(key, null);
-			// make sure there is an activity of that name
-			if (test != null) {
-
+	void addActivityKeyBinding(String activityName, String btnID, String device, String deviceBtn) {
+		if (activityName != null) {
+			activityName = addActivityPrefix(activityName);
+			String record = blumote.prefs.getString(activityName, null);
+			
+			// formatting of record is : btnID device deviceBtn, etc
+			if (record != null) {
+				// supress leading comma if null record (empty)
+				record = record + ",";
+			} else {
+				record = "";
 			}
-
+			
+			// append the new data to the existing record
+			record = record + btnID + " " + device + " " + deviceBtn;
+			
+			// save new record into NV memory
+			Editor mEditor = blumote.prefs.edit();
+			mEditor.putString(activityName, record);
+			mEditor.commit();
+			
+			// update buttons on interface
 			mainint.fetchButtons();
 		}
 	}
@@ -311,12 +391,56 @@ public class Activities {
 	
 	// removes a binding from an activity
 	// ARGUMENTS:
-	// String key : the key of the activity to be modified
-	// String binding : the button-id of the 
-	void removeActivityKeyBinding(String key, String binding) {
-		key = processActivityKeyForFile(key);
-		// TODO implement this
-		mainint.fetchButtons();
+	// String activityName : the key of the activity to be modified
+	// String buttonID : the button-id of the button we want un-bound 
+	void removeActivityKeyBinding(String activityName, String buttonID) {
+		activityName = addActivityPrefix(activityName);
+		
+		String record = blumote.prefs.getString(activityName, null);
+		
+		if (record != null) {
+			// split up the items by commas
+			String[] entries = record.split(",");
+			
+			// after we remove the button we will have data of one less item
+			String[] newEntries = new String[entries.length - 1];
+			int newEntriesIndex = 0;
+			
+			// formatting of record is : btnID device deviceBtn, etc
+			String[] buttonMap = new String[3];
+			try {
+				for (int i= 0; i< entries.length; i++) {
+					buttonMap = entries[i].split(" ");
+					if (buttonMap[2].matches(buttonID)) {					
+						continue; // skip this item
+					} else {
+						newEntries[newEntriesIndex] = entries[i];
+						newEntriesIndex++;
+					}
+				}
+			} catch (ArrayIndexOutOfBoundsException e) {
+				// if we get this then we tried to put too many things into newEntries[]
+				// which probably means we did not find the item to delete.
+				// in this case we are just going to not edit the record so we will 
+				// define newEntries as equivalent to entries[]
+				newEntries = entries;
+			}
+				
+			// now that we have our newEntries[] we need to convert it into a flattened csv string
+			// convert List to a compacted csv string
+			StringBuilder newRecord = new StringBuilder();
+			for (int i= 0 ; i < newEntries.length; i++) {
+				newRecord.append(newEntries[i]+",");
+			}
+			
+			// save new record into NV memory
+			Editor mEditor = blumote.prefs.edit();
+			mEditor.putString(activityName, newRecord.toString());
+			mEditor.commit();
+			
+			// refresh interface buttons
+			mainint.fetchButtons();
+		} // end if						
 	}	
 	
 	void removeActivityKeyBinding(String binding) {
@@ -324,21 +448,142 @@ public class Activities {
 	}
 	
 	// this function will return a Cursor that represents the button codes stored in the activity profile setting
-	Cursor getActivityButtons(String key) {
-		key = processActivityKeyForFile(key);
+	Cursor getActivityButtons(String activityName) {
+		activityName = addActivityPrefix(activityName);
 		String[] db_columns = new String[DB_FIELDS.values().length];
 		int i = 0;
+		// load up db_columns[] with the column names as defined by DB_FIELDS enum
 		for (DB_FIELDS field : DB_FIELDS.values()) {
 			db_columns[i++] = field.getValue();
 		}
 		
-		MatrixCursor result = new MatrixCursor(db_columns);
+		MatrixCursor activityButtons = new MatrixCursor(db_columns);
 		// now pull data from preferences file and add rows to the cursor
-		//TODO implement this
-		return result;
-	}
+		
+		// need to loop through the activity 'record' that defines the button mappings
+		// and then add each item in the proper columns of the MatrixCursor
+		String record = blumote.prefs.getString(activityName, null);
+		
+		if (record != null) {
+			// split up the items by commas		
+			String[] entries = record.split(",");
+
+			ActivityButton activityButton;
+			Object[] toInsert = new Object[3]; // to insert into the MatrixCursor
+			for (int index = 0; index < entries.length; index++) {
+				activityButton = new ActivityButton(activityName, entries[index]);
+				try {
+					// try to insert data from database if it exists
+					// load up Object[] with the 3 column data items required
+					toInsert[BUTTON_ID] = (Object)activityButton.getActivityButton();					
+					toInsert[BUTTON_DATA] = (Object)blumote.device_data.getButton(
+							activityButton.getDeviceName(), activityButton.getDeviceButton());
+					toInsert[CATEGORY] = (Object)Constants.CATEGORIES.ACTIVITY.getValue();
+					activityButtons.addRow(toInsert);
+				} catch (Exception e) {
+					// if the button has no data associated with it, just ignore it
+				}
+				
+			}
+		}
+		return activityButtons;
+	}	
 	
 	Cursor getActivityButtons() {
 		return getActivityButtons(workingActivity);
+	}
+
+	void setWorkingActivity(int position) {
+		// uses ListView index to set the working activity
+		String name = mActivitiesArrayAdapter.getItem(position);
+		setWorkingActivity(name);
+	}
+	
+	private class ActivityButton {
+		private String deviceName;
+		private String activityName;
+		private String activityButton;
+		private String deviceButton;
+		
+		// formatting of record is : btnID device deviceBtn, etc
+		ActivityButton(String activityName, String record) {
+			String[] items = record.split(" ");
+			this.activityName = activityName;
+			this.activityButton = items[0];
+			this.deviceName = items[1];
+			this.deviceButton = items[2];
+		}
+		
+		String getActivityButton() {
+			return activityButton;
+		}
+		
+		String getDeviceButton() {
+			return deviceButton;
+		}
+		
+		String getDeviceName() {
+			return deviceName;
+		}
+		
+		@SuppressWarnings("unused")
+		String getActivityName() {
+			return activityName;
+		}	
+	}
+	
+	// instantiates a DeviceButton based on an activity and button
+	// sets internal fields to 'null' if an error occurs during translation
+	private class DeviceButton {
+		private String deviceName;
+		private String deviceButton;
+		
+		// takes an activity and activity button and converts to a device and button
+		DeviceButton(String activityName, String activityButton) {
+			String record = null;
+			Map<String,?> values = blumote.prefs.getAll();
+			
+			// iterate through these values
+			for (String item : values.keySet()) {
+				// check if prefix is an activity
+				if (item.startsWith(ACTIVITY_PREFIX)) {									
+					// need to see if this is the activityName we are seeking
+					if (item.matches(activityName)) {
+						record = (String)values.get(item);
+						break; // get out of for loop
+					}
+				}
+			}
+			
+			if (record != null) {
+				// convert activity buttons record to appropriate device buttons
+				// split up the items by commas		
+				String[] entries = record.split(",");
+
+				ActivityButton activityBtnItem;
+				for (int index = 0; index < entries.length; index++) {
+					activityBtnItem = new ActivityButton(activityName, entries[index]);
+
+					// check if this activityBtnItem matches the activityButton we are interested in
+					if (activityBtnItem.getActivityButton().matches(activityButton)) {
+						this.deviceButton = activityBtnItem.getDeviceButton();
+						this.deviceName = activityBtnItem.getDeviceName();
+					}
+
+				}
+			} // end if
+			else {
+				this.deviceButton = null;
+				this.deviceName = null;
+			}
+		}
+		
+		String getDevice() {
+			return deviceName;
+		}
+		
+		String getButton() {
+			return deviceButton;
+		}
 	}
 }

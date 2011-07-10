@@ -72,11 +72,11 @@ public class DeviceDB {
 	}
 	
 	// This should return one of the buttons of a particular device selection
-	public byte[] getButton(String curTable, String buttonID)
+	public byte[] getButton(String device, String buttonID)
 	{
 		byte[] button;
 		
-		Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
+		Cursor c = db.query(device, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
 				null, null, null, null);
 		if (c != null) {
 			c.moveToFirst();

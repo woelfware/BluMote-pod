@@ -17,7 +17,6 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.Editable;
 import android.view.ContextMenu;
 import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
@@ -47,6 +46,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 import com.woelfware.database.DeviceDB;
+import com.woelfware.database.Constants.CATEGORIES;
 
 public class BluMote extends Activity implements OnClickListener,OnItemClickListener,OnItemSelectedListener
 {
@@ -117,7 +117,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	
 	// context of screen view, using this for categorizing in database
 	// hardcoding this for now, will need to adjust for new contexts
-	private String cur_context = "tv-dvd";
+	private String cur_context = CATEGORIES.TV_DVD.getValue();
 
 	// Currently selected button resource id (for training mode operations)
 	private int BUTTON_ID = 0;
@@ -576,6 +576,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (payload != null) {
 				activityInit.add(cur_device+" "+button_map.get(BUTTON_ID));
 			}
+			Toast.makeText(this, "Button press added to initialization list!",
+					Toast.LENGTH_SHORT).show();
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
 			Toast.makeText(this, "Aim remote at pod and press button...",
 					Toast.LENGTH_SHORT).show();
@@ -583,20 +585,25 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		} else { // skip this handler if we are in learn button mode
 			// send message to handler after the delay expires, allows for
 			// repeating event
-			if (NUM_MESSAGES == 0 && LOOP_KEY) {
-				Message msg = new Message();
-				msg.what = MESSAGE_KEY_PRESSED;
+			if (mChatService.getState() == BluetoothChatService.STATE_CONNECTED) {
+				if (NUM_MESSAGES == 0 && LOOP_KEY) {
+					Message msg = new Message();
+					msg.what = MESSAGE_KEY_PRESSED;
 
-				String payload = null;
-				payload = button_map.get(BUTTON_ID);
+					String payload = null;
+					payload = button_map.get(BUTTON_ID);
 
-				if (payload != null) {
-					msg.arg1 = BUTTON_ID;
-					buttonSend(payload);
-				}
+					if (payload != null) {
+						msg.arg1 = BUTTON_ID;
+						buttonSend(payload);
+					}
 
-				NUM_MESSAGES++;
-				mHandler.sendMessageDelayed(msg, DELAY_TIME);
+					NUM_MESSAGES++;
+					mHandler.sendMessageDelayed(msg, DELAY_TIME);
+				} 
+			} else {
+				Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT)
+				.show();
 			}
 		}
 	}			
@@ -715,9 +722,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			case MESSAGE_DEVICE_NAME:
 				// save the connected device's name
 				mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-				Toast.makeText(getApplicationContext(),
-						"Connected to " + mConnectedDeviceName,
-						Toast.LENGTH_SHORT).show();
+				//Toast.makeText(getApplicationContext(),"Connected to " + mConnectedDeviceName,
+				//		Toast.LENGTH_SHORT).show();
 				break;
 
 			case MESSAGE_TOAST:
@@ -947,6 +953,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			
 		case R.id.activity_edit_init:
 			i = new Intent(this, ActivityInitEdit.class);
+			// tack on data to tell the activity what the "activities" item is
+			i.putExtra(ActivityInitEdit.ACTIVITY_NAME, activities.getWorkingActivity());
 			startActivityForResult(i, ACTIVITY_INIT_EDIT);
 			return true;
 			
@@ -969,11 +977,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// after we add it then we need to clear out the activityInit object for the next usage
 			activityInit.clear();
 			Toast.makeText(this, "Press a button to associate with a device...", Toast.LENGTH_SHORT).show();
+			// now put us back into the original activity for the drop-down
+			mainScreen.setDropDown(activities.getWorkingActivity());
 			return true;
 			
 		case R.id.end_activity_edit:
 			INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY; // go to activity mode (to use new activity)
 			Toast.makeText(this, "Done editing activity", Toast.LENGTH_SHORT).show();
+			// now put us back into the original activity for the drop-down
+			mainScreen.setDropDown(activities.getWorkingActivity());
 		}
 
 		return false;
@@ -997,6 +1009,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		switch (item.getItemId()) {
 		case ID_DELETE:
 			activities.deleteActivity((int)info.id);
+			mainScreen.populateDropDown();
 			return true;
 			
 		case ID_RENAME:
@@ -1004,12 +1017,22 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			activity_rename = (int)info.id;
 			//launch window to get new name to use
 			Intent i = new Intent(this, EnterDevice.class);
-			startActivityForResult(i, ACTIVITY_RENAME);
+			startActivityForResult(i, ACTIVITY_RENAME);			
 			return true;
 			
-		case ID_MANAGE:						
+		case ID_MANAGE:					
+			// save menu item that was selected, if a "REDO" is requested
+			// then need this information to set the currently selected activity
+			activities.setWorkingActivity((int)info.id);
+			
 			i = new Intent(this, ActivityInitEdit.class);
+			// tack on data to tell the activity what the "activities" item is
+			i.putExtra(ActivityInitEdit.ACTIVITY_NAME, activities.getWorkingActivity());
 			startActivityForResult(i, ACTIVITY_INIT_EDIT);
+			
+			// set selected drop-down item to the item being managed
+			mainScreen.setDropDown(activities.getWorkingActivity());
+
 			return true;
 		}
 		return super.onContextItemSelected(item);
@@ -1376,16 +1399,18 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				.setCancelable(false)
 				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			           public void onClick(DialogInterface dialog, int id) {
-			               // TODO format below for DELAY,xx should be put into activities function to read the delays
 			        	   try {
-			        		   Editable test = text.getText();
 			        		   if (Integer.parseInt(text.getText().toString()) > 0) {
 			        			   activityInit.add("DELAY "+Integer.parseInt(
 			        					   text.getText().toString()));
+			        			   Toast.makeText(BluMote.this, "Delay added to initialization list!",
+			        						Toast.LENGTH_SHORT).show();
 			        		   }
 			        	   }
 			        	   catch (NumberFormatException e) {
 			        		   // do nothing, just quit
+			        		   Toast.makeText(BluMote.this, "Invalid number, ignoring...",
+			       					Toast.LENGTH_SHORT).show();
 			        	   }
 			        	   dialog.dismiss();
 			           }
@@ -1399,7 +1424,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return alert;
 		
 		case DIALOG_INIT_PROGRESS:
-			// TODO
 			// should create a new progressdialog 
 			// the dialog should exit after all the initItems are processed
 			ProgressDialog progressDialog = new ProgressDialog(BluMote.this);

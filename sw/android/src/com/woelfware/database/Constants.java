@@ -8,11 +8,22 @@ public class Constants {
 	public static final String KEY_ID="_id";
 
 	// Columns in the database
-	public class DB_FIELD {
-		public static final String BUTTON_ID = "button_id";
-		public static final String BUTTON_DATA = "button_data"; 
-		public static final String CATEGORY = "button_category"; // for example, TV, DVD, etc
-		
+//	public class DB_FIELD {
+//		public static final String BUTTON_ID = "button_id";
+//		public static final String BUTTON_DATA = "button_data"; 
+//		public static final String CATEGORY = "button_category"; // for example, TV, DVD, etc
+//		
+//	}
+	
+	public enum CATEGORIES {
+		TV_DVD("tv-dvd"), ACTIVITY("activity");
+		private final String field;
+		CATEGORIES(String field) {
+			this.field = field;
+		}
+		public String getValue() {
+			return field;
+		}
 	}
 	
 	public enum DB_FIELDS {

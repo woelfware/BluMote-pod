@@ -5,7 +5,6 @@ import java.util.HashMap;
 
 import android.content.Intent;
 import android.content.SharedPreferences.Editor;
-import android.database.Cursor;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
@@ -296,6 +295,8 @@ public class MainInterface {
 			btn_home.setOnClickListener(blumote);
 			move_left_n_btn.setOnClickListener(blumote);
 			move_left_n_btn.setOnTouchListener(blumote.gestureListener);
+			move_right_n_btn.setOnClickListener(blumote);
+			move_right_n_btn.setOnTouchListener(blumote.gestureListener);
 			move_right_btn.setOnClickListener(blumote);
 			move_right_btn.setOnTouchListener(blumote.gestureListener);
 			left_btn.setOnClickListener(blumote);
@@ -410,8 +411,10 @@ public class MainInterface {
 	// called first time program initializes, just determines
 	// what the last used device was and sets that to the active selection
 	private void restoreSpinner() {
+		populateDropDown();
 		// set spinner to default from last session if possible		
 		String prefs_table = blumote.prefs.getString("lastDevice", null);
+		prefs_table = prefs_table.replaceAll("_", " ");
 		if (prefs_table != null) {
 			for (int i = 0; i < device_spinner.getCount(); i++) {
 				if (prefs_table.equals(device_spinner.getItemAtPosition(i))) {
@@ -419,8 +422,8 @@ public class MainInterface {
 				}
 			}
 		}
-		// refresh drop down and fetch buttons
-		populateDropDown();
+		// always fetch buttons after we populate the drop down
+		fetchButtons();
 	}
 	
 	public HashMap<Integer,String> getButtonMap() {
@@ -504,7 +507,8 @@ public class MainInterface {
 					// check if activity or a device
 					if (table_s.startsWith(ACTIVITY_PREFIX)) {
 						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
-						blumote.buttons = activities.getActivityButtons(table_s);						
+						activities.setWorkingActivity(currentDropDown());
+						blumote.buttons = activities.getActivityButtons(table_s);								
 					}
 					else { // must be a device
 						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;					
