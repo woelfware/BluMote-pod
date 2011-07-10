@@ -8,16 +8,15 @@ Element [ 0x0 "CON__CUI_MJ-3523-SMT"  ""  ""  20000  20000  0  0   0   100   0x0
 
 	#Now adding Pins(Vias)
 	#Pin [rX  rY  Annular-Ring  Copper-Clearance  Soldermask-Clearance  Drill-Size  "Name" "Number" SFlags]
-
-	Pin [ 0 	0 	6800 	1600 	20685 	6700 	""  	"" 	 0x00 ]
-	Pin [ -27600 	0 	6800 	1600 	20685 	6700 	""  	"" 	 0x00 ]
+	Pin [ 0 	0 	400 	1600 	400 	6700 	""  	"" 	 0x00 ]
+	Pin [ -27600 	0 	400 	1600 	400 	6700 	""  	"" 	 0x00 ]
 
 	#Now adding Pads
 	#Pad [rX1 rY1 rX2 rY2 Thickness Clearance Mask "Name" "Number" SFlags]
 
-	Pad [ 4400 	-15750 	4400 	-13450 	8700 	1600 	2378 	"1"  	"1" 	 0x0100 ]
-	Pad [ -32700 	-14600 	-32700 	-14600 	11000 	1600 	2378 	"2"  	"2" 	 0x0100 ]
-	Pad [ -48800 	3000 	-48800 	3000 	11000 	1600 	2378 	"3"  	"3" 	 0x0100 ]
+	Pad [ 4400 	-15750 	4400 	-13450 	8700 	1600 	9100 	"1"  	"1" 	 0x0100 ]
+	Pad [ -32700 	-14600 	-32700 	-14600 	11000 	1600 	11400 	"2"  	"2" 	 0x0100 ]
+	Pad [ -48800 	3000 	-48800 	3000 	11000 	1600 	11400 	"3"  	"3" 	 0x0100 ]
 
 	#Now adding Silkscreen lines
 	#ElementLine [X1 Y1 X2 Y2 Thickness] 
