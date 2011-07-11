@@ -65,9 +65,11 @@ public class ManageDevices extends Activity {
 
 	private void populateDisplay() {
 		String[] devices = device_data.getDevices();
-		mDevicesArrayAdapter.clear(); // clear before adding
-		for (int i= 0 ; i< devices.length; i++) {
-			mDevicesArrayAdapter.add(devices[i]);
+		if (devices != null) {
+			mDevicesArrayAdapter.clear(); // clear before adding
+			for (int i= 0 ; i< devices.length; i++) {
+				mDevicesArrayAdapter.add(devices[i]);
+			}
 		}
 	}
 	

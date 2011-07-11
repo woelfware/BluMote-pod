@@ -209,7 +209,8 @@ public class MainInterface {
 			button_map.put(R.id.btn_volume_up, "btn_volume_up");
 			button_map.put(R.id.btn_volume_down, "btn_volume_down");
 			button_map.put(R.id.btn_channel_up, "btn_channel_up");
-			button_map.put(R.id.btn_channel_down, "input");
+			button_map.put(R.id.btn_channel_down, "btn_channel_down");
+			button_map.put(R.id.btn_input, "btn_input");
 			button_map.put(R.id.power_btn, "btn_pwr");
 			button_map.put(R.id.power2_btn, "power2_btn");
 			button_map.put(R.id.back_skip_btn, "back_skip_btn");
@@ -414,8 +415,8 @@ public class MainInterface {
 		populateDropDown();
 		// set spinner to default from last session if possible		
 		String prefs_table = blumote.prefs.getString("lastDevice", null);
-		prefs_table = prefs_table.replaceAll("_", " ");
 		if (prefs_table != null) {
+			prefs_table = prefs_table.replaceAll("_", " ");		
 			for (int i = 0; i < device_spinner.getCount(); i++) {
 				if (prefs_table.equals(device_spinner.getItemAtPosition(i))) {
 					device_spinner.setSelection(i);
@@ -433,16 +434,18 @@ public class MainInterface {
 	// sets up the drop-down list, pulls rows from DB to populate
 	void populateDropDown() {
 		String[] devices = blumote.device_data.getDevices();
-		mAdapter.clear(); // clear before adding
-		for (int i= 0 ; i< devices.length; i++) {
-			mAdapter.add(devices[i]);
+		if (devices != null) {
+			mAdapter.clear(); // clear before adding
+			for (int i= 0 ; i< devices.length; i++) {
+				mAdapter.add(devices[i]);
+			}
+
+			//put activities into drop-down
+			activities.populateActivites(false, mAdapter);
+
+			// always fetch buttons after we populate the drop down
+			fetchButtons();
 		}
-		
-		//put activities into drop-down
-		activities.populateActivites(false, mAdapter);
-		
-		// always fetch buttons after we populate the drop down
-		fetchButtons();
 	}
 	
 	void toggleDropDownVis() {
@@ -572,7 +575,6 @@ public class MainInterface {
 				}
 			}
 		}
-		// TODO Auto-generated method stub
 		CharSequence[] returnData = list.toArray(new CharSequence[list.size()]);
 		
 		return returnData;

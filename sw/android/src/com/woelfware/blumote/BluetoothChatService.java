@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -220,14 +221,21 @@ class BluetoothChatService {
             mmDevice = device;
             BluetoothSocket tmp = null;
 
-//             Get a BluetoothSocket for a connection with the
-//             given BluetoothDevice
+            // Get a BluetoothSocket for a connection with the
+            // given BluetoothDevice
             try {
-            	//tmp = mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
-            	// could be an HTC device, try to connect that way.
-    			Method m = mmDevice.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});               
-    			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
-    			tmp = (BluetoothSocket) m.invoke(mmDevice, 1);	
+            	if (Build.VERSION.SDK_INT >= 10) {
+            		// the newer SDK includes this function call, but it doesn't appear to work on HTC phones
+            		// so the tryConnect() tries to use reflection before giving up entirely
+            		tmp = mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
+            	}
+            	else {
+            		// old frameworks need to use the reflection technique
+            		//tmp = mmDevice.createRfcommSocketToServiceRecord(MY_UUID);
+            		Method m = mmDevice.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});               
+        			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
+        			tmp = (BluetoothSocket) m.invoke(mmDevice, 1);	
+            	}
             }
             catch (Exception e) {           
                 Log.e(TAG, "create() failed", e);

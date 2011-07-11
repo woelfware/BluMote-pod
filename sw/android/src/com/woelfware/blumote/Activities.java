@@ -4,24 +4,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.database.Cursor;
-import android.database.MatrixCursor;
 import android.os.CountDownTimer;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
 import com.woelfware.database.Constants;
-import com.woelfware.database.Constants.DB_FIELDS;
 
 public class Activities {
 	protected static boolean timerReady = true;
 	private final String TAG = "Activities";
-	private final int BUTTON_ID = 0;
-	private final int BUTTON_DATA = 1;
-	private final int CATEGORY = 2;
+
 	private MainInterface mainint = null;
 	private BluMote blumote = null;
 	ArrayAdapter<String> mActivitiesArrayAdapter = null;
@@ -111,14 +107,15 @@ public class Activities {
 	private static String formatActivityNameForInit(String key) {
 		// convert spaces to underscores
 		key = key.replace(" ", "_");
-		// prepend prefix if it doesn't already exist
+
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
-			key = key.replace(ACTIVITY_PREFIX, "") + INIT;
-			return key;
+			key = key.replace(ACTIVITY_PREFIX, "");
 		}
-		else {
-			return key+INIT;
+		if (key.endsWith(INIT)) {
+			return key;
+		} else {
+			return key + INIT;
 		}
 	}
 	
@@ -340,12 +337,19 @@ public class Activities {
 				}
 				// execute button code
 				if (toSend != null) {
+					// always clear out PKTS_SENT since when doing an init sequence
+					// we don't need to worry about flooding the pod as much...
+					//TODO - do we need some sort of wait to occur if PKTS_SENT is not 0?  
+					// problem is that normally PKTS_SENT gets decremented by an ACTION_UP which
+					// in this case is not an option....need to either clear it or find some way to wait
+					// until the ACK is received but also prevent locking up
+					BluMote.PKTS_SENT = 0;
 					blumote.sendButton(toSend);
 				}
 			}				
 		} // end while	
 		// check if we are done processing, if so dismiss the progress dialog
-		if (initItemsIndex == (initItems.length - 1)) {
+		if (initItemsIndex >= initItems.length) {
 			blumote.dismissDialog(BluMote.DIALOG_INIT_PROGRESS);
 		}
 	} // end nextActivityInitSequence
@@ -411,7 +415,7 @@ public class Activities {
 			try {
 				for (int i= 0; i< entries.length; i++) {
 					buttonMap = entries[i].split(" ");
-					if (buttonMap[2].matches(buttonID)) {					
+					if (buttonMap[2].equals(buttonID)) {					
 						continue; // skip this item
 					} else {
 						newEntries[newEntriesIndex] = entries[i];
@@ -447,49 +451,44 @@ public class Activities {
 		removeActivityKeyBinding(workingActivity, binding);
 	}
 	
-	// this function will return a Cursor that represents the button codes stored in the activity profile setting
-	Cursor getActivityButtons(String activityName) {
+	// this function will return an array of ButtonData objects
+	// that hold the button codes pulled from the actual device database
+	ButtonData[] getActivityButtons(String activityName) {
 		activityName = addActivityPrefix(activityName);
-		String[] db_columns = new String[DB_FIELDS.values().length];
-		int i = 0;
-		// load up db_columns[] with the column names as defined by DB_FIELDS enum
-		for (DB_FIELDS field : DB_FIELDS.values()) {
-			db_columns[i++] = field.getValue();
-		}
-		
-		MatrixCursor activityButtons = new MatrixCursor(db_columns);
-		// now pull data from preferences file and add rows to the cursor
 		
 		// need to loop through the activity 'record' that defines the button mappings
-		// and then add each item in the proper columns of the MatrixCursor
+		// and then add each item in the proper columns of the ButtonData[] object
 		String record = blumote.prefs.getString(activityName, null);
-		
+		ButtonData[] deviceButtons = null;
 		if (record != null) {
 			// split up the items by commas		
 			String[] entries = record.split(",");
 
+			deviceButtons = new ButtonData[entries.length];
 			ActivityButton activityButton;
-			Object[] toInsert = new Object[3]; // to insert into the MatrixCursor
+
 			for (int index = 0; index < entries.length; index++) {
 				activityButton = new ActivityButton(activityName, entries[index]);
 				try {
 					// try to insert data from database if it exists
-					// load up Object[] with the 3 column data items required
-					toInsert[BUTTON_ID] = (Object)activityButton.getActivityButton();					
-					toInsert[BUTTON_DATA] = (Object)blumote.device_data.getButton(
-							activityButton.getDeviceName(), activityButton.getDeviceButton());
-					toInsert[CATEGORY] = (Object)Constants.CATEGORIES.ACTIVITY.getValue();
-					activityButtons.addRow(toInsert);
+					deviceButtons[index] = new ButtonData(
+							0, activityButton.getActivityButton(), 
+							blumote.device_data.getButton(activityButton.getDeviceName(), activityButton.getDeviceButton()),
+							Constants.CATEGORIES.ACTIVITY.getValue() );
 				} catch (Exception e) {
-					// if the button has no data associated with it, just ignore it
+					// if the call the getButtion() failed then lets just create a button with null for data
+					deviceButtons[index] = new ButtonData(
+							0, activityButton.getActivityButton(), 
+							null,
+							Constants.CATEGORIES.ACTIVITY.getValue() );
 				}
 				
 			}
 		}
-		return activityButtons;
+		return deviceButtons;
 	}	
 	
-	Cursor getActivityButtons() {
+	ButtonData[] getActivityButtons() {
 		return getActivityButtons(workingActivity);
 	}
 
@@ -548,7 +547,7 @@ public class Activities {
 				// check if prefix is an activity
 				if (item.startsWith(ACTIVITY_PREFIX)) {									
 					// need to see if this is the activityName we are seeking
-					if (item.matches(activityName)) {
+					if (item.equals(activityName)) {
 						record = (String)values.get(item);
 						break; // get out of for loop
 					}
@@ -565,9 +564,10 @@ public class Activities {
 					activityBtnItem = new ActivityButton(activityName, entries[index]);
 
 					// check if this activityBtnItem matches the activityButton we are interested in
-					if (activityBtnItem.getActivityButton().matches(activityButton)) {
+					if (activityBtnItem.getActivityButton().equals(activityButton)) {
 						this.deviceButton = activityBtnItem.getDeviceButton();
 						this.deviceName = activityBtnItem.getDeviceName();
+						break;
 					}
 
 				}

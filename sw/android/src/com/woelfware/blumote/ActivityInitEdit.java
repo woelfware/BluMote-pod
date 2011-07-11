@@ -109,7 +109,7 @@ public class ActivityInitEdit extends Activity {
         if (initItems != null && initItems.length > 0) {
         	// iterate through these values
         	for (String item : initItems) {	
-        		if (item.matches("")) {
+        		if (item.equals("")) {
         			continue; // skip if its empty
         		}
         		activityArrayAdapter.add(item);

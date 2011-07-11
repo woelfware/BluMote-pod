@@ -1,11 +1,15 @@
 package com.woelfware.database;
 
+import java.util.ArrayList;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.util.Log;
+
+import com.woelfware.blumote.ButtonData;
 
 public class DeviceDB {
 	private SQLiteDatabase db;
@@ -64,11 +68,22 @@ public class DeviceDB {
 	}
 	
 	// This should return all the buttons of a particular device selection
-	public Cursor getButtons(String curTable)
+	public ButtonData[] getButtons(String curTable)
 	{
 		Cursor c = db.query(curTable, null, null,
 				null, null, null, null);
-		return c;
+		
+		ButtonData[] buttons = null;		
+		if (c.getCount() > 0) {
+			c.moveToFirst();
+			buttons = new ButtonData[c.getCount()];
+			// iterate through cursor to load up buttons array
+			for (int i= 0; i < buttons.length; i++) {
+				buttons[i] = new ButtonData(c.getInt(0), c.getString(1), c.getBlob(2), c.getString(3));
+				c.moveToNext();
+			}
+		}
+		return buttons;
 	}
 	
 	// This should return one of the buttons of a particular device selection
@@ -129,25 +144,33 @@ public class DeviceDB {
 		try {
 			Cursor c = db.rawQuery("SELECT name FROM sqlite_master", null);
 			// create array to hold table names, exclude android_metadata and sqlite_sequence
-			String[] results = new String[c.getCount() - 2]; 
-			String result = null;
-			c.moveToFirst(); 
-			int arrayIndex = 0;
-			// loop through items, add items in correct format to the String[]			
-			for (int cursorIndex = 0; cursorIndex < c.getCount(); cursorIndex++) {								
-				result = c.getString(0); // get first column (table name)
-				if (!(result.equals("android_metadata"))
-						&& !(result.equals("sqlite_sequence"))) {
-					// spaces are removed from table names, converted to
-					// underscores, so convert them back here
-					result = result.replace("_", " ");
-					results[arrayIndex] = result;
-					arrayIndex++;
-				}
+			if (c!=null) {
+				ArrayList<String> results = new ArrayList<String>();								 
+				String result = null;
+				c.moveToFirst(); 
+				// loop through items, add items in correct format to the String[]			
+				for (int cursorIndex = 0; cursorIndex < c.getCount(); cursorIndex++) {								
+					result = c.getString(0); // get first column (table name)
+					if (!(result.equals("android_metadata"))
+							&& !(result.equals("sqlite_sequence"))) {
+						// spaces are removed from table names, converted to
+						// underscores, so convert them back here
+						result = result.replace("_", " ");
+						results.add(result);
+					}
 
-				c.moveToNext();
+					c.moveToNext();
+				}
+				String[] returnValue = new String[results.size()];
+				// convert arraylist to a string[]
+				for (int i=0 ; i< results.size(); i++) {
+					returnValue[i] = results.get(i);
+				}
+				return returnValue;
 			}
-			return results;
+			else {
+				return null;
+			}
 		} catch (Exception ex) {
 			Log.v("List tables exception", ex.getMessage());
 			return null;
