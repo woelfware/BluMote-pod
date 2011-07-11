@@ -11,7 +11,7 @@
 /* IR */
 #define IR_CARRIER_FREQ		(38)	/* KHz */
 #define US_PER_SYS_TICK		(8)
-#define MAX_SPACE_WAIT_TIME	(20000)	/* us */
+#define MAX_SPACE_WAIT_TIME	(10000)	/* us */
 #define IR_LEARN_CODE_TIMEOUT	(10000000)	/* us */
 #define NBR_IR_BURSTS	(3)
 
