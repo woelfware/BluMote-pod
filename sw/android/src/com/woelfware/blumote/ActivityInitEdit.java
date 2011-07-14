@@ -25,12 +25,21 @@ import android.widget.ListView;
 import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
-
+/**
+ * This activity-class is launched from the main BluMote interface. 
+ * This class deals with changing or viewing the Initialization list associated
+ * with the 'activities' feature.  
+ * @author keusej
+ *
+ */
 public class ActivityInitEdit extends Activity {	
 	private ArrayAdapter<String> activityArrayAdapter;
     ListView activitiesListView;
 	
+    // intent return codes
 	public static final String REDO = "redo";
+	public static final String APPEND = "append";
+	
     private static final int ID_DELETE = 0;
     private static final int ID_CHANGE = 1;
 	public static final String ACTIVITY_NAME = "ACTIVITY";
@@ -39,6 +48,7 @@ public class ActivityInitEdit extends Activity {
 	private int itemSelected; // index of init item that context menu was created on
 	
 	private Button redo_init_btn;
+	private Button append_init_btn;
     
     // the activity that we want to work on
     String activityName;
@@ -92,6 +102,16 @@ public class ActivityInitEdit extends Activity {
             }
         });
         
+        append_init_btn = (Button) findViewById(R.id.append_init_btn);
+        append_init_btn.setOnClickListener( new OnClickListener() {
+            public void onClick(View v) {
+            	// send intent extra to "append"
+            	Intent i = getIntent();
+				i.putExtra("returnStr", APPEND);
+				finish();         	            
+            }
+        });
+        
         populateDisplay();
         
         registerForContextMenu(findViewById(R.id.activity_edit_list));
@@ -100,8 +120,9 @@ public class ActivityInitEdit extends Activity {
         setResult(RESULT_OK,i);       
 	}
 
-	// populate the ListView on the interface with the sequence in the initialization
-	// of an activity
+	/**
+	 * Populate the display with all the activity initialization steps
+	 */
 	private void populateDisplay() {
         activityArrayAdapter.clear(); // always clear before adding items
         
@@ -117,7 +138,6 @@ public class ActivityInitEdit extends Activity {
         }
 	}
     
-
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
@@ -175,7 +195,7 @@ public class ActivityInitEdit extends Activity {
 		}
 		super.onCreateContextMenu(menu, v, menuInfo);
 	}
-	
+
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		super.onCreateDialog(id);
@@ -224,6 +244,10 @@ public class ActivityInitEdit extends Activity {
 		}
 	}
 	
+	/**
+	 * Update the initialization delay
+	 * @param newDelay the new delay in milli-seconds
+	 */
 	private void updateInitDelay(int newDelay) {			
 		// the position in the activityArrayAdapter is also the position in initItems
 		ArrayList<String> initItems = new ArrayList<String>();

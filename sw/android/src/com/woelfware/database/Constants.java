@@ -1,5 +1,10 @@
 package com.woelfware.database;
 
+/**
+ * Helper class to hold all the database properties
+ * @author keusej
+ *
+ */
 public class Constants {
 	// database properties
 	public static final String DATABASE_NAME="device_data";

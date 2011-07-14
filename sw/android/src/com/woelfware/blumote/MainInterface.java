@@ -13,6 +13,12 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Spinner;
 
+/**
+ * This class offloads several of the functions associated with dealing 
+ * with the interface and buttons/dropdowns/lists
+ * @author keusej
+ *
+ */
 public class MainInterface {
 	
 	private  ImageButton fav_btn;
@@ -96,6 +102,10 @@ public class MainInterface {
     
     private Activities activities;
     
+    /**
+     * public constructor
+     * @param d the BluMote object to work with
+     */
 	public MainInterface(BluMote d) {
 		blumote = d;
 	}
@@ -105,9 +115,10 @@ public class MainInterface {
 	static final String ACTIVITY_PREFIX = "(A)_";
 	static final String ACTIVITY_PREFIX_SPACE = "(A) ";
 	
-	// this method will initialize the button elements
-	// it will set the button_map hashmap in blumote
-	// to it's members	
+	/**
+	 * This method will initialize the button elements of the interface
+	 * as well as dropdowns/lists and set up the button_map hashmap in blumote
+	 */
 	public void initialize(Activities a) {
 		// create a handle to the Activities class for working with the activities framework
 		activities = a;
@@ -409,8 +420,10 @@ public class MainInterface {
 		refreshMiscBtns(); // refresh misc button text from prefs file
 	}
 	
-	// called first time program initializes, just determines
-	// what the last used device was and sets that to the active selection
+	/*
+	 * called first time program initializes, just determies what the last used
+	 * device was and then sets the drop-down to that item
+	 */
 	private void restoreSpinner() {
 		populateDropDown();
 		// set spinner to default from last session if possible		
@@ -427,11 +440,17 @@ public class MainInterface {
 		fetchButtons();
 	}
 	
+	/**
+	 * Get the button hashmap 
+	 * @return the button_map hashmap of all buttons on the interface
+	 */
 	public HashMap<Integer,String> getButtonMap() {
 		return button_map;
 	}		
 	
-	// sets up the drop-down list, pulls rows from DB to populate
+	/**
+	 * sets up the drop-down list, pulls rows from DB to populate
+	 */
 	void populateDropDown() {
 		String[] devices = blumote.device_data.getDevices();
 		if (devices != null) {
@@ -448,6 +467,10 @@ public class MainInterface {
 		}
 	}
 	
+	/**
+	 * Turns the visibility of the drop-down selection on or off.
+	 * Default state at initialization is for it to be on.
+	 */
 	void toggleDropDownVis() {
 		// toggles the drop-down visibility
 		if (device_spinner.getVisibility() == View.VISIBLE) {
@@ -458,7 +481,10 @@ public class MainInterface {
 		}
 	}
 	
-	// sets dropdown to the item indicated by string parameter
+	/**
+	 * sets dropdown to the item indicated by string parameter
+	 * @param s the item that we want to set the drop-down to
+	 */
 	void setDropDown(String s) {		
 		s = s.replace(" ", "_"); // need this so activity prefix startsWith works
 		blumote.cur_device = s; // set device to this
@@ -488,12 +514,18 @@ public class MainInterface {
 		fetchButtons();
 	}
 	
+	/**
+	 * The currently selected drop down item is returned
+	 * @return the currently selected drop down
+	 */
 	String currentDropDown() {
 		return (String)device_spinner.getSelectedItem();		
 	}
 	
-	// this function updates the "cur_table" with what is selected in
-	// drop-down. It then grabs the button keys from that table into "devices" Cursor
+	/**
+	 * This function updates the data associated with buttons on the interface, needs 
+	 * to be called anytime that data is changed.
+	 */
 	void fetchButtons() {
 		// first update the cur_table from spinner
 		if (device_spinner.getCount() > 0) {
@@ -527,7 +559,12 @@ public class MainInterface {
 		}
 	}		
 	
-	// return_string is the new name, misc_button is the selected misc button id code
+	/**
+	 * Updates the text associated with a Misc button on the interface
+	 * TODO - should associate the data with the particular drop-down item selected
+	 * @param return_string is the new name of the Misc button
+	 * @param misc_button The misc_button name to be operated on
+	 */
 	void renameMisc(String return_string, String misc_button) {
 		// this function should rename the misc button
 		// work with the preferences file for this
@@ -538,11 +575,20 @@ public class MainInterface {
 		refreshMiscBtns(); // update interface with new label
 	}	
 	
-	// retrieve android resource id from a string representation
+	/**
+	 * This function retrieves the underlying android resource ID associated 
+	 * with a View based on the name of the item as defined in the interface.
+	 * @param name the name of the View
+	 * @return the integer id of that View
+	 */
 	int getResourceFromString(String name) {
 		return blumote.getResources().getIdentifier(name,"id",blumote.getPackageName());		
 	}
 	
+	/**
+	 * Refresh the misc buttons on the interface, pulls in any modified text labels that may have been set
+	 * TODO - should call this everytime the drop-down is changed in order for customized misc buttons per device to work
+	 */
 	void refreshMiscBtns() {
 		// this stub is for refreshing the misc buttons from the preferences file
 		// call this when the program first is launched and after renaming any of them
@@ -563,7 +609,11 @@ public class MainInterface {
 		}		
 	}	
 
-	// return a StringBuilder that contains the list of devices that are known on device
+	/**
+	 * Returns an array that contains the devices that are currently setup
+	 * Note that the return value excludes activities, only devices are returned
+	 * @return the CharSequence[] representing all the devices currently known
+	 */
 	public CharSequence[] getDropDownDevices() {
 		ArrayList<String> list = new ArrayList<String>();
 		if (device_spinner.getCount() > 0) {

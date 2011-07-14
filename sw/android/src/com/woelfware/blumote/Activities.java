@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -13,7 +12,14 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 
 import com.woelfware.database.Constants;
-
+/**
+ * This class handles activities which are created to 
+ * allow combining devices on the interface - like "watch a DVD"
+ * and also allows for initialization sequences to be sent in a sequence
+ * The data is persistend in the SharedPreferences object 
+ * @author keusej
+ *
+ */
 public class Activities {
 	protected static boolean timerReady = true;
 	private final String TAG = "Activities";
@@ -33,10 +39,11 @@ public class Activities {
 	private int initItemsIndex = 0;	
 	private String[] initItems = null;
 	
-	// public constructor
-	// ARGUMENTS:
-	// MainInterface mainint : handle to the MainInterface class that constructed this
-	// Blumote blumote : handle to the Blumote class that we operate on
+	/**
+	 * 
+	 * @param blumote main BluMote object to reference
+	 * @param mainint MainInterface object to reference
+	 */
 	public Activities(BluMote blumote, MainInterface mainint) {
 		this.mainint = mainint;
 		this.blumote = blumote;
@@ -46,9 +53,16 @@ public class Activities {
 				R.layout.manage_devices_item);
 	}
 	
-	// updates the arrayadapter parameter with all the activities from the
-	// prefs file.  boolean suppressPrefix is used to remove the 
-	// ACTIVITIES_PREFIX if that is desired
+	/**
+	 * updates the arrayadapter parameter with all the activities from the
+	 * prefs file.  boolean suppressPrefix is used to remove the
+	 * ACTIVITIES_PREFIX if that is desired
+	 * @param suppressPrefix true if we want to remove the activity prefix ACTIVITY_PREFIX, 
+	 * false if we don't want to suppress when adding to the ArrayAdapter
+	 * @param adapter the ArrayAdapter that we want to add activities to
+	 * @param prefs the SharedPreferences object that we used to store activities in
+	 * 
+	 */
 	static void populateActivities(boolean suppressPrefix, ArrayAdapter<String> adapter, SharedPreferences prefs) {
 		Map<String,?> values = prefs.getAll();
 		
@@ -68,6 +82,14 @@ public class Activities {
 		}
 	}
 	
+	/**
+	 * updates the arrayadapter parameter with all the activities from the
+	 * prefs file.  boolean suppressPrefix is used to remove the
+	 * ACTIVITIES_PREFIX if that is desired
+	 * @param suppressPrefix true if we want to remove the activity prefix ACTIVITY_PREFIX, 
+	 * false if we don't want to suppress when adding to the ArrayAdapter
+	 * @param adapter the ArrayAdapter that we want to add activities to
+	 */
 	void populateActivites(boolean suppressPrefix, ArrayAdapter<String> adapter) { 
 		populateActivities(suppressPrefix, adapter, blumote.prefs);
 	}	
@@ -75,18 +97,32 @@ public class Activities {
 	// instead of continuously recreating the activity that we are working with
 	// this function allows the caller to set it once and then all functions
 	// use this handle to perform their actions
+	/**
+	 * sets the working activity.  The Activities class depends on this being set prior to usage
+	 * of any member functions.
+	 * @param key The name of the activity that we want to work with
+	 */
 	public void setWorkingActivity(String key) 	{
 		workingActivity = addActivityPrefix(key);
 	}
 	
+	/**
+	 * Receive the working activity that we set with setWorkingActivity()
+	 * @return The working activity is returned
+	 */
 	public String getWorkingActivity() {
 		return workingActivity;
 	}
 	
-	// this function will make sure the activity prefix is 
-	// attached to the key passed in, this format is necessary for
-	// saving activity data except activity-INIT data.
-	// also ensures that spaces are converted to underscores
+	 
+	/**
+	 * this function will make sure the activity prefix is 
+	 * attached to the key passed in, this format is necessary for
+	 * saving activity data except activity-INIT data.
+	 * @param key the name of the activity that we want to operate on
+	 * @return the processed key
+	 *  
+	 */
 	private static String addActivityPrefix(String key) {
 		// convert spaces to underscores
 		key = key.replace(" ", "_");
@@ -99,11 +135,14 @@ public class Activities {
 		}
 	}
 	
-	// this function will make sure the activity prefix is 
-	// removed from the key passed in, this format is necessary for
-	// saving activity INIT data
-	// also ensures that spaces are converted to underscores
-	// appends the INIT suffix to the key
+
+	/**
+	 * This function will make sure the activity prefix is 
+	 * removed from the key passed in, this format is necessary for
+	 * saving activity INIT data, appends the INIT suffix to the key
+	 * @param key the name of the activity we want to operate on
+	 * @return the processed activity name that we passed in
+	 */
 	private static String formatActivityNameForInit(String key) {
 		// convert spaces to underscores
 		key = key.replace(" ", "_");
@@ -120,7 +159,12 @@ public class Activities {
 	}
 	
 	
-	// delete activity from the arraylist
+	/**
+	 * delete an activity from the arraylist on the interface.  This function is usually
+	 * invoked on a context menu on the arraylist that displays all the activities to the user
+	 * 
+	 * @param position the position in the arraylist to delete
+	 */
 	public void deleteActivity(int position) {
 		String name = mActivitiesArrayAdapter.getItem(position);
 		mActivitiesArrayAdapter.remove(name);
@@ -147,7 +191,10 @@ public class Activities {
 		mainint.populateDropDown();
 	}
 	
-	// add a new activity to the arraylist
+	/**
+	 * add a new activity to the arraylist on the interface
+	 * @param s the name of the activity to add to the arraylist
+	 */
 	public void addActivity(String s) {
 		// add to arraylist
 		mActivitiesArrayAdapter.add(s);
@@ -173,7 +220,12 @@ public class Activities {
 			
 	}
 	
-	// rename an activity , pass in new name and position in arraylist
+	/**
+	 * rename an activity on the interface, pass in new name and position in arraylist.
+	 * This function will update the preferences file as well as update the interface arraylist.
+	 * @param newName the new name
+	 * @param position the position of the old name in the arraylist
+	 */
 	public void renameActivity(String newName, int position) { 
 		String oldName = mActivitiesArrayAdapter.getItem(position);
 		mActivitiesArrayAdapter.remove(oldName);
@@ -198,17 +250,17 @@ public class Activities {
 		
 		mainint.populateDropDown(); // always refresh dropdown when renaming an activity
 	}
-	
-	// add a new initialization sequence to an existing activity....
-	// ARGUMENTS:
-	// String key : the key of the activity to associate this init sequence with
-	// List<String> init: a List of Strings representing operations to be 
-	// performed as part of the activities startup/init sequence.  It is assumed
-	// that the items are added to the list in order (first to last). 
-	// FORMAT:
-	// Delay xx : delay of xx seconds
-	// Device button : 'device' represents one of the known devices in the database,
-	// 'button' represents the button ID on the interface that should be sent
+		 
+	/**
+	 * add a new initialization sequence to an existing activity....
+	 * 	
+	 * @param activityName the name of the activity we want to add init sequence to
+	 * @param init the list of Strings that we want to add to the initialization int the following two formats:
+	 * "Delay X" : delay of X milli-seconds
+	 * "Device button" : 'device' represents one of the known devices in the database,
+	 * 'button' represents the button ID on the device's interface
+	 * @param prefs The shared preferences object that the data is persisted in 
+	 */
 	static void addActivityInitSequence(String activityName, List<String> init, SharedPreferences prefs) {
 		if (activityName != null) {
 			Editor mEditor = prefs.edit();
@@ -225,16 +277,38 @@ public class Activities {
 		}
 	}
 	
+	/**
+	 * add a new initialization sequence to an existing activity....
+	 * 	
+	 * @param activityName the name of the activity we want to add init sequence to
+	 * @param init the list of Strings that we want to add to the initialization int the following two formats:
+	 * "Delay X" : delay of X milli-seconds
+	 * "Device button" : 'device' represents one of the known devices in the database,
+	 * 'button' represents the button ID on the device's interface
+	 */
 	void addActivityInitSequence(String activityName, List<String> init) {
 		addActivityInitSequence(activityName,init, blumote.prefs);
 	}
 	
+	/**
+	 * add a new initialization sequence to an existing activity....the activity to operate on
+	 * is assumed to be set by setWorkingActivity()
+	 * 	
+	 * @param init the list of Strings that we want to add to the initialization int the following two formats:
+	 * "Delay X" : delay of X milli-seconds
+	 * "Device button" : 'device' represents one of the known devices in the database,
+	 * 'button' represents the button ID on the device's interface
+	 */
 	void addActivityInitSequence(List<String> init) {
 		addActivityInitSequence(workingActivity,init);
 	}
 	
-	// Retrieve the initialization sequence to be performed by the activity
-	// returns a String[] with the elements in order (first to last)
+	/**
+	 * Retrieve the initialization sequence to be performed by the activity
+	 * @param activityName the name of activity to retrieve init sequence of
+	 * @param prefs the Shared preferences object that has the init data
+	 * @return Strin[] with the elements in order (first to last)
+	 */
 	static String[] getActivityInitSequence(String activityName, SharedPreferences prefs) {
 		activityName = formatActivityNameForInit(activityName);
 		String initSequence = prefs.getString(activityName, null);
@@ -246,13 +320,21 @@ public class Activities {
 		}
 	}
 	
+	/**
+	 * Retrieve the initialization sequence to be performed by the activity.
+	 * This function assumes setWorkingActivity() was called and that the default blumote prefs file is used
+	 * @return Strin[] with the elements in order (first to last)
+	 */
 	private String[] getActivityInitSequence() {
 		return getActivityInitSequence(workingActivity, blumote.prefs);
 	}
 	
-	// this function will extract the init sequence and then execute it.
-	// note that while this is running it will pop-up a 'working' dialog
-	// that will stay up until the init sequence completes.
+	/**
+	 * this function will extract the init sequence and then execute it.
+	 * note that while this is running it will pop-up a 'working' dialog
+	 * that will stay up until the init sequence completes.
+	 * @param activityName The name of the activity to execute init sequence of
+	 */
 	void startActivityInitSequence(String activityName) {
 		activityName = formatActivityNameForInit(activityName);
 		// call getActivityInitSequence(activityName) to get the list of items to execute
@@ -265,13 +347,21 @@ public class Activities {
 		nextActivityInitSequence();
 	}
 
+	/**
+	 * this function will extract the init sequence and then execute it.
+	 * note that while this is running it will pop-up a 'working' dialog
+	 * that will stay up until the init sequence completes.
+	 * The activity to use is assumed to be set by setWorkingActivity() previously.
+	 */
 	void startActivityInitSequence() {
 		startActivityInitSequence(workingActivity);
 	}
 	
-	// this should be called after startActivityInitSequence has completed
-	// this function will execute the next item in the Init sequence, if
-	// no more items are available it will dismiss the progress dialog
+	/**
+	 * this should be called after startActivityInitSequence has completed
+	 * this function will execute the next item in the Init sequence, if
+	 * no more items are available it will dismiss the progress dialog
+	 */
 	void nextActivityInitSequence() {
 		String item;
 		while (initItemsIndex < initItems.length) {
@@ -354,15 +444,14 @@ public class Activities {
 		}
 	} // end nextActivityInitSequence
 	
-
-	// add a new button association for an existing activity
-	// ARGUMENTS:
-	// String activityName: the key of the activity to associate this init sequence with
-	// String btnID : is button on interface
-	// String device :is an existing device name which is in the database, the second 
-	// String deviceBtn :is a ID for an interface button of that device  
-	// Note: when a new keybinding is added it is 'appended' to the existing bindings
-	// in the prefs file
+	/**
+	 * add a new button association for an existing activity
+	 * Note: when a new keybinding is added it is 'appended' to the existing bindings
+	 * @param activityname the key of the activity to associate this init sequence with
+	 * @param btnID the button id of the activity screen button that we want to bind
+	 * @param device is an existing device name which is in the database
+	 * @param deviceBtn is the ID for an interface button of the device that we want bound
+	 */
 	void addActivityKeyBinding(String activityName, String btnID, String device, String deviceBtn) {
 		if (activityName != null) {
 			activityName = addActivityPrefix(activityName);
@@ -389,14 +478,23 @@ public class Activities {
 		}
 	}
 	
+	/**
+	 * add a new button association for an existing activity
+	 * Note: when a new keybinding is added it is 'appended' to the existing bindings
+	 * This function assumes setWorkingActivity() was previously called
+	 * @param btnID the button id of the activity screen button that we want to bind
+	 * @param device is an existing device name which is in the database
+	 * @param deviceBtn is the ID for an interface button of the device that we want bound
+	 */
 	void addActivityKeyBinding(String btnID, String device, String deviceBtn) {
 		addActivityKeyBinding(workingActivity, btnID, device, deviceBtn);
 	}
 	
-	// removes a binding from an activity
-	// ARGUMENTS:
-	// String activityName : the key of the activity to be modified
-	// String buttonID : the button-id of the button we want un-bound 
+	/** 
+	 * Removes a key binding from an activity button to a device button.
+	 * @param activityname the activity name we want to work with
+	 * @param buttonID the button id of the activity button to remove binding of
+	 */
 	void removeActivityKeyBinding(String activityName, String buttonID) {
 		activityName = addActivityPrefix(activityName);
 		
@@ -447,12 +545,20 @@ public class Activities {
 		} // end if						
 	}	
 	
+	/** 
+	 * Removes a key binding from an activity button to a device button.
+	 * This function assumes setWorkingActivity() was called previously.
+	 * @param buttonID the button id of the activity button to remove binding of
+	 */
 	void removeActivityKeyBinding(String binding) {
 		removeActivityKeyBinding(workingActivity, binding);
 	}
 	
-	// this function will return an array of ButtonData objects
-	// that hold the button codes pulled from the actual device database
+	/**
+	 * Returns the activity buttons in a ButtonData[] structure
+	 * @param activityName the activity we want to return data from
+	 * @return The full array of button associations
+	 */
 	ButtonData[] getActivityButtons(String activityName) {
 		activityName = addActivityPrefix(activityName);
 		
@@ -488,23 +594,43 @@ public class Activities {
 		return deviceButtons;
 	}	
 	
+	/**
+	 * Returns the activity buttons in a ButtonData[] structure
+	 * This function assumes setWorkingActivity() was previously called.
+	 * @return The full array of button associations
+	 */
 	ButtonData[] getActivityButtons() {
 		return getActivityButtons(workingActivity);
 	}
 
+	/**
+	 * This function sets the working activity but uses the position in the 
+	 * interface arraylist to do so.
+	 * @param position Position in the array list
+	 */
 	void setWorkingActivity(int position) {
 		// uses ListView index to set the working activity
 		String name = mActivitiesArrayAdapter.getItem(position);
 		setWorkingActivity(name);
 	}
 	
+	/**
+	 * This is a helper class to encapsulate all the parameters of a
+	 * activity button which is associated with a real device button.
+	 * @author keusej
+	 *
+	 */
 	private class ActivityButton {
 		private String deviceName;
 		private String activityName;
 		private String activityButton;
 		private String deviceButton;
 		
-		// formatting of record is : btnID device deviceBtn, etc
+		/**
+		 * Constructor for the class
+		 * @param activityName the name of the activity
+		 * @param record The data that is extracted from the SharedPreferences for a particular activity
+		 */
 		ActivityButton(String activityName, String record) {
 			String[] items = record.split(" ");
 			this.activityName = activityName;
@@ -531,13 +657,19 @@ public class Activities {
 		}	
 	}
 	
-	// instantiates a DeviceButton based on an activity and button
-	// sets internal fields to 'null' if an error occurs during translation
+	/**
+	 * Helper class to encapsulate the data associated with a real device button
+	 */
 	private class DeviceButton {
 		private String deviceName;
 		private String deviceButton;
 		
-		// takes an activity and activity button and converts to a device and button
+		/**
+		 * Takes an activity and activity button and converts to a device and button.
+		 * 
+		 * @param activityName the name of the activity
+		 * @param activityButton the button name on the activity interface
+		 */
 		DeviceButton(String activityName, String activityButton) {
 			String record = null;
 			Map<String,?> values = blumote.prefs.getAll();

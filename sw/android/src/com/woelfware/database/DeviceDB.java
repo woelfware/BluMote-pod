@@ -11,6 +11,11 @@ import android.util.Log;
 
 import com.woelfware.blumote.ButtonData;
 
+/**
+ * Helper class to manage operating on the SQLite database
+ * @author keusej
+ *
+ */
 public class DeviceDB {
 	private SQLiteDatabase db;
 	private final Context context;
@@ -37,8 +42,16 @@ public class DeviceDB {
 		}
 	}
 	
-	// pass in the current-table that we are working with then the button ID and the content
-	// returns the rowID of the addition
+	/**
+	 * Inserts a new button into the database
+	 * @param curTable the table name which is typically the device name
+	 * @param buttonID the name of the button that we want to insert into the table
+	 * @param buttonCategory the category for the button that we are adding to the database, typically all buttons
+	 * in a table are the same category
+	 * TODO - see if there is a way to move buttonCategory to be a single entry per table
+	 * @param content the button data (IR code) associated with the button
+	 * @return the row ID of the database, this return value is not currently used
+	 */
 	public long insertButton(String curTable, String buttonID, String buttonCategory, byte[] content)
 	{
 		try {
@@ -67,7 +80,11 @@ public class DeviceDB {
 		}
 	}
 	
-	// This should return all the buttons of a particular device selection
+	/**
+	 * This should return all the buttons of a particular device selection
+	 * @param curTable the name of the device that we want to extract the button data for
+	 * @return the ButtonData[] which contains the properties for each button in the DB
+	 */
 	public ButtonData[] getButtons(String curTable)
 	{
 		Cursor c = db.query(curTable, null, null,
@@ -86,7 +103,12 @@ public class DeviceDB {
 		return buttons;
 	}
 	
-	// This should return one of the buttons of a particular device selection
+	/**
+	 * This should return the data for one of the buttons of a particular device selection
+	 * @param device the name of the device which is also the table of the database
+	 * @param buttonID the name of the button that we want to get the data for
+	 * @return the byte[] for the IR codes associated with a button
+	 */
 	public byte[] getButton(String device, String buttonID)
 	{
 		byte[] button;
@@ -102,7 +124,11 @@ public class DeviceDB {
 		return null;
 	}
 	
-	// returns 1 if successful, 0 if some error and 2 if duplicate exists
+	/**
+	 * Add a new device to the database
+	 * @param table the name of the device, which is also the table name in the DB
+	 * @return 1 if successful, 0 if there was an error and 2 if a duplicate exists
+	 */
 	public int addDevice(String table) {
 		Log.v("MyDB createTable","Creating table");
 		String TABLE="create table "+
@@ -122,6 +148,10 @@ public class DeviceDB {
 		}
 	}
 	
+	/**
+	 * Removes a device from the database, all button codes are destroyed
+	 * @param table the name of the device to delete
+	 */
 	public void removeDevice(String table) {
 		try {
 			db.execSQL("drop table if exists "+table);
@@ -130,6 +160,11 @@ public class DeviceDB {
 		}	
 	}
 
+	/**
+	 * Renames a device in the database
+	 * @param table the existing name
+	 * @param rename the new name
+	 */
 	public void renameDevice(String table, String rename) {
 		try {
 			db.execSQL("ALTER TABLE "+table+" RENAME TO "+rename);
@@ -138,8 +173,9 @@ public class DeviceDB {
 		}	
 	}
 	
-	// gets String[] of all tables in database and returns as a cursor
-	// excludes the android_metadata and sqlite_sequence tables
+	/**
+	 * Returns all the devices that are currently being stored in the database
+	 */
 	public String[] getDevices() {		
 		try {
 			Cursor c = db.rawQuery("SELECT name FROM sqlite_master", null);
@@ -177,16 +213,26 @@ public class DeviceDB {
 		}		
 	}
 	
-	// deletes a particular button
-	// returns true if succeeded
+	/**
+	 * Deletes a button from the database
+	 * @param curTable the device name that has the button
+	 * @param buttonID the button that we want deleted
+	 * @return true if successful, false if not
+	 */
     public boolean deleteButton(String curTable, String buttonID) 
     {
         return db.delete(curTable, Constants.DB_FIELDS.BUTTON_ID.getValue() + 
         		"=" + buttonID, null) > 0;
     }
     
-    // updates a button
-    // returns true if succeeded, externally should call insertButton
+    /**
+     * Updates a button with new data (IR code)
+     * @param curTable the name of the device
+     * @param buttonID the button name
+     * @param buttonCategory the button category
+     * TODO - consider category change to get rid of it per button
+     * @param content the code associated with the button
+     */
     private boolean updateButton(String curTable, String buttonID, String buttonCategory, byte[] content) 
     {
     	// DEBUG var

@@ -13,8 +13,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.database.Cursor;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
 import android.view.ContextMenu;
@@ -48,6 +48,12 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import com.woelfware.database.DeviceDB;
 import com.woelfware.database.Constants.CATEGORIES;
 
+/**
+ * Primary class for the project.
+ * Implements the callbacks for the buttons/etc on the interface.
+ * @author keusej
+ *
+ */
 public class BluMote extends Activity implements OnClickListener,OnItemClickListener,OnItemSelectedListener
 {
 	// Debugging
@@ -199,9 +205,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
     // with the device button
     private String activityButton = "";   
     
-	/** Called when the activity is first created. */
+    // these variables are all used in the gesture listener logic
+	private static boolean buttonTimerStarted = false;
+    private static String currentButtonPushed = null;
+    private static View lastView;
+    private static boolean isPushed;
+        
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState) {	
+		
 		super.onCreate(savedInstanceState);
 
 		// get preferences file
@@ -243,77 +255,53 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		gestureDetector = new GestureDetector(new MyGestureDetector());
 		// the gesture listener will listen for any touch event
 		gestureListener = new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent e) {
+            public boolean onTouch(View v, MotionEvent e) {            	
                 if (gestureDetector.onTouchEvent(e)) { // check if it is a fling event
                     return true;
-                }
-                else 
-                {                	
-                	// non fling event
-                	if (e.getAction() == MotionEvent.ACTION_DOWN) {
-            			// buzz
-                		// TODO have prefs to turn buzz on and off
-            			v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-            		}
+                }                
+                else // non fling event
+                {
+                	currentButtonPushed = button_map.get(v.getId());
                 	
-                	String payload = null;
-            		payload = button_map.get(v.getId());
-
-            		if (payload != null) {            			
+            		if (currentButtonPushed != null) {            			
             			if (e.getAction() == MotionEvent.ACTION_DOWN) {
-            				// check if this is a misc rename
-                			if (INTERFACE_STATE == Codes.INTERFACE_STATE.RENAME_STATE) {
-                				// store the button that we want to update if it is a valid misc key
-                				// if it isn't then exit and Toast user, change state back to idle
-                				if (payload.startsWith("btn_misc")) {
-                					// if compare works then we can go ahead and implement the rename
-                					misc_button = payload;
-                    				// launch window to get new name to use
-                    				Intent i = new Intent(BluMote.this, EnterDevice.class);
-                    				startActivityForResult(i, MISC_RENAME);
-                				}
-                				else {
-                					Toast.makeText(BluMote.this, "Not a valid Misc button, canceling", 
-                							Toast.LENGTH_SHORT).show();
-                				}
-                				
-                				INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; // reset state in any case
-                				return false; 
-                			}
-                			
-                			// check if it is a navigational button
-                			// checkNavigation returns true if it is a navigation button
-            				if (isNavigationButton(payload)) {
-            					// execute navigation
-            					executeNavigationButton(payload);
-            					return false;  
-            				}
+            				isPushed = true;
+                        	lastView = v;
+            				// check if buttonTimerStarted is not started
+            				if (!buttonTimerStarted) {
+            					buttonTimerStarted = true;
+            					// fire off count down timer before executing button press (ms)
+            					new CountDownTimer(300, 300) {
+            						public void onTick(long millisUntilFinished) {
+            							// no need to use this function
+            						}
+            						public void onFinish() {
+            							// called when timer expired
+            							buttonTimerStarted = false;
+            							// check if the button is still depressed
+            							// if so then execute the button
+            							executeBuzzer();
+            							executeButtonActionDown();            								
+            						}
+            					}.start();			
+            				} 
             			}  // END if (e.getAction() == MotionEvent.ACTION_DOWN
-            			// should I attempt to delay recognition to allow
-                    	// fling to register but not button press??
-                    	
+            			
                     	// only execute this one time and only if not in learn mode
                 		// if we don't have !LOOP_KEY you can hit button multiple times
                 		// and hold finger on button and you'll get duplicates
-
-            			if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY || 
-            					INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
-            				if (e.getAction() == MotionEvent.ACTION_DOWN) {
-            					LOOP_KEY = true; // start looping until we lift finger off
-            					// key
-
-            					touchButton(payload, v.getId());
-            				} else if (e.getAction() == MotionEvent.ACTION_UP) {
-            					LOOP_KEY = false; // reset loop key global
-            					if (PKTS_SENT > 0) { // decrement producer/consumer for
-            						// button sends
-            						PKTS_SENT--; // if we lose our response from pod, need
-            						// to decrement by 1
-            					} // so that we can eventually be able to send a packet out
-            					// again
-            				}
+            			if (e.getAction() == MotionEvent.ACTION_UP) {
+            				LOOP_KEY = false; // reset loop key global
+            				isPushed = false; 
+            				if (PKTS_SENT > 0) { // decrement producer/consumer for
+            					// button sends
+            					PKTS_SENT--; // if we lose our response from pod, need
+            					// to decrement by 1
+            				} // so that we can eventually be able to send a packet out
+            				// again
             			}
-            		}  // END if (payload != null)          	
+            		}  // END if (currentButtonPushed != null)         
+            		
             		return false; // allows XML to consume
                 } // END else
             } // END onTouch(View v, MotionEvent e)
@@ -330,6 +318,42 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		device_data = new DeviceDB(this);
 		device_data.open();
 	}	
+
+	/**
+	 * Buzzes the phone if a button is pushed
+	 */
+	private void executeBuzzer() {
+		// buzz
+		// TODO have prefs to turn buzz on and off
+		lastView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+	}
+
+	/**
+	 * Execute a button ACTION_DOWN event.  This is called after the user pushes on a button
+	 * and we take action based on the mode the program is currently in.
+	 */
+	private void executeButtonActionDown() {
+		// check if this is a misc rename
+		if (isPushed) { // check if user moved finger off button before firing button press
+			isPushed = false;			
+
+			// check if it is a navigational button
+			// checkNavigation returns true if it is a navigation button
+			if (isNavigationButton(currentButtonPushed)) {
+				// execute navigation
+				executeNavigationButton(currentButtonPushed);
+			}
+
+			else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY || 
+					INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
+
+				LOOP_KEY = true; // start looping until we lift finger off
+				// key
+
+				touchButton(currentButtonPushed, lastView.getId());
+			}		
+		}
+	}
 	
 	@Override
 	protected void onStart() {
@@ -351,7 +375,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			registerForContextMenu(findViewById(R.id.activities_list));
 		}
 	}
-
+	
 	@Override
 	protected synchronized void onResume() {
 		super.onResume();
@@ -432,7 +456,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return gestureDetector.onTouchEvent(event);
 	}
 
-	// move screen to the left	
+	/**
+	 * move screen to the left	
+	 */
 	private void moveLeft() {
 		LOOP_KEY = false;
 		
@@ -460,7 +486,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 	
-	// move screen to the right
+	/**
+	 * move screen to the right
+	 */
 	private void moveRight() {
 		LOOP_KEY = false;
 		
@@ -489,6 +517,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 	
+	/**
+	 * Checks if the button is one for navigation (move left or right)
+	 * @param payload the button name we want to check
+	 * @return true if it is a navigation button, false if not
+	 */
 	private boolean isNavigationButton(String payload) {
 		if (payload != null) {
 			try {
@@ -509,6 +542,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return false;
 	}
 	
+	/**
+	 * Execute the movement of a navigational button
+	 * @param payload the button name
+	 */
 	public void executeNavigationButton(String payload) {
 		if (payload != null) {
 			try {
@@ -530,7 +567,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return;
 	}
 	
-	// Called when a user pushes a non-navigation button down for the first time
+	/**
+	 * Called when a user pushes a non-navigation button down for the first time
+	 * @param payload the name of the button
+	 * @param rbutton the resource-id of the button
+	 */
 	private void touchButton(String payload, int rbutton) {		
 		if (payload != null) {
 			// if we got here it means we are a regular button, not move_left or
@@ -557,8 +598,23 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		if (isNavigationButton(buttonName)) {
 			return;  // navigation buttons don't need an onClick handler
 		}
-		
-		if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_EDIT) {	
+		if (INTERFACE_STATE == Codes.INTERFACE_STATE.RENAME_STATE) {
+			// store the button that we want to update if it is a valid misc key
+			// if it isn't then exit and Toast user, change state back to idle
+			if (buttonName.startsWith("btn_misc")) {
+				// if compare works then we can go ahead and implement the rename
+				misc_button = buttonName;
+				// launch window to get new name to use
+				Intent i = new Intent(BluMote.this, EnterDevice.class);
+				startActivityForResult(i, MISC_RENAME);
+			}
+			else {
+				Toast.makeText(BluMote.this, "Not a valid Misc button, canceling", 
+						Toast.LENGTH_SHORT).show();
+			}
+
+			INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; // reset state in any case
+		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_EDIT) {	
 			if (captureButton) {
 				// if we are in this mode then what we want to do is to associate the button that was
 				// pushed (from a device) with the original activity button
@@ -631,16 +687,26 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}			
 
+	/**
+	 * Set the current button_map that contains all the data for the buttons on the interface 
+	 * to a new map.
+	 * @param map the new map to use
+	 */
 	protected void setButtonMap(HashMap<Integer, String> map) {
 		button_map = map;
 	}
 
-	// called to setup the buttons on the main screen
+	/**
+	 * called to setup the buttons on the main screen.  Should be called once in onStart()
+	 */
 	private void setupInterface() {
 		mainScreen.initialize(activities);		
 		button_map = mainScreen.getButtonMap();		
 	}
 
+	/**
+	 * Ensure that the bluetooth device is discoverable, if it is not it requests it
+	 */
 	private void ensureDiscoverable() {
 		if (mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
 			Intent discoverableIntent = new Intent(
@@ -651,6 +717,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 
+	/**
+	 * Sends the byte[] to the currently connected bluetooth device
+	 * @param message the byte[] to send
+	 */
 	private void sendMessage(byte[] message) {
 		// Check that we're actually connected before trying anything
 		if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
@@ -670,7 +740,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 
-	// The Handler that gets information back from other activities/classes
+	/**
+	 * The Handler that gets information back from other activities/classes
+	 */
 	private final Handler mHandler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
@@ -881,9 +953,24 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (resultCode == Activity.RESULT_OK) {
 				Bundle return_bundle = data.getExtras();
 				if (return_bundle != null) {
-					// check if the "REDO" was requested, if so re-enter ACTIVITY_INIT mode
-					if (return_bundle.getString("returnStr").equals(ActivityInitEdit.REDO) ) {
+					String request = return_bundle.getString("returnStr");				
+					if (request.equals(ActivityInitEdit.REDO)) {
+						// check if the "REDO" was requested, if so re-enter ACTIVITY_INIT mode
 						activityInit.clear();
+						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
+					}
+					else if (request.equals(ActivityInitEdit.APPEND) ) {
+						// append to end of existing init items
+						activityInit.clear();						
+						// get list of activity init items into local data structure
+						// assumption here is setWorkingActivity was called prior 
+						// to launching the intent that got us here
+						String[] newInitItems = 
+							Activities.getActivityInitSequence(activities.getWorkingActivity(), prefs);						
+						for (int i=0; i< newInitItems.length; i++) {
+							activityInit.add(newInitItems[i]);
+						}
+						// enter ACTIVITY_INIT mode to begin adding more items
 						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
 					}
 					// otherwise just go back into normal activity mode
@@ -1014,14 +1101,23 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return false;
 	}
 
-	// OnItemSelectedListener interface definition
-	// called when user selects an item in the drop-down
+	/**
+	 * OnItemSelectedListener interface definition
+	 * called when user selects an item in the drop-down
+	 * @param parent
+	 * @param view the view of the arraylist
+	 * @param pos the position in the arraylist that was selected
+	 * @param id the resource-ID of the arraylist that was operated on
+	 */
 	public void onItemSelected(AdapterView<?> parent, View view, int pos,
 			long id) {
 		// setup interface buttons appropriately		
 		mainScreen.fetchButtons();
 	}	
-	// OnItemSelectedListener interface definition
+
+	/**
+	 * Part of the OnItemSelectedListener interface, not used for this appliaction
+	 */
 	public void onNothingSelected(AdapterView<?> parent) {
 		// Do nothing.
 	}
@@ -1076,7 +1172,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		super.onCreateContextMenu(menu, v, menuInfo);
 	}
 
-	// The on-click listener for all devices in the activities ListViews
+	/**
+	 * The on-click listener for all devices in the activities ListViews
+	 * @param av
+	 * @param v The View object of the listview
+	 * @param position the position that was clicked in the listview
+	 * @param id the resource-id of the listview
+	 */
 	public void onItemClick(AdapterView<?> av, View v, int position, long id) {		
 		
 		// Change to activities state after init is run
@@ -1096,23 +1198,34 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		
 	}
 
-	// this function sends the code to the pod based on the button that was
-	// selected
-	protected void buttonSend(String buttonName) {				
+	/**
+	 * This function sends the code to the pod based on the button 
+	 * that was selected.
+	 */
+	protected void buttonSend(String buttonName) {		
+		boolean foundIt = false;
 		if (buttons != null && buttons.length > 0) {
 			for (int i=0; i < buttons.length; i++) {
 				 if (buttonName.equals(buttons[i].getButtonName())) {
 					 // then extract the button data out to be sent, check if data is non-null
 					 byte[] code = buttons[i].getButtonData();
 					 if (code != null) {
+						 foundIt = true;
 						 sendButton(code);
 					 }
 				 }				 
 			}
+		} 
+		if (!foundIt) {
+			Toast.makeText(this, "Button not setup!", Toast.LENGTH_SHORT).show();
 		}
+		
 	}
 	
-	// this function sends the byte[] for a button to the pod
+	/**
+	 * this function sends the byte[] for a button to the pod
+	 * @param code the IR code data to send
+	 */
 	protected void sendButton(byte[] code) {
 		byte command = (byte) (Codes.Pod.IR_TRANSMIT);
 		byte[] toSend = new byte[code.length + 1]; // 1 extra bytes
@@ -1133,7 +1246,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 	
-	// This function sends the command codes to the pod
+	/**
+	 * This function sends the command codes to the pod, it is used for everything except 
+	 * the button data which uses {@link}sendButton()
+	 * @param code
+	 */
 	protected void sendCode(int code) {
 		byte[] toSend;
 		switch (code) {
@@ -1164,7 +1281,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		} // end switch
 	}
 
-	// called after learn mode is finished and has data to store
+	/**
+	 * called after learn mode is finished and has data to store
+	 */
 	protected void storeButton() {
 		String payload = null;
 		payload = button_map.get(BUTTON_ID);
@@ -1183,9 +1302,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		mainScreen.fetchButtons();
 	}
 
-	// returns false if the data to be inserted is more bytes than array is
-	// setup for,
-	// this should not happen unless pod screwed up
+	/**
+	 * Determines if more bytes are being read that is available in the local data structure. This
+	 * function should be called whenever a new set of data is COLLECTING in interpretResponse()
+	 * @param bytes the number of bytes received
+	 * @return false if the data is outside of the local storage space available and true if there is no error.
+	 */
 	protected boolean checkPodDataBounds(int bytes) {
 		if (bytes > (Codes.pod_data.length - Codes.data_index)) {
 			return false;
@@ -1193,9 +1315,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return true;
 	}
 
-	// an error happened, Toast user and reset state machines
-	// if argument = 1 then signal learn mode error,
-	// if argument = 2 then signal get info error
+	/**
+	 * A state machine error happened while receiving data over bluetooth
+	 * @param code 1 is for errors while in LEARN_MODE and 2 is for errors
+	 * while in GET_INFO mode, affects the usage of Toast
+	 */
 	protected void signalError(int code) {
 		if (code == 1) {
 			Toast.makeText(this, "Error occured, exiting learn mode!",
@@ -1208,11 +1332,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 
-	// this method should be called whenever we receive a byte[] from the pod
-	// the bytes argument tells us how many bytes were received and stored in
-	// response[]
-	// note that the response array is a circular buffer, the starting index
-	// head is 'index'
+	/**
+	 * This method should be called whenever we receive a byte[] from the pod.
+	 * @param response the circular buffer that contains the data that was received over BT
+	 * @param bytes how many bytes were received and stored in response[] on the call to this method
+	 * @param index the starting index into the circular data buffer that should be read
+	 */
 	protected void interpretResponse(byte[] response, int bytes, int index) {
 		switch (BT_STATE) {
 		case LEARN:
@@ -1458,6 +1583,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 	
+	/**
+	 * This class will allow Fling events to be captured and processed, if a Fling event is captured
+	 * the the appropriate movement function is called to perform that action.
+	 * @author keusej
+	 *
+	 */
 	class MyGestureDetector extends SimpleOnGestureListener {
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
