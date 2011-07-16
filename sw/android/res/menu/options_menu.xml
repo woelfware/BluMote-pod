@@ -28,7 +28,8 @@
           android:title="@string/learn_button" ></item>
     <item android:id="@+id/stop_learn"
           android:icon="@android:drawable/ic_input_delete"
-          android:title="Cancel Learn" ></item>
+          android:title="Cancel Learn"
+          android:visible = "false" ></item>
     <item android:id="@+id/advanced"
           android:title="Advanced" 
           android:icon ="@android:drawable/ic_menu_more">

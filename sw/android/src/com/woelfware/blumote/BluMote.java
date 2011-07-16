@@ -1008,6 +1008,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		else {		
 			MenuInflater inflater = getMenuInflater();
 			inflater.inflate(R.menu.options_menu, menu);
+			if (BT_STATE == Codes.BT_STATE.LEARN) {
+				// if we are currently in learn mode, then offer up the 'cancel learn' item
+				menu.findItem(R.id.stop_learn).setVisible(true);
+				menu.findItem(R.id.learn_button).setVisible(false);
+			} else {
+				// else hide stop learn and show learn
+				menu.findItem(R.id.stop_learn).setVisible(false);
+				menu.findItem(R.id.learn_button).setVisible(true);
+			}
+			
 		}
 		return true;
 	}
