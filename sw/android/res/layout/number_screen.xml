@@ -2,8 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
-    	
+    android:layout_height="fill_parent">    	
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
@@ -82,5 +81,9 @@
 			<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_down" android:id="@+id/down_btn" android:scaleType="centerInside"></ImageButton>						     	     
  			<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/go_home" android:id="@+id/btn_home" android:scaleType="fitXY"></ImageButton>
  	</LinearLayout>
-			     	     
+ 	<ImageView android:src="@drawable/middle_circle" android:layout_width="50dip"
+				android:layout_height="20dip" android:layout_marginTop="5dp"
+				android:scaleType="fitXY" android:layout_gravity="center_horizontal"
+				android:visibility="invisible"
+	></ImageView>  		     	     
 </LinearLayout>

@@ -3,7 +3,6 @@ package com.woelfware.blumote;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -179,12 +178,12 @@ public class Activities {
 		
 		// iterate through button_map to search for any button name suffixes
 		// to clean up and remove from prefs file
-		Set<Integer> toIterate = mainint.button_map.keySet();
-		String entry;
-		for (int i : toIterate) {
-			entry = mainint.button_map.get(i);
-			mEditor.remove(name+entry);
-		}
+//		Set<Integer> toIterate = mainint.button_map.keySet();
+//		String entry;
+//		for (int i : toIterate) {
+//			entry = mainint.button_map.get(i);
+//			mEditor.remove(name+entry);
+//		}
 		mEditor.commit();
 		
 		// refresh drop-down

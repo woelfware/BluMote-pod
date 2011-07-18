@@ -38,8 +38,7 @@
 		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_seek_backward" android:id="@+id/back_btn" android:scaleType="centerInside"></ImageButton>    
 		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_seek_forward" android:id="@+id/forward_btn" android:scaleType="centerInside"></ImageButton>    
 		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_skip_forward" android:id="@+id/skip_forward_btn" android:scaleType="centerInside"></ImageButton>    
-		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_record" android:id="@+id/record_btn" android:scaleType="fitXY"></ImageButton>
-   		
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/media_record" android:id="@+id/record_btn" android:scaleType="fitXY"></ImageButton>   		
 	</LinearLayout>
 	<LinearLayout
 		android:orientation="horizontal"
@@ -101,13 +100,9 @@
 				<ImageButton style="@style/BottomRockerStyle" android:src="@drawable/minus" android:id="@+id/btn_channel_down" android:scaleType="centerInside"></ImageButton>				    					
 			</LinearLayout>
 		</LinearLayout>
-		<LinearLayout
-			android:orientation="horizontal"
-			android:layout_width="wrap_content" 
-			android:layout_height="wrap_content"
-			android:layout_gravity="center"
-			android:baselineAligned="false" > 			
-		
-					  	
-		</LinearLayout>
+		<ImageView android:src="@drawable/middle_circle" android:layout_width="50dip"
+				android:layout_height="20dip" android:layout_marginTop="5dp"
+				android:scaleType="fitXY" android:layout_gravity="center_horizontal"
+				android:visibility="invisible"
+		></ImageView>  	
 </LinearLayout>

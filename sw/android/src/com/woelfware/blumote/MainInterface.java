@@ -92,7 +92,7 @@ public class MainInterface {
     private Button add_activity_btn;
     
     // array adapter for the drop-down spinner
-	private ArrayAdapter<String> mAdapter;
+	private ArrayAdapter<String> spinnerAdapter;
     
     ListView activitiesListView;
     
@@ -411,9 +411,9 @@ public class MainInterface {
 			// SPINNER setup
 			// 
 			device_spinner = (Spinner) blumote.findViewById(R.id.device_spinner);
-			mAdapter = new ArrayAdapter<String>(blumote, R.layout.spinner_entry);
-			mAdapter.setDropDownViewResource(R.layout.spinner_entry);
-			device_spinner.setAdapter(mAdapter);
+			spinnerAdapter = new ArrayAdapter<String>(blumote, R.layout.spinner_entry);
+			spinnerAdapter.setDropDownViewResource(R.layout.spinner_entry);
+			device_spinner.setAdapter(spinnerAdapter);
 			device_spinner.setOnItemSelectedListener(blumote);		
 			restoreSpinner(); // restore selection from last program invocation
 		}
@@ -454,13 +454,13 @@ public class MainInterface {
 	void populateDropDown() {
 		String[] devices = blumote.device_data.getDevices();
 		if (devices != null) {
-			mAdapter.clear(); // clear before adding
+			spinnerAdapter.clear(); // clear before adding
 			for (int i= 0 ; i< devices.length; i++) {
-				mAdapter.add(devices[i]);
+				spinnerAdapter.add(devices[i]);
 			}
 
 			//put activities into drop-down
-			activities.populateActivites(false, mAdapter);
+			activities.populateActivites(false, spinnerAdapter);
 
 			// always fetch buttons after we populate the drop down
 			fetchButtons();
@@ -486,9 +486,6 @@ public class MainInterface {
 	 * @param s the item that we want to set the drop-down to
 	 */
 	void setDropDown(String s) {		
-		s = s.replace(" ", "_"); // need this so activity prefix startsWith works
-		blumote.cur_device = s; // set device to this
-		
 		s = s.replace("_", " "); // need this so displays right
 		for (int i = 0; i < device_spinner.getCount(); i++) {
 			if (s.equals((String)device_spinner.getItemAtPosition(i))) {
@@ -496,6 +493,10 @@ public class MainInterface {
 				break;
 			}
 		}
+		
+		s = s.replace(" ", "_"); // need this so activity prefix startsWith works
+		blumote.cur_device = s; // set device to this
+		
 		// if we are in ACTIVITY or MAIN modes then toggle between them when
 		// changing devices in the drop-down
 		if (blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY ||
@@ -529,11 +530,18 @@ public class MainInterface {
 	void fetchButtons() {
 		// first update the cur_table from spinner
 		if (device_spinner.getCount() > 0) {
-			Object table = device_spinner.getSelectedItem();			
-			if (table != null) {
+			//DEBUG TODO
+			Object spinnerItem;
+			try {
+				spinnerItem = device_spinner.getSelectedItem();
+			} catch (Exception e) {
+				spinnerItem = null;				
+				setSpinnerErrorState();
+			}
+			if (spinnerItem != null) {
 				// replace spaces with underscores and then set cur_table to
 				// that				
-				String table_s = table.toString().replace(" ", "_");
+				String table_s = spinnerItem.toString().replace(" ", "_");
 				blumote.cur_device = table_s;
 				// if we are in ACTIVITY or MAIN modes then toggle between them when
 				// changing devices in the drop-down
@@ -555,9 +563,21 @@ public class MainInterface {
 				Editor mEditor = blumote.prefs.edit();
 				mEditor.putString("lastDevice", blumote.cur_device);
 				mEditor.commit();
+			} else {
+				setSpinnerErrorState();								
 			}
+		} else {
+			setSpinnerErrorState();
 		}
 	}		
+	/**
+	 * sets spinner to a default error condition
+	 */
+	void setSpinnerErrorState() {
+		device_spinner.setSelection(0);
+		blumote.buttons = null;
+		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; 
+	}
 	
 	/**
 	 * Updates the text associated with a Misc button on the interface

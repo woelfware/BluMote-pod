@@ -37,6 +37,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -92,7 +93,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private TextView mTitle;
 	// private ImageButton led_btn;
 	
+	// helps change interface pages
 	private ViewFlipper flip;
+	
+	// pager is for keeping track of what page we are on
+	ImageView pager;
 
 	// Name of the connected device
 	private String mConnectedDeviceName = null;
@@ -244,7 +249,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		setContentView(R.layout.main_interface);
 		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
 				R.layout.custom_title);
-		flip=(ViewFlipper)findViewById(R.id.flipper); // flips between our screens		
+		flip=(ViewFlipper)findViewById(R.id.flipper); // flips between our screens
 		
 		slide_right_anim = AnimationUtils.loadAnimation(this, R.anim.slide_right);
 		slide_left_anim = AnimationUtils.loadAnimation(this, R.anim.slide_left);
@@ -308,6 +313,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
         }; // END gestureListener
         
         flip.setOnTouchListener(gestureListener);
+        
+        pager = (ImageView)findViewById(R.id.pager);
         
 		// Set up the custom title
 		mTitle = (TextView) findViewById(R.id.title_left_text);
@@ -468,20 +475,20 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		
 		switch (page) {
 		case MAIN:
-			//setContentView(R.layout.activities);								
 			flip.showPrevious();
 			page = Pages.ACTIVITIES;
-			//setupActivities();
+			// set pager to left
+			pager.setImageDrawable(getResources().getDrawable(R.drawable.left_circle));
 			return;
 
 		case ACTIVITIES:
 			return;
 
 		case NUMBERS:
-			//setContentView(R.layout.main);
 			flip.showPrevious();
 			page = Pages.MAIN;
-			//setupDefaultButtons();
+			// set pager to center
+			pager.setImageDrawable(getResources().getDrawable(R.drawable.middle_circle));
 			return;
 		}
 	}
@@ -499,17 +506,17 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		
 		switch (page) {
 		case MAIN:
-			//setContentView(R.layout.number_screen);
 			flip.showNext();
 			page = Pages.NUMBERS;
-			//setupNumbers();
+			// set pager to right
+			pager.setImageDrawable(getResources().getDrawable(R.drawable.right_circle));
 			return;
 
 		case ACTIVITIES:
-			//setContentView(R.layout.main);
 			flip.showNext();
 			page = Pages.MAIN;
-			//setupDefaultButtons();
+			// set pager to middle
+			pager.setImageDrawable(getResources().getDrawable(R.drawable.middle_circle));
 			return;
 
 		case NUMBERS:
