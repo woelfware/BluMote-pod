@@ -28,8 +28,8 @@ public class MainInterface {
     private  ImageButton btn_channel_down;
 //    private  Spinner device_spinner;
 //    private  ImageButton led_btn;
-    private  ImageButton btn_pwr;
-    private  ImageButton power2_btn;
+    private  ImageButton power_on_btn;
+    private  ImageButton power_off_btn;
     private  ImageButton back_skip_btn;
     private  ImageButton back_btn;
     private  ImageButton forward_btn;
@@ -47,13 +47,13 @@ public class MainInterface {
     private  ImageButton pgdn_btn;
     private  Button guide_btn;
     private  Button exit_btn;
-    private  ImageButton move_left_btn;
-    private  ImageButton move_right_btn;
+//    private  ImageButton move_left_btn;
+//    private  ImageButton move_right_btn;
     private  Button btn_input;
     private  Button btn_last;
 
-    private  ImageButton move_left_n_btn;
-    private  ImageButton move_right_n_btn;
+//    private  ImageButton move_left_n_btn;
+//    private  ImageButton move_right_n_btn;
 	private Spinner device_spinner;
 	private ImageButton left_btn;
 	private ImageButton down_btn;
@@ -82,8 +82,8 @@ public class MainInterface {
 	private Button btn_misc7;
 	private Button btn_misc8;
 	
-    private  ImageButton move_left_a_btn;
-    private  ImageButton move_right_a_btn;
+//    private  ImageButton move_left_a_btn;
+//    private  ImageButton move_right_a_btn;
 
     // this has to match the number of misc buttons in the interface
     // we use this for the renaming of misc buttons logic
@@ -134,8 +134,8 @@ public class MainInterface {
 			btn_channel_down = (ImageButton) blumote.findViewById(R.id.btn_channel_down);
 			btn_input = (Button) blumote.findViewById(R.id.btn_input);
 			//        led_btn = (ImageButton) blumote.findViewById(R.id.led_btn);
-			btn_pwr = (ImageButton) blumote.findViewById(R.id.power_btn);
-			power2_btn = (ImageButton) blumote.findViewById(R.id.power2_btn);
+			power_on_btn = (ImageButton) blumote.findViewById(R.id.power_on_btn);
+			power_off_btn = (ImageButton) blumote.findViewById(R.id.power_off_btn);
 			back_skip_btn = (ImageButton) blumote.findViewById(R.id.back_skip_btn);
 			back_btn = (ImageButton) blumote.findViewById(R.id.back_btn);
 			forward_btn = (ImageButton) blumote.findViewById(R.id.forward_btn);
@@ -152,8 +152,8 @@ public class MainInterface {
 			pgdn_btn = (ImageButton) blumote.findViewById(R.id.pgdn_btn);
 			guide_btn = (Button) blumote.findViewById(R.id.guide_btn);
 			exit_btn = (Button) blumote.findViewById(R.id.exit_btn);
-			move_right_btn = (ImageButton) blumote.findViewById(R.id.move_right_btn);
-			move_left_btn = (ImageButton) blumote.findViewById(R.id.move_left_btn);
+//			move_right_btn = (ImageButton) blumote.findViewById(R.id.move_right_btn);
+//			move_left_btn = (ImageButton) blumote.findViewById(R.id.move_left_btn);
 			pause_btn = (ImageButton) blumote.findViewById(R.id.pause_btn);
 			fav_btn = (ImageButton) blumote.findViewById(R.id.fav_btn);
 			btn_last = (Button) blumote.findViewById(R.id.btn_last);
@@ -167,10 +167,10 @@ public class MainInterface {
 			btn_channel_down.setOnClickListener(blumote);
 			btn_input.setOnClickListener(blumote);
 			btn_input.setOnTouchListener(blumote.gestureListener);
-			btn_pwr.setOnClickListener(blumote);
-			btn_pwr.setOnTouchListener(blumote.gestureListener);
-			power2_btn.setOnClickListener(blumote);
-			power2_btn.setOnTouchListener(blumote.gestureListener);
+			power_on_btn.setOnClickListener(blumote);
+			power_on_btn.setOnTouchListener(blumote.gestureListener);
+			power_off_btn.setOnClickListener(blumote);
+			power_off_btn.setOnTouchListener(blumote.gestureListener);
 			back_skip_btn.setOnClickListener(blumote);
 			back_skip_btn.setOnTouchListener(blumote.gestureListener);
 			back_btn.setOnClickListener(blumote);
@@ -203,10 +203,10 @@ public class MainInterface {
 			guide_btn.setOnTouchListener(blumote.gestureListener);
 			exit_btn.setOnClickListener(blumote);
 			exit_btn.setOnTouchListener(blumote.gestureListener);
-			move_left_btn.setOnClickListener(blumote);
-			move_left_btn.setOnTouchListener(blumote.gestureListener);
-			move_right_btn.setOnClickListener(blumote);
-			move_right_btn.setOnTouchListener(blumote.gestureListener);
+//			move_left_btn.setOnClickListener(blumote);
+//			move_left_btn.setOnTouchListener(blumote.gestureListener);
+//			move_right_btn.setOnClickListener(blumote);
+//			move_right_btn.setOnTouchListener(blumote.gestureListener);
 			pause_btn.setOnClickListener(blumote);
 			pause_btn.setOnTouchListener(blumote.gestureListener);
 			fav_btn.setOnTouchListener(blumote.gestureListener);
@@ -222,8 +222,8 @@ public class MainInterface {
 			button_map.put(R.id.btn_channel_up, "btn_channel_up");
 			button_map.put(R.id.btn_channel_down, "btn_channel_down");
 			button_map.put(R.id.btn_input, "btn_input");
-			button_map.put(R.id.power_btn, "btn_pwr");
-			button_map.put(R.id.power2_btn, "power2_btn");
+			button_map.put(R.id.power_on_btn, "power_on_btn");
+			button_map.put(R.id.power_off_btn, "power_off_btn");
 			button_map.put(R.id.back_skip_btn, "back_skip_btn");
 			button_map.put(R.id.back_btn, "back_btn");
 			button_map.put(R.id.forward_btn, "forward_btn");
@@ -241,14 +241,14 @@ public class MainInterface {
 			button_map.put(R.id.pgdn_btn, "pgdn_btn");
 			button_map.put(R.id.guide_btn, "guide_btn");
 			button_map.put(R.id.exit_btn, "exit_btn");
-			button_map.put(R.id.move_right_btn, "move_right_btn");
-			button_map.put(R.id.move_left_btn, "move_left_btn");
+//			button_map.put(R.id.move_right_btn, "move_right_btn");
+//			button_map.put(R.id.move_left_btn, "move_left_btn");
 			button_map.put(R.id.fav_btn, "fav_btn");
 			button_map.put(R.id.btn_last, "btn_last");
 			///////////////////////////////////////////////////////////
 			// NUMBERS SCREEN
-			move_right_n_btn = (ImageButton) blumote.findViewById(R.id.move_right_n_btn);
-			move_left_n_btn = (ImageButton) blumote.findViewById(R.id.move_left_n_btn);
+//			move_right_n_btn = (ImageButton) blumote.findViewById(R.id.move_right_n_btn);
+//			move_left_n_btn = (ImageButton) blumote.findViewById(R.id.move_left_n_btn);
 			btn_n0 = (Button) blumote.findViewById(R.id.btn_n0);
 			btn_n1 = (Button) blumote.findViewById(R.id.btn_n1);
 			btn_n2 = (Button) blumote.findViewById(R.id.btn_n2);
@@ -305,12 +305,12 @@ public class MainInterface {
 			btn_exit.setOnClickListener(blumote);
 			btn_home.setOnTouchListener(blumote.gestureListener);
 			btn_home.setOnClickListener(blumote);
-			move_left_n_btn.setOnClickListener(blumote);
-			move_left_n_btn.setOnTouchListener(blumote.gestureListener);
-			move_right_n_btn.setOnClickListener(blumote);
-			move_right_n_btn.setOnTouchListener(blumote.gestureListener);
-			move_right_btn.setOnClickListener(blumote);
-			move_right_btn.setOnTouchListener(blumote.gestureListener);
+//			move_left_n_btn.setOnClickListener(blumote);
+//			move_left_n_btn.setOnTouchListener(blumote.gestureListener);
+//			move_right_n_btn.setOnClickListener(blumote);
+//			move_right_n_btn.setOnTouchListener(blumote.gestureListener);
+//			move_right_btn.setOnClickListener(blumote);
+//			move_right_btn.setOnTouchListener(blumote.gestureListener);
 			left_btn.setOnClickListener(blumote);
 			left_btn.setOnTouchListener(blumote.gestureListener);
 			right_btn.setOnClickListener(blumote);
@@ -355,8 +355,8 @@ public class MainInterface {
 			button_map.put(R.id.btn_enter, "btn_enter");
 			button_map.put(R.id.btn_exit, "btn_exit");
 			button_map.put(R.id.btn_home, "btn_home");
-			button_map.put(R.id.move_right_n_btn, "move_right_btn");
-			button_map.put(R.id.move_left_n_btn, "move_left_btn");
+//			button_map.put(R.id.move_right_n_btn, "move_right_btn");
+//			button_map.put(R.id.move_left_n_btn, "move_left_btn");
 			button_map.put(R.id.left_btn, "left_btn");
 			button_map.put(R.id.right_btn, "right_btn");
 			button_map.put(R.id.btn_up, "btn_up");
@@ -372,12 +372,12 @@ public class MainInterface {
 			/////////////////////////////////////////////////////////
 			// ACTIVITY setup
 			// initialize buttons
-			move_right_a_btn = (ImageButton) blumote.findViewById(R.id.move_right_a_btn);
-			move_left_a_btn = (ImageButton) blumote.findViewById(R.id.move_left_a_btn);
-			move_left_a_btn.setOnClickListener(blumote);
-			move_left_a_btn.setOnTouchListener(blumote.gestureListener);
-			move_right_a_btn.setOnClickListener(blumote);
-			move_right_a_btn.setOnTouchListener(blumote.gestureListener);
+//			move_right_a_btn = (ImageButton) blumote.findViewById(R.id.move_right_a_btn);
+//			move_left_a_btn = (ImageButton) blumote.findViewById(R.id.move_left_a_btn);
+//			move_left_a_btn.setOnClickListener(blumote);
+//			move_left_a_btn.setOnTouchListener(blumote.gestureListener);
+//			move_right_a_btn.setOnClickListener(blumote);
+//			move_right_a_btn.setOnTouchListener(blumote.gestureListener);
 			
 			button_map.put(R.id.move_right_a_btn, "move_right_btn");
 			button_map.put(R.id.move_left_a_btn, "move_left_btn");
@@ -397,6 +397,8 @@ public class MainInterface {
 				public void onClick(View v) {
 					// first clear the arraylist that keeps track if initialization entries
 					blumote.activityInit.clear();
+					// clear list that keeps track of power-off button codes
+					blumote.activityInitPowerOnDevices.clear();
 					// Launch the function to ask for a name for device
 					Intent i = new Intent(blumote, EnterDevice.class);
 					blumote.startActivityForResult(i, BluMote.ACTIVITY_ADD);
@@ -438,6 +440,33 @@ public class MainInterface {
 		}
 		// always fetch buttons after we populate the drop down
 		fetchButtons();
+	}
+	
+	/**
+	 * Checks if the button is one for navigation (move left or right)
+	 * THIS IS CURRENTLY DEPRACATED SINCE NAVIGATION BUTTONS WERE REMOVED FROM INTERFACE
+	 * @param buttonID the button we want to check
+	 * @return true if it is a navigation button, false if not
+	 */
+	boolean isNavigationButton(int buttonID) {
+		String payload = blumote.button_map.get(buttonID);
+		if (payload != null) {
+			try {
+				// see if we have a navigation page move command....
+				if (payload == "move_left_btn") {
+					return true;
+				}
+				// check if the navigation move_right was pushed
+				// this only works when we are in main screen
+				if (payload == "move_right_btn") {
+					return true;
+				}
+			} catch (Exception e) {
+				// do nothing, this is fine
+				return false;
+			}
+		}
+		return false;
 	}
 	
 	/**
@@ -495,7 +524,7 @@ public class MainInterface {
 		}
 		
 		s = s.replace(" ", "_"); // need this so activity prefix startsWith works
-		blumote.cur_device = s; // set device to this
+		blumote.cur_device = s; // set device to this				
 		
 		// if we are in ACTIVITY or MAIN modes then toggle between them when
 		// changing devices in the drop-down
@@ -503,10 +532,10 @@ public class MainInterface {
 				blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
 			if (s.startsWith(ACTIVITY_PREFIX)) { 			
 				// if it is an activity then set program state to activities mode
-				blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;						
+				blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;					
 			}
 			else { // must be regular device
-				blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;			
+				blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;						
 			}
 		}
 		// otherwise scan if it is in the database of device configs and set it that way
@@ -519,9 +548,9 @@ public class MainInterface {
 	 * The currently selected drop down item is returned
 	 * @return the currently selected drop down
 	 */
-	String currentDropDown() {
+	String getCurrentDropDown() {
 		return (String)device_spinner.getSelectedItem();		
-	}
+	}			
 	
 	/**
 	 * This function updates the data associated with buttons on the interface, needs 
@@ -530,7 +559,6 @@ public class MainInterface {
 	void fetchButtons() {
 		// first update the cur_table from spinner
 		if (device_spinner.getCount() > 0) {
-			//DEBUG TODO
 			Object spinnerItem;
 			try {
 				spinnerItem = device_spinner.getSelectedItem();
@@ -543,6 +571,20 @@ public class MainInterface {
 				// that				
 				String table_s = spinnerItem.toString().replace(" ", "_");
 				blumote.cur_device = table_s;
+				
+				if (table_s.startsWith(ACTIVITY_PREFIX)) {
+					// show the "power off" button, hide the power on button
+					power_off_btn.setVisibility(View.VISIBLE);
+					power_on_btn.setVisibility(View.INVISIBLE);
+					// TODO Power off button is special for an activity, load the data here
+					blumote.activityPowerOffData = activities.getPowerOffButtonData(table_s);
+				}
+				else {
+					// hide the power off button, show the power on button
+					power_on_btn.setVisibility(View.VISIBLE);
+					power_off_btn.setVisibility(View.INVISIBLE);
+				}
+				
 				// if we are in ACTIVITY or MAIN modes then toggle between them when
 				// changing devices in the drop-down
 				if (blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY ||
@@ -550,7 +592,7 @@ public class MainInterface {
 					// check if activity or a device
 					if (table_s.startsWith(ACTIVITY_PREFIX)) {
 						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
-						activities.setWorkingActivity(currentDropDown());
+						activities.setWorkingActivity(getCurrentDropDown());
 						blumote.buttons = activities.getActivityButtons(table_s);								
 					}
 					else { // must be a device
@@ -577,6 +619,10 @@ public class MainInterface {
 		device_spinner.setSelection(0);
 		blumote.buttons = null;
 		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; 
+		
+		power_off_btn.setVisibility(View.INVISIBLE);
+		power_on_btn.setVisibility(View.INVISIBLE);
+	
 	}
 	
 	/**

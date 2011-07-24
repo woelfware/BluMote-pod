@@ -3,15 +3,18 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">    	
+<!--
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="center"
 		android:baselineAligned ="false">     
-		<ImageButton android:id="@+id/move_left_n_btn"  android:background="@drawable/move_left" android:layout_width="60dp" android:layout_height="50dp" android:scaleType="fitXY" android:layout_marginRight="100dp" />   
+ 		<ImageButton android:id="@+id/move_left_n_btn"  android:background="@drawable/move_left" android:layout_width="60dp" android:layout_height="50dp" android:scaleType="fitXY" android:layout_marginRight="100dp" />   
 		<ImageButton android:id="@+id/move_right_n_btn"  android:background="@drawable/move_right" android:layout_width="60dp" android:layout_height="50dp" android:scaleType="fitXY" android:layout_marginLeft="100dp" android:visibility="invisible"/>
+ 		
 	</LinearLayout>    
+-->
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 

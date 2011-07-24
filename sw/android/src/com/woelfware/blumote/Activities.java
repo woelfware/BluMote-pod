@@ -1,5 +1,6 @@
 package com.woelfware.blumote;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +32,19 @@ public class Activities {
 	// prefix to put before a new activity to prefs file to find it easier
 	// when searching through keys
 	static final String ACTIVITY_PREFIX = "(A)_";
+	// SUFFIX for initialization items
 	private static final String INIT = "INIT";
+	// SUFFIX for power off codes to store
+	private static final String OFF = "_OFF";
 	
 	// these member variables will deal with executing all the 
 	// initialization steps
 	private int initItemsIndex = 0;	
 	private String[] initItems = null;
+	
+	// these member variables will deal with sending the power off codes for an activity
+	private ButtonData[] powerOffData = null;
+	private int powerOffDataIndex = 0;
 	
 	/**
 	 * 
@@ -51,7 +59,7 @@ public class Activities {
 		mActivitiesArrayAdapter = new ArrayAdapter<String>(blumote,
 				R.layout.manage_devices_item);
 	}
-	
+		
 	/**
 	 * updates the arrayadapter parameter with all the activities from the
 	 * prefs file.  boolean suppressPrefix is used to remove the
@@ -134,15 +142,34 @@ public class Activities {
 		}
 	}
 	
+	/**
+	 * this function will make sure the activity prefix is 
+	 * removed from the key passed in, this format is necessary for
+	 * saving some activity data that needs to be hidden from the user.
+	 * @param key the name of the activity that we want to operate on
+	 * @return the processed key
+	 *  
+	 */
+	@SuppressWarnings("unused")
+	private static String removeActivityPrefix(String key) {
+		// convert spaces to underscores
+		key = key.replace(" ", "_");
+		// remove prefix if it doesn't already exist
+		if (key.startsWith(ACTIVITY_PREFIX)) {
+			return key.replace(ACTIVITY_PREFIX, "");
+		}
+		else {
+			return key;
+		}
+	}
 
 	/**
 	 * This function will make sure the activity prefix is 
-	 * removed from the key passed in, this format is necessary for
-	 * saving activity INIT data, appends the INIT suffix to the key
+	 * removed from the key passed in and add the INIT suffix
 	 * @param key the name of the activity we want to operate on
 	 * @return the processed activity name that we passed in
 	 */
-	private static String formatActivityNameForInit(String key) {
+	private static String formatActivityInitSuffix(String key) {
 		// convert spaces to underscores
 		key = key.replace(" ", "_");
 
@@ -157,6 +184,26 @@ public class Activities {
 		}
 	}
 	
+	/**
+	 * This function will make sure the activity prefix is 
+	 * removed from the key passed in, and add the OFF suffix
+	 * @param key the name of the activity we want to operate on
+	 * @return the processed activity name that we passed in
+	 */
+	private static String formatActivityOffSuffix(String key) {
+		// convert spaces to underscores
+		key = key.replace(" ", "_");
+
+		if (key.startsWith(ACTIVITY_PREFIX)) {
+			// remove the prefix
+			key = key.replace(ACTIVITY_PREFIX, "");
+		}
+		if (key.endsWith(OFF)) {
+			return key;
+		} else {
+			return key + OFF;
+		}
+	}
 	
 	/**
 	 * delete an activity from the arraylist on the interface.  This function is usually
@@ -173,7 +220,7 @@ public class Activities {
 		Editor mEditor = blumote.prefs.edit();
 		// delete the activity record as well as it's associated INIT routine
 		mEditor.remove(name); 	
-		name = formatActivityNameForInit(name);
+		name = formatActivityInitSuffix(name);
 		mEditor.remove(name);
 		
 		// iterate through button_map to search for any button name suffixes
@@ -239,8 +286,8 @@ public class Activities {
 		mEditor.remove(oldName); // remove old one
 		mEditor.putString(newName, activity); // add new name with old data
 		// Now do the same for INIT data
-		oldName = formatActivityNameForInit(oldName);
-		newName = formatActivityNameForInit(newName);
+		oldName = formatActivityInitSuffix(oldName);
+		newName = formatActivityInitSuffix(newName);
 		String activityInit = blumote.prefs.getString(oldName, null);
 		mEditor.remove(oldName); // remove old one
 		mEditor.putString(newName, activityInit); // add new name with old data
@@ -263,13 +310,33 @@ public class Activities {
 	static void addActivityInitSequence(String activityName, List<String> init, SharedPreferences prefs) {
 		if (activityName != null) {
 			Editor mEditor = prefs.edit();
-
-			activityName = formatActivityNameForInit(activityName);
+			
 			// convert List to a compacted csv string
 			StringBuilder initItems = new StringBuilder();
+			String currentItem;
+			String[] curItems;
+			ArrayList<String> powerOffItems = new ArrayList<String>();
 			for (Iterator<String> initStep = init.iterator(); initStep.hasNext();) {
-				initItems.append(initStep.next()+",");
+				currentItem = initStep.next();
+				initItems.append(currentItem+",");
+				//check if the item is a power button, if so then need to add it to the activity power off button
+				curItems = currentItem.split(" "); // split on a space delimeter
+				if (curItems.length == 2) { // should have 2 elements
+					// second item is the button name (if not a delay)
+					if(!curItems[0].equals("DELAY")) {
+						if (curItems[1].equals("power_on_btn")) { 
+							powerOffItems.add(curItems[0]); // save just the device name
+						}
+					}
+				}
 			}
+			
+			// add the collected power off buttons to the interface
+			recordPowerOffButton(activityName, powerOffItems, prefs);
+			
+			// add INIT suffix before storing initItems to prefs file
+			activityName = formatActivityInitSuffix(activityName);
+			
 			mEditor.putString(activityName, initItems.toString()); 
 
 			mEditor.commit();
@@ -309,9 +376,9 @@ public class Activities {
 	 * @return Strin[] with the elements in order (first to last)
 	 */
 	static String[] getActivityInitSequence(String activityName, SharedPreferences prefs) {
-		activityName = formatActivityNameForInit(activityName);
+		activityName = formatActivityInitSuffix(activityName);
 		String initSequence = prefs.getString(activityName, null);
-		if (initSequence == null) {
+		if (initSequence==null) {
 			return null;
 		}
 		else {
@@ -335,7 +402,7 @@ public class Activities {
 	 * @param activityName The name of the activity to execute init sequence of
 	 */
 	void startActivityInitSequence(String activityName) {
-		activityName = formatActivityNameForInit(activityName);
+		activityName = formatActivityInitSuffix(activityName);
 		// call getActivityInitSequence(activityName) to get the list of items to execute
 		initItems = getActivityInitSequence();
 		initItemsIndex = 0; // reset index
@@ -442,6 +509,41 @@ public class Activities {
 			blumote.dismissDialog(BluMote.DIALOG_INIT_PROGRESS);
 		}
 	} // end nextActivityInitSequence
+	
+
+	/**
+	 * sends the power off codes with a proper delay between sends to prevent buffer overflow on pod
+	 * @param powerOff
+	 */
+	public void sendPowerOffData(ButtonData[] powerOff) {
+		
+		powerOffData = powerOff;
+		powerOffDataIndex = 0;
+		
+		nextPowerOffData();
+	}
+	
+	public void nextPowerOffData() {
+		if (powerOffDataIndex < powerOffData.length) {
+			blumote.sendButton(powerOffData[powerOffDataIndex].getButtonData());
+			powerOffDataIndex++;
+
+			if (powerOffDataIndex < powerOffData.length) {
+				//need to start a wait timer for this period of time
+				new CountDownTimer(BluMote.MEDIUM_DELAY_TIME, BluMote.MEDIUM_DELAY_TIME) {
+					public void onTick(long millisUntilFinished) {
+						// no need to use this function
+					}
+
+					public void onFinish() {
+						// called when timer expired			
+						nextPowerOffData(); // continue on the quest to finish
+					}
+				}.start();					
+			}
+
+		} // end while	
+	}
 	
 	/**
 	 * add a new button association for an existing activity
@@ -614,6 +716,132 @@ public class Activities {
 	}
 	
 	/**
+	 * Checks if the button ID is valid for an initialization sequence of an activity
+	 * @param buttonId the resource ID of the interface button
+	 * @return true if it is valid, false if not valid
+	 */
+	static boolean isValidActivityButton(int buttonId) {		 
+		switch (buttonId) {
+		case R.id.power_off_btn:
+			return false;
+		
+		case R.id.move_left_a_btn:
+			return false;
+		
+		case R.id.move_right_a_btn:
+			return false;
+			
+//		case R.id.move_left_n_btn:
+//			return false;
+//			
+//		case R.id.move_right_n_btn:
+//			return false;
+			
+		default:
+			return true;
+		}
+	}
+	
+	/**
+	 * Takes a list of devices that have had their power buttons pushed when creating the init list for an activity
+	 * and stores them for the power off button of an activity.
+	 * @param activityName the name of the activity
+	 * @param powerOnDevices a list of power buttons that were pushed during init sequence recording
+	 * @param prefs the preferences file
+	 */
+	static void recordPowerOffButton(String activityName, ArrayList<String> powerOnDevices, SharedPreferences prefs) {
+		// convert the items to comma separated values
+		StringBuilder builder = new StringBuilder();
+		
+		Iterator<String> iterator = powerOnDevices.iterator();
+		
+		while (iterator.hasNext()) {
+			builder.append(iterator.next()+",");
+		}
+		
+		Editor mEditor = prefs.edit();
+		activityName = formatActivityOffSuffix(activityName);		
+		mEditor.putString(activityName, builder.toString()); 			
+		mEditor.commit();
+	}
+	
+	/**
+	 * Takes a list of devices that have had their power buttons pushed when creating the init list for an activity
+	 * and stores them for the power off button of an activity.
+	 * @param powerOnDevices a list of power buttons that were pushed during init sequence recording
+	 */
+	void recordPowerOffButton(ArrayList<String> powerOnDevices) {
+		recordPowerOffButton(workingActivity, powerOnDevices, blumote.prefs);
+	}	
+	
+	/**
+	 * This function returns the power off data associated with an activities 'power off' button.
+	 * This is automatically generated when setting up an activities initialization sequence and the user 
+	 * pushes a power on command for a device.
+	 * @param activityName the name of the activity we want to get the power off codes for
+	 * @return the power off codes as an array of ButtonData objects
+	 */
+	ButtonData[] getPowerOffButtonData(String activityName) {
+		// pull power off / toggle codes from prefs file
+		// populate blumote's field with this data
+		// BluMote needs to look for the power off button push and execute this data
+		// this function loads 'null' if no data is stored
+		try {
+			activityName = formatActivityOffSuffix(activityName);
+			String powerOffCodes = blumote.prefs.getString(activityName, null);
+			// powerOffCodes is csv
+			String[] devices = powerOffCodes.split(",");
+			byte[] buttonData;
+			if (devices != null) {				
+				ButtonData[] returnData = new ButtonData[devices.length];
+				// each token is a device name that we should issue the power command for			
+				for (int i=0; i < devices.length; i++) {
+					try {
+						// try to insert data from database if it exists
+//						String deviceName = devices[i].split(" ");
+						buttonData = blumote.device_data.getButton(devices[i], blumote.button_map.get(R.id.power_on_btn));
+						returnData[i] = new ButtonData( R.id.power_on_btn, blumote.button_map.get(R.id.power_on_btn),
+								buttonData,	Constants.CATEGORIES.TV_DVD.getValue() );
+					} catch (Exception e) {
+						// if the call the getButtion() failed then lets just create a button with null for data
+						returnData[i] = new ButtonData(
+								0, blumote.button_map.get(R.id.power_on_btn), 
+								null, Constants.CATEGORIES.TV_DVD.getValue() );
+					}
+				}
+				
+				return returnData;
+			} else { // no devices in the list, so return null
+				return null;
+			}
+		} catch (Exception e) {
+			// just exit function and set blumote power-off data to null
+			return null;
+		}
+	}
+	
+	/**
+	 * Get the list of all the devices that have power-on commands associated with the activities'
+	 * initialization list.  
+	 * @param activityName the name of the activity
+	 * @return the array of data or null if nothing was found
+ 	 */
+	String[] getPowerOffDevices(String activityName) {
+		// pull power off / toggle codes from prefs file
+		// populate blumote's field with this data
+		// BluMote needs to look for the power off button push and execute this data
+		// this function loads 'null' if no data is stored
+		try {
+			String powerOffCodes = blumote.prefs.getString(getWorkingActivity()+OFF, null);
+			// powerOffCodes is csv
+			String[] devices = powerOffCodes.split(",");
+			return devices;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	/**
 	 * This is a helper class to encapsulate all the parameters of a
 	 * activity button which is associated with a real device button.
 	 * @author keusej
@@ -717,4 +945,5 @@ public class Activities {
 			return deviceButton;
 		}
 	}
+
 }

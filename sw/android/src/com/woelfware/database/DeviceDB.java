@@ -96,7 +96,7 @@ public class DeviceDB {
 			buttons = new ButtonData[c.getCount()];
 			// iterate through cursor to load up buttons array
 			for (int i= 0; i < buttons.length; i++) {
-				buttons[i] = new ButtonData(c.getInt(0), c.getString(1), c.getBlob(2), c.getString(3));
+				buttons[i] = new ButtonData(0, c.getString(1), c.getBlob(2), c.getString(3));
 				c.moveToNext();
 			}
 		}

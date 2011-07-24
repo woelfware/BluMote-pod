@@ -224,7 +224,7 @@ class BluetoothChatService {
             // Get a BluetoothSocket for a connection with the
             // given BluetoothDevice
             try {
-            	if (Build.VERSION.SDK_INT >= 10) {
+            	if (Build.VERSION.SDK_INT >= 10 && !(Build.MANUFACTURER.equals("HTC")) ) {
             		// the newer SDK includes this function call, but it doesn't appear to work on HTC phones
             		// so the tryConnect() tries to use reflection before giving up entirely
             		tmp = mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);

@@ -4,30 +4,34 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:baselineAligned="false">
+    <Spinner 	
+		android:id="@+id/device_spinner" 
+		android:prompt="@string/spinner_prompt"
+		android:layout_height = "50dp"
+		android:layout_width="300dp"
+		android:layout_gravity="center"
+		android:background="@drawable/spinner_look"
+		android:textColor="#FFFFFF" >
+	</Spinner>	
     <LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="center" >     
-		<ImageButton android:id="@+id/move_left_btn" android:background="@drawable/move_left" android:layout_width="60dp" android:layout_height="50dp" android:scaleType="fitXY" />
-		<Spinner 	
-			android:id="@+id/device_spinner" 
-			android:prompt="@string/spinner_prompt"
-			android:layout_height = "50dp"
-			android:layout_gravity="center"
-			android:background="@drawable/spinner_look"
-			android:textColor="#FFFFFF" android:layout_width="200dp">
-		</Spinner>	
-		<ImageButton android:id="@+id/move_right_btn" android:layout_gravity="right" android:background="@drawable/move_right" android:layout_width="60dp" android:layout_height="50dp" android:scaleType="fitXY"/>
+<!-- 		<ImageButton android:id="@+id/move_left_btn" android:background="@drawable/move_left" android:layout_width="60dp" android:layout_height="50dp" android:scaleType="fitXY" /> 
+ -->
+		
+<!-- 		<ImageButton android:id="@+id/move_right_btn" android:layout_gravity="right" android:background="@drawable/move_right" android:layout_width="60dp" android:layout_height="50dp" android:scaleType="fitXY"/>
+ -->
 	</LinearLayout>			
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="center">     
-		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_green" android:id="@+id/power2_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginRight="30dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_green" android:id="@+id/power_on_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginRight="30dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
 		<Button android:id="@+id/btn_input" android:text="Input" style="@style/CustomBtnText" android:layout_width="85dp"></Button>					  
-		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_off" android:id="@+id/power_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginLeft="30dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
+		<ImageButton style="@style/CustomImageBtnText" android:src="@drawable/pwr_off" android:id="@+id/power_off_btn" android:background="@drawable/round_btn_look" android:scaleType="fitXY" android:layout_marginLeft="30dp" android:layout_width="65dp" android:layout_height="65dp" ></ImageButton>
 	</LinearLayout>
 	<LinearLayout
 		android:orientation="horizontal"
