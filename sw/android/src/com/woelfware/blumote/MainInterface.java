@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -379,10 +380,8 @@ public class MainInterface {
 //			move_right_a_btn.setOnClickListener(blumote);
 //			move_right_a_btn.setOnTouchListener(blumote.gestureListener);
 			
-			button_map.put(R.id.move_right_a_btn, "move_right_btn");
-			button_map.put(R.id.move_left_a_btn, "move_left_btn");
-
-			
+//			button_map.put(R.id.move_right_a_btn, "move_right_btn");
+//			button_map.put(R.id.move_left_a_btn, "move_left_btn");			
 
 			// Find and set up the ListView
 			activitiesListView = (ListView) blumote.findViewById(R.id.activities_list);
@@ -438,8 +437,6 @@ public class MainInterface {
 				}
 			}
 		}
-		// always fetch buttons after we populate the drop down
-		fetchButtons();
 	}
 	
 	/**
@@ -541,7 +538,7 @@ public class MainInterface {
 		// otherwise scan if it is in the database of device configs and set it that way
 		
 		// update buttons
-		fetchButtons();
+		fetchButtons();				
 	}
 	
 	/**
@@ -576,7 +573,6 @@ public class MainInterface {
 					// show the "power off" button, hide the power on button
 					power_off_btn.setVisibility(View.VISIBLE);
 					power_on_btn.setVisibility(View.INVISIBLE);
-					// TODO Power off button is special for an activity, load the data here
 					blumote.activityPowerOffData = activities.getPowerOffButtonData(table_s);
 				}
 				else {
@@ -610,8 +606,34 @@ public class MainInterface {
 			}
 		} else {
 			setSpinnerErrorState();
-		}
+		}		
+		
+		// refresh the text on the misc buttons
+		refreshMiscBtns(); 
 	}		
+	
+	/** 
+	 * This function renames all the misc buttons associated with the old name to the new name
+	 * @param oldName the original name the keys would have been stored with
+	 * @param newName the new name we want to use	
+	 * @param prefs the SharedPreferences object that the misc button data is stored in
+	 */
+	static void renameMiscButtons(String oldName, String newName, SharedPreferences prefs) {
+		//iterate through all oldName items, if we find the item, then copy the data and 
+		// delete the old and insert with new name
+		Editor mEditor = prefs.edit();
+		String miscButton;
+		for (int i=0; i< NUM_MISC_BTNS; i++) {
+			miscButton = prefs.getString(
+					oldName + "btn_misc"+Integer.toString(i), null);
+			if (miscButton != null) {
+				mEditor.remove(oldName + "btn_misc"+Integer.toString(i));
+				mEditor.putString(newName + "btn_misc"+Integer.toString(i), miscButton);
+			}
+		}
+		mEditor.commit();
+	}
+	
 	/**
 	 * sets spinner to a default error condition
 	 */
@@ -627,7 +649,6 @@ public class MainInterface {
 	
 	/**
 	 * Updates the text associated with a Misc button on the interface
-	 * TODO - should associate the data with the particular drop-down item selected
 	 * @param return_string is the new name of the Misc button
 	 * @param misc_button The misc_button name to be operated on
 	 */
@@ -636,6 +657,10 @@ public class MainInterface {
 		// work with the preferences file for this
 		// after update preferences then refresh the misc buttons
 		Editor mEditor = blumote.prefs.edit();
+		
+		// the drop down will help create the key
+		misc_button = getCurrentDropDown().replace(" ", "_") + misc_button;
+		
 		mEditor.putString(misc_button, return_string); // key, value
 		mEditor.commit();
 		refreshMiscBtns(); // update interface with new label
@@ -653,24 +678,36 @@ public class MainInterface {
 	
 	/**
 	 * Refresh the misc buttons on the interface, pulls in any modified text labels that may have been set
-	 * TODO - should call this everytime the drop-down is changed in order for customized misc buttons per device to work
 	 */
 	void refreshMiscBtns() {
-		// this stub is for refreshing the misc buttons from the preferences file
+		// for refreshing the misc buttons from the preferences file
 		// call this when the program first is launched and after renaming any of them
+		
+		String dropDown = getCurrentDropDown().replace(" ", "_");
+		String miscButton;
 		for (int i=1; i<= NUM_MISC_BTNS; i++) {
-			String misc_btn = blumote.prefs.getString(
-					"btn_misc"+Integer.toString(i), null);
-			if (misc_btn != null) {
+			miscButton = blumote.prefs.getString(
+					dropDown + "btn_misc"+Integer.toString(i), null);
+			if (miscButton != null) {
 				// update btn on interface with text value from prefs file
 				try {
 					Button btn = (Button)blumote.findViewById(
 							getResourceFromString("btn_misc"+Integer.toString(i)));					
-					btn.setText(misc_btn);
+					btn.setText(miscButton);
 				} catch (Exception e) {
 					// oops something didn't work, oh well
 				}
-			}							
+			} else {
+				// if prefs getString() returns null then lets restore the default misc button
+				// text - need this so when changing drop-down it restores default text
+				try {
+					Button btn = (Button)blumote.findViewById(
+							getResourceFromString("btn_misc"+Integer.toString(i)));					
+					btn.setText("Misc "+Integer.toString(i));
+				} catch (Exception e) {
+					// oops something didn't work, oh well
+				}
+			}
 				//button_map.get(misc_btn)
 		}		
 	}	

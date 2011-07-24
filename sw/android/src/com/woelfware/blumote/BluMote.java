@@ -1089,7 +1089,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * @param id the resource-ID of the arraylist that was operated on
 	 */
 	public void onItemSelected(AdapterView<?> parent, View view, int pos,
-			long id) {
+			long id) {		
 		// setup interface buttons appropriately		
 		mainScreen.fetchButtons();
 	}	

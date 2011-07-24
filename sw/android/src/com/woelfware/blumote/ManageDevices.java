@@ -2,6 +2,7 @@ package com.woelfware.blumote;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.MenuItem;
@@ -109,6 +110,11 @@ public class ManageDevices extends Activity {
     		if ( return_bundle != null ) {
     			return_string = return_bundle.getString("returnStr");
         		device_data.renameDevice(table_name, return_string);
+        		
+        		SharedPreferences prefs = getSharedPreferences("droidMoteSettings",
+						MODE_PRIVATE);
+        		// rename all MISC buttons stored
+        		MainInterface.renameMiscButtons(table_name, return_string, prefs);
     		}
         	// refresh the display of items
     		populateDisplay();    		

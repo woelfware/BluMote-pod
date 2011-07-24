@@ -20,7 +20,8 @@
 		android:layout_width="wrap_content" 
 		android:layout_height="wrap_content"
 		android:layout_gravity="center"
-		android:baselineAligned ="false">     
+		android:baselineAligned ="false"
+		android:paddingTop="50dip">     
 			<Button android:id="@+id/btn_misc1" android:text="Misc 1" style="@style/CustomBtnText"></Button>	
 			<Button android:id="@+id/btn_n1" android:text="1" style="@style/CustomNumbersText"></Button>			
 			<Button android:id="@+id/btn_n2" android:text="2" style="@style/CustomNumbersText"></Button>			

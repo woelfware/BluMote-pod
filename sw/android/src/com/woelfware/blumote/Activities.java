@@ -285,18 +285,21 @@ public class Activities {
 		String activity = blumote.prefs.getString(oldName, null);				
 		mEditor.remove(oldName); // remove old one
 		mEditor.putString(newName, activity); // add new name with old data
-		// Now do the same for INIT data
+		
+		// rename all MISC buttons stored
+		MainInterface.renameMiscButtons(oldName, newName, blumote.prefs);
+		
+		// Now rename INIT data
 		oldName = formatActivityInitSuffix(oldName);
 		newName = formatActivityInitSuffix(newName);
 		String activityInit = blumote.prefs.getString(oldName, null);
 		mEditor.remove(oldName); // remove old one
-		mEditor.putString(newName, activityInit); // add new name with old data
-		
+		mEditor.putString(newName, activityInit); // add new name with old data		
 		mEditor.commit();
 		
 		mainint.populateDropDown(); // always refresh dropdown when renaming an activity
-	}
-		 
+	}		
+	
 	/**
 	 * add a new initialization sequence to an existing activity....
 	 * 	
@@ -725,11 +728,11 @@ public class Activities {
 		case R.id.power_off_btn:
 			return false;
 		
-		case R.id.move_left_a_btn:
-			return false;
-		
-		case R.id.move_right_a_btn:
-			return false;
+//		case R.id.move_left_a_btn:
+//			return false;
+//		
+//		case R.id.move_right_a_btn:
+//			return false;
 			
 //		case R.id.move_left_n_btn:
 //			return false;
