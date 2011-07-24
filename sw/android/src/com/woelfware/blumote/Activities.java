@@ -76,7 +76,24 @@ public class Activities {
 		// iterate through these values
 		for (String item : values.keySet()) {
 			// check if prefix is an activity and this is not an initilialization item
-			if (item.startsWith(ACTIVITY_PREFIX) && !item.endsWith(INIT)) {				
+			if (item.startsWith(ACTIVITY_PREFIX)) {
+				// make sure none of the suffixes are present
+				if (item.endsWith(INIT) ) {
+					 continue;
+				}
+				if (item.endsWith(OFF)) {
+					continue;
+				}
+				boolean foundIt = false;
+				for (int i=0; i< MainInterface.NUM_MISC_BTNS; i++) {
+					if (item.endsWith("btn_misc" + Integer.toString(i))) {
+						foundIt = true;
+						break;
+					}
+				}
+				if (foundIt) {
+					continue;
+				}
 				if (suppressPrefix == true) {
 					// remove the prefix
 					item = item.replace(ACTIVITY_PREFIX, "");
@@ -276,25 +293,35 @@ public class Activities {
 		String oldName = mActivitiesArrayAdapter.getItem(position);
 		mActivitiesArrayAdapter.remove(oldName);
 		mActivitiesArrayAdapter.add(newName);
-		
+				
 		newName = addActivityPrefix(newName);
 		oldName = addActivityPrefix(oldName);
 		Editor mEditor = blumote.prefs.edit();
 		
 		// store the data from old name
 		String activity = blumote.prefs.getString(oldName, null);				
-		mEditor.remove(oldName); // remove old one
-		mEditor.putString(newName, activity); // add new name with old data
-		
+		if (activity != null) {
+			mEditor.remove(oldName); // remove old one
+			mEditor.putString(newName, activity); // add new name with old data
+		}
 		// rename all MISC buttons stored
 		MainInterface.renameMiscButtons(oldName, newName, blumote.prefs);
 		
+		// rename all OFF data stored
+		String newOFF = formatActivityOffSuffix(newName);
+		String oldOFF = formatActivityOffSuffix(oldName);
+		String offData = blumote.prefs.getString(oldOFF, null);
+		if (offData != null) {
+			mEditor.remove(oldOFF);
+			mEditor.putString(oldOFF, newOFF);
+		}
+		
 		// Now rename INIT data
-		oldName = formatActivityInitSuffix(oldName);
-		newName = formatActivityInitSuffix(newName);
-		String activityInit = blumote.prefs.getString(oldName, null);
-		mEditor.remove(oldName); // remove old one
-		mEditor.putString(newName, activityInit); // add new name with old data		
+		String oldINIT = formatActivityInitSuffix(oldName);
+		String newINIT = formatActivityInitSuffix(newName);
+		String activityInit = blumote.prefs.getString(oldINIT, null);
+		mEditor.remove(oldINIT); // remove old one
+		mEditor.putString(newINIT, activityInit); // add new name with old data		
 		mEditor.commit();
 		
 		mainint.populateDropDown(); // always refresh dropdown when renaming an activity
@@ -335,7 +362,7 @@ public class Activities {
 			}
 			
 			// add the collected power off buttons to the interface
-			recordPowerOffButton(activityName, powerOffItems, prefs);
+			savePowerOffButton(activityName, powerOffItems, prefs);
 			
 			// add INIT suffix before storing initItems to prefs file
 			activityName = formatActivityInitSuffix(activityName);
@@ -752,7 +779,7 @@ public class Activities {
 	 * @param powerOnDevices a list of power buttons that were pushed during init sequence recording
 	 * @param prefs the preferences file
 	 */
-	static void recordPowerOffButton(String activityName, ArrayList<String> powerOnDevices, SharedPreferences prefs) {
+	static void savePowerOffButton(String activityName, ArrayList<String> powerOnDevices, SharedPreferences prefs) {
 		// convert the items to comma separated values
 		StringBuilder builder = new StringBuilder();
 		
@@ -773,8 +800,8 @@ public class Activities {
 	 * and stores them for the power off button of an activity.
 	 * @param powerOnDevices a list of power buttons that were pushed during init sequence recording
 	 */
-	void recordPowerOffButton(ArrayList<String> powerOnDevices) {
-		recordPowerOffButton(workingActivity, powerOnDevices, blumote.prefs);
+	void savePowerOffButton(ArrayList<String> powerOnDevices) {
+		savePowerOffButton(workingActivity, powerOnDevices, blumote.prefs);
 	}	
 	
 	/**
@@ -835,7 +862,7 @@ public class Activities {
 		// BluMote needs to look for the power off button push and execute this data
 		// this function loads 'null' if no data is stored
 		try {
-			String powerOffCodes = blumote.prefs.getString(getWorkingActivity()+OFF, null);
+			String powerOffCodes = blumote.prefs.getString(formatActivityOffSuffix(getWorkingActivity()), null);
 			// powerOffCodes is csv
 			String[] devices = powerOffCodes.split(",");
 			return devices;

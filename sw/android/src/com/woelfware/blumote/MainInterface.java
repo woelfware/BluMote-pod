@@ -88,7 +88,7 @@ public class MainInterface {
 
     // this has to match the number of misc buttons in the interface
     // we use this for the renaming of misc buttons logic
-    private static final int NUM_MISC_BTNS = 8;
+    static final int NUM_MISC_BTNS = 8;
     
     private Button add_activity_btn;
     
@@ -418,11 +418,10 @@ public class MainInterface {
 			device_spinner.setOnItemSelectedListener(blumote);		
 			restoreSpinner(); // restore selection from last program invocation
 		}
-		refreshMiscBtns(); // refresh misc button text from prefs file
 	}
 	
 	/*
-	 * called first time program initializes, just determies what the last used
+	 * called first time program initializes, just determines what the last used
 	 * device was and then sets the drop-down to that item
 	 */
 	private void restoreSpinner() {
