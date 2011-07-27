@@ -59,6 +59,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// private static final String TAG = "BlueMote";
 	static final boolean D = true;
 
+	// Preferences file for this application
+	static final String PREFS_FILE = "BluMoteSettings";
+	
 	// Intent request codes
 	private static final int REQUEST_CONNECT_DEVICE = 1;
 	private static final int REQUEST_ENABLE_BT = 2;
@@ -123,8 +126,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// Data associated with the power_off button of an activity
 	ButtonData[] activityPowerOffData = null;
-	// this holds the list of devices that get their power-on buttons pushed while setting up an activity INIT
-	ArrayList<String> activityInitPowerOnDevices = new ArrayList<String>();
+//	// this holds the list of devices that get their power-on buttons pushed while setting up an activity INIT
+//	ArrayList<String> activityInitPowerOnDevices = new ArrayList<String>();
 	
 	// currently selected device
 	String cur_device;
@@ -171,6 +174,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// for holding the activity init sequence while it's being built
 	ArrayList<String> activityInit = new ArrayList<String>();
 
+	// used to convert device/activity names into IDs that do not change
+	InterfaceLookup lookup;
+	
 	// These are used for activities display window
 	private static final int ID_DELETE = 0;
 	private static final int ID_RENAME = 1;
@@ -223,8 +229,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		super.onCreate(savedInstanceState);
 
 		// get preferences file
-		prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
+		prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
 
+		// initialize the InterfaceLookup
+		lookup = new InterfaceLookup(prefs);
+		
 		// Get local Bluetooth adapter
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -635,10 +644,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_INIT) {
 			// store init entries by device, button-id
 			if (Activities.isValidActivityButton(BUTTON_ID)) {
-				// check if the button is a power on button, if so accumulate this to our list
-				if (BUTTON_ID == R.id.power_on_btn) {
-					activityInitPowerOnDevices.add(mainScreen.getCurrentDropDown());
-				}
+//				// check if the button is a power on button, if so accumulate this to our list
+//				if (BUTTON_ID == R.id.power_on_btn) {
+//					activityInitPowerOnDevices.add(mainScreen.getCurrentDropDown());
+//				}
 				activityInit.add(cur_device+" "+button_map.get(BUTTON_ID));
 				Toast.makeText(this, "Button press added to initialization list!",
 						Toast.LENGTH_SHORT).show();
@@ -733,8 +742,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					// first need to pull current known devices list so we can
 					// append to it
 					if (connectingDevice != null) {
-						prefs = getSharedPreferences("droidMoteSettings",
-								MODE_PRIVATE);
+						prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
 						String prefs_table = prefs.getString("knownDevices",
 								null);
 
@@ -868,7 +876,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					String return_string = return_bundle.getString("returnStr");
 					
 					// Add item to list
-					activities.addActivity(return_string);		
+					activities.addActivity(return_string);							
 				}				
 			}
 			break;
@@ -879,7 +887,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				if (return_bundle != null) {
 					String return_string = return_bundle.getString("returnStr");
 
-					activities.renameActivity(return_string, activity_rename);
+					activities.renameActivity(return_string, activity_rename);					
 				}				
 			}
 			break;
@@ -902,7 +910,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					if (request.equals(ActivityInitEdit.REDO)) {
 						// check if the "REDO" was requested, if so re-enter ACTIVITY_INIT mode
 						activityInit.clear();
-						activityInitPowerOnDevices.clear();
+//						activityInitPowerOnDevices.clear();
 						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
 					}
 					else if (request.equals(ActivityInitEdit.APPEND) ) {
@@ -919,14 +927,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							}
 						}
 						
-						activityInitPowerOnDevices.clear();
-						// get list of power-on devices to populate
-						String[] powerOffDevices = activities.getPowerOffDevices(activities.getWorkingActivity());
-						if (powerOffDevices != null) {
-							for (int i=0; i< powerOffDevices.length; i++) {
-								activityInitPowerOnDevices.add(powerOffDevices[i]);
-							}
-						}
+//						activityInitPowerOnDevices.clear();
+//						// get list of power-on devices to populate
+//						String[] powerOffDevices = activities.getPowerOffDevices(activities.getWorkingActivity());
+//						if (powerOffDevices != null) {
+//							for (int i=0; i< powerOffDevices.length; i++) {
+//								activityInitPowerOnDevices.add(powerOffDevices[i]);
+//							}
+//						}
 						// enter ACTIVITY_INIT mode to begin adding more items
 						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
 					}
@@ -1052,9 +1060,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// when ending the activity init then we should store the init sequence to the prefs file
 			activities.addActivityInitSequence(activityInit);
 			// after we add it then we need to clear out the activityInit
-			// and activityInitPowerOnDevices objects for the next usage
+//			 and activityInitPowerOnDevices objects for the next usage
 			activityInit.clear();
-			activityInitPowerOnDevices.clear();
+//			activityInitPowerOnDevices.clear();
 			Toast.makeText(this, "Press a button to associate with a device...", Toast.LENGTH_SHORT).show();
 			// now put us back into the original activity for the drop-down
 			mainScreen.setDropDown(activities.getWorkingActivity());
@@ -1199,7 +1207,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				}
 			}
 			if (!foundIt) {
-				Toast.makeText(this, "Button not setup!", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "No IR code found!", Toast.LENGTH_SHORT).show();
 			}
 		} else {
 			Toast.makeText(this, "Button not setup!", Toast.LENGTH_SHORT).show();
@@ -1246,7 +1254,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	
 	/**
 	 * This function sends the command codes to the pod, it is used for everything except 
-	 * the button data which uses {@link}sendButton()
+	 * the button data which uses {@link sendButton()}
 	 * @param code
 	 */
 	protected void sendCode(int code) {

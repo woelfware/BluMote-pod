@@ -70,12 +70,13 @@ public class Activities {
 	 * @param prefs the SharedPreferences object that we used to store activities in
 	 * 
 	 */
-	static void populateActivities(boolean suppressPrefix, ArrayAdapter<String> adapter, SharedPreferences prefs) {
+	static void populateActivities(boolean suppressPrefix, ArrayAdapter<String> adapter, 
+			SharedPreferences prefs) {
 		Map<String,?> values = prefs.getAll();
 		
 		// iterate through these values
 		for (String item : values.keySet()) {
-			// check if prefix is an activity and this is not an initilialization item
+			// check if prefix is an activity and this is not an initialization item
 			if (item.startsWith(ACTIVITY_PREFIX)) {
 				// make sure none of the suffixes are present
 				if (item.endsWith(INIT) ) {
@@ -224,7 +225,7 @@ public class Activities {
 	
 	/**
 	 * delete an activity from the arraylist on the interface.  This function is usually
-	 * invoked on a context menu on the arraylist that displays all the activities to the user
+	 * invoked on a context menu on the arraylist that displays all the activities to the user.
 	 * 
 	 * @param position the position in the arraylist to delete
 	 */
@@ -233,6 +234,9 @@ public class Activities {
 		mActivitiesArrayAdapter.remove(name);
 				
 		name = addActivityPrefix(name);
+		
+		// remove the ID associated with the device
+		blumote.lookup.deleteLookupId(name);
 		
 		Editor mEditor = blumote.prefs.edit();
 		// delete the activity record as well as it's associated INIT routine
@@ -263,6 +267,10 @@ public class Activities {
 		mActivitiesArrayAdapter.add(s);
 
 		s = addActivityPrefix(s);
+		
+		// assign new ID
+		blumote.lookup.addLookupId(s);
+		
 		Editor mEditor = blumote.prefs.edit();
 		mEditor.putString(s, null); // key, value
 		mEditor.commit();	
@@ -296,6 +304,10 @@ public class Activities {
 				
 		newName = addActivityPrefix(newName);
 		oldName = addActivityPrefix(oldName);
+		
+		// update lookup ID
+		blumote.lookup.updateLookupName(newName, oldName);
+		
 		Editor mEditor = blumote.prefs.edit();
 		
 		// store the data from old name
@@ -304,10 +316,10 @@ public class Activities {
 			mEditor.remove(oldName); // remove old one
 			mEditor.putString(newName, activity); // add new name with old data
 		}
-		// rename all MISC buttons stored
+		// rename all MISC button keys stored
 		MainInterface.renameMiscButtons(oldName, newName, blumote.prefs);
 		
-		// rename all OFF data stored
+		// rename all OFF data keys stored
 		String newOFF = formatActivityOffSuffix(newName);
 		String oldOFF = formatActivityOffSuffix(oldName);
 		String offData = blumote.prefs.getString(oldOFF, null);
@@ -316,7 +328,7 @@ public class Activities {
 			mEditor.putString(oldOFF, newOFF);
 		}
 		
-		// Now rename INIT data
+		// Now rename INIT data keys
 		String oldINIT = formatActivityInitSuffix(oldName);
 		String newINIT = formatActivityInitSuffix(newName);
 		String activityInit = blumote.prefs.getString(oldINIT, null);
@@ -333,11 +345,13 @@ public class Activities {
 	 * @param activityName the name of the activity we want to add init sequence to
 	 * @param init the list of Strings that we want to add to the initialization int the following two formats:
 	 * "Delay X" : delay of X milli-seconds
-	 * "Device button" : 'device' represents one of the known devices in the database,
-	 * 'button' represents the button ID on the device's interface
+	 * "DeviceID button" : 'device' represents one of the known devices in the database and should be the ID as 
+	 * returned by InterfaceLookup, 'button' represents the button ID on the device's interface
 	 * @param prefs The shared preferences object that the data is persisted in 
+	 * @param lookup the InterfaceLookup object to use to convert the device/activity names to IDs
 	 */
-	static void addActivityInitSequence(String activityName, List<String> init, SharedPreferences prefs) {
+	static void addActivityInitSequence(String activityName, List<String> init, SharedPreferences prefs, 
+			InterfaceLookup lookup) {
 		if (activityName != null) {
 			Editor mEditor = prefs.edit();
 			
@@ -348,16 +362,22 @@ public class Activities {
 			ArrayList<String> powerOffItems = new ArrayList<String>();
 			for (Iterator<String> initStep = init.iterator(); initStep.hasNext();) {
 				currentItem = initStep.next();
-				initItems.append(currentItem+",");
-				//check if the item is a power button, if so then need to add it to the activity power off button
-				curItems = currentItem.split(" "); // split on a space delimeter
+				curItems = currentItem.split(" "); // split on a space delimeter												
+				
+				//check if the item is a power button, if so then need to add it to the activity power off button				
 				if (curItems.length == 2) { // should have 2 elements
 					// second item is the button name (if not a delay)
 					if(!curItems[0].equals("DELAY")) {
+						// parse the element [0] to a proper device/activity ID if it is not a delay item
+						curItems[0] = lookup.getID(curItems[0]);
+						
+						// check to see if this is a power_on button and if so add it to the arraylist
 						if (curItems[1].equals("power_on_btn")) { 
-							powerOffItems.add(curItems[0]); // save just the device name
+							powerOffItems.add(curItems[0]); // save just the device ID
 						}
 					}
+					// add this item to the initItems stringbuilder
+					initItems.append(curItems[0] + " " + curItems[1] + ","); 
 				}
 			}
 			
@@ -383,7 +403,7 @@ public class Activities {
 	 * 'button' represents the button ID on the device's interface
 	 */
 	void addActivityInitSequence(String activityName, List<String> init) {
-		addActivityInitSequence(activityName,init, blumote.prefs);
+		addActivityInitSequence(activityName,init, blumote.prefs, blumote.lookup);
 	}
 	
 	/**
@@ -396,14 +416,14 @@ public class Activities {
 	 * 'button' represents the button ID on the device's interface
 	 */
 	void addActivityInitSequence(List<String> init) {
-		addActivityInitSequence(workingActivity,init);
+		addActivityInitSequence(workingActivity,init, blumote.prefs, blumote.lookup);
 	}
 	
 	/**
 	 * Retrieve the initialization sequence to be performed by the activity
 	 * @param activityName the name of activity to retrieve init sequence of
 	 * @param prefs the Shared preferences object that has the init data
-	 * @return Strin[] with the elements in order (first to last)
+	 * @return String[] with the elements in order (first to last)
 	 */
 	static String[] getActivityInitSequence(String activityName, SharedPreferences prefs) {
 		activityName = formatActivityInitSuffix(activityName);
@@ -419,7 +439,7 @@ public class Activities {
 	/**
 	 * Retrieve the initialization sequence to be performed by the activity.
 	 * This function assumes setWorkingActivity() was called and that the default blumote prefs file is used
-	 * @return Strin[] with the elements in order (first to last)
+	 * @return String[] with the elements in order (first to last)
 	 */
 	private String[] getActivityInitSequence() {
 		return getActivityInitSequence(workingActivity, blumote.prefs);
@@ -498,39 +518,42 @@ public class Activities {
 				// extract value after the space
 				String buttonID = (item.split(" ")[1]); 
 				byte[] toSend = null;
-				
-				// need to determine if this is an activity (A)_ 
-				if ( (item.split(" ")[0]).startsWith(Activities.ACTIVITY_PREFIX)) {
-					String activityName = (item.split(" ")[0]); // extract value before the space
-					// then need to extract lookup to real device button association..
-					try {
-						// Returns DeviceButton created from activity button and activity name
-						DeviceButton realDevice = new DeviceButton(activityName, buttonID);
-						toSend = blumote.device_data.getButton(realDevice.getDevice(), realDevice.getButton());
-					} catch (Exception e) {
-						// failed so don't send anything
+
+				String buttonSource = item.split(" ")[0];
+				buttonSource = blumote.lookup.getName(buttonSource);
+				// if buttonSource is null that means the device/activity was deleted, so just skip over this item
+				if (buttonSource != null) {
+					// need to determine if this is an activity (A)_ 
+					if ( buttonSource.startsWith(Activities.ACTIVITY_PREFIX)) {
+						// then need to extract lookup to real device button association..
+						try {
+							// Returns DeviceButton created from activity button and activity name
+							DeviceButton realDevice = new DeviceButton(buttonSource, buttonID);
+							toSend = blumote.device_data.getButton(realDevice.getDevice(), realDevice.getButton());
+						} catch (Exception e) {
+							// failed so don't send anything
+						}
+
+					}				
+					else {
+						// 	otherwise we can just use getButton if it is a regular device
+						try {
+							toSend = blumote.device_data.getButton(buttonSource, buttonID);
+						} catch (Exception e) {
+							// failed so don't send anything
+						}
 					}
-					
-				}				
-				else {
-					// 	otherwise we can just use getButton if it is a regular device
-					try {
-						String device = (item.split(" ")[0]); // extract value before the space
-						toSend = blumote.device_data.getButton(device, buttonID);
-					} catch (Exception e) {
-						// failed so don't send anything
+					// execute button code
+					if (toSend != null) {
+						// always clear out PKTS_SENT since when doing an init sequence
+						// we don't need to worry about flooding the pod as much...
+						//TODO - do we need some sort of wait to occur if PKTS_SENT is not 0?  
+						// problem is that normally PKTS_SENT gets decremented by an ACTION_UP which
+						// in this case is not an option....need to either clear it or find some way to wait
+						// until the ACK is received but also prevent locking up
+						BluMote.PKTS_SENT = 0;
+						blumote.sendButton(toSend);
 					}
-				}
-				// execute button code
-				if (toSend != null) {
-					// always clear out PKTS_SENT since when doing an init sequence
-					// we don't need to worry about flooding the pod as much...
-					//TODO - do we need some sort of wait to occur if PKTS_SENT is not 0?  
-					// problem is that normally PKTS_SENT gets decremented by an ACTION_UP which
-					// in this case is not an option....need to either clear it or find some way to wait
-					// until the ACK is received but also prevent locking up
-					BluMote.PKTS_SENT = 0;
-					blumote.sendButton(toSend);
 				}
 			}				
 		} // end while	
@@ -586,26 +609,32 @@ public class Activities {
 	void addActivityKeyBinding(String activityName, String btnID, String device, String deviceBtn) {
 		if (activityName != null) {
 			activityName = addActivityPrefix(activityName);
-			String record = blumote.prefs.getString(activityName, null);
-			
-			// formatting of record is : btnID device deviceBtn, etc
-			if (record != null) {
-				// supress leading comma if null record (empty)
-				record = record + ",";
-			} else {
-				record = "";
+
+			// convert device to the ID associated with that device
+			device = blumote.lookup.getID(device);
+			// check if device is not null, if it is then skip this item
+			if (device != null) {
+				String record = blumote.prefs.getString(activityName, null);
+
+				// formatting of record is : btnID deviceID deviceBtn, etc
+				if (record != null) {
+					// supress leading comma if null record (empty)
+					record = record + ",";
+				} else {
+					record = "";
+				}
+
+				// append the new data to the existing record
+				record = record + btnID + " " + device + " " + deviceBtn;
+
+				// save new record into NV memory
+				Editor mEditor = blumote.prefs.edit();
+				mEditor.putString(activityName, record);
+				mEditor.commit();
+
+				// update buttons on interface
+				mainint.fetchButtons();
 			}
-			
-			// append the new data to the existing record
-			record = record + btnID + " " + device + " " + deviceBtn;
-			
-			// save new record into NV memory
-			Editor mEditor = blumote.prefs.edit();
-			mEditor.putString(activityName, record);
-			mEditor.commit();
-			
-			// update buttons on interface
-			mainint.fetchButtons();
 		}
 	}
 	
@@ -639,7 +668,7 @@ public class Activities {
 			String[] newEntries = new String[entries.length - 1];
 			int newEntriesIndex = 0;
 			
-			// formatting of record is : btnID device deviceBtn, etc
+			// formatting of record is : btnID deviceID deviceBtn, etc
 			String[] buttonMap = new String[3];
 			try {
 				for (int i= 0; i< entries.length; i++) {
@@ -776,7 +805,8 @@ public class Activities {
 	 * Takes a list of devices that have had their power buttons pushed when creating the init list for an activity
 	 * and stores them for the power off button of an activity.
 	 * @param activityName the name of the activity
-	 * @param powerOnDevices a list of power buttons that were pushed during init sequence recording
+	 * @param powerOnDevices a list of power buttons that were pushed during init sequence recording, note 
+	 * this data should be the device-ID not the device-name.
 	 * @param prefs the preferences file
 	 */
 	static void savePowerOffButton(String activityName, ArrayList<String> powerOnDevices, SharedPreferences prefs) {
@@ -821,12 +851,16 @@ public class Activities {
 			String powerOffCodes = blumote.prefs.getString(activityName, null);
 			// powerOffCodes is csv
 			String[] devices = powerOffCodes.split(",");
+						
 			byte[] buttonData;
 			if (devices != null) {				
 				ButtonData[] returnData = new ButtonData[devices.length];
 				// each token is a device name that we should issue the power command for			
-				for (int i=0; i < devices.length; i++) {
+				for (int i=0; i < devices.length; i++) {					
 					try {
+						// convert each devices element back to the actual name from the id
+						devices[i] = blumote.lookup.getName(devices[i]);
+						
 						// try to insert data from database if it exists
 //						String deviceName = devices[i].split(" ");
 						buttonData = blumote.device_data.getButton(devices[i], blumote.button_map.get(R.id.power_on_btn));
@@ -856,20 +890,20 @@ public class Activities {
 	 * @param activityName the name of the activity
 	 * @return the array of data or null if nothing was found
  	 */
-	String[] getPowerOffDevices(String activityName) {
-		// pull power off / toggle codes from prefs file
-		// populate blumote's field with this data
-		// BluMote needs to look for the power off button push and execute this data
-		// this function loads 'null' if no data is stored
-		try {
-			String powerOffCodes = blumote.prefs.getString(formatActivityOffSuffix(getWorkingActivity()), null);
-			// powerOffCodes is csv
-			String[] devices = powerOffCodes.split(",");
-			return devices;
-		} catch (Exception e) {
-			return null;
-		}
-	}
+//	String[] getPowerOffDevices(String activityName) {
+//		// pull power off / toggle codes from prefs file
+//		// populate blumote's field with this data
+//		// BluMote needs to look for the power off button push and execute this data
+//		// this function loads 'null' if no data is stored
+//		try {
+//			String powerOffCodes = blumote.prefs.getString(formatActivityOffSuffix(getWorkingActivity()), null);
+//			// powerOffCodes is csv
+//			String[] devices = powerOffCodes.split(",");
+//			return devices;
+//		} catch (Exception e) {
+//			return null;
+//		}
+//	}
 	
 	/**
 	 * This is a helper class to encapsulate all the parameters of a
@@ -892,7 +926,11 @@ public class Activities {
 			String[] items = record.split(" ");
 			this.activityName = activityName;
 			this.activityButton = items[0];
-			this.deviceName = items[1];
+			
+			// device name is going to be converted from the ID which is stored
+			// in the prefs file to the actual name
+			this.deviceName = blumote.lookup.getName(items[1]);
+			
 			this.deviceButton = items[2];
 		}
 		

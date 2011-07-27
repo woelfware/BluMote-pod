@@ -397,14 +397,14 @@ public class MainInterface {
 					// first clear the arraylist that keeps track if initialization entries
 					blumote.activityInit.clear();
 					// clear list that keeps track of power-off button codes
-					blumote.activityInitPowerOnDevices.clear();
+//					blumote.activityInitPowerOnDevices.clear();
 					// Launch the function to ask for a name for device
 					Intent i = new Intent(blumote, EnterDevice.class);
 					blumote.startActivityForResult(i, BluMote.ACTIVITY_ADD);
 				}
 			});
 			
-			// populate activites arraylist with initial items
+			// populate activities arraylist with initial items
 			// need to pass in the arrayadapter we want to populate
 			activities.populateActivites(true, activities.mActivitiesArrayAdapter); 
 			
@@ -682,33 +682,36 @@ public class MainInterface {
 		// for refreshing the misc buttons from the preferences file
 		// call this when the program first is launched and after renaming any of them
 		
-		String dropDown = getCurrentDropDown().replace(" ", "_");
-		String miscButton;
-		for (int i=1; i<= NUM_MISC_BTNS; i++) {
-			miscButton = blumote.prefs.getString(
-					dropDown + "btn_misc"+Integer.toString(i), null);
-			if (miscButton != null) {
-				// update btn on interface with text value from prefs file
-				try {
-					Button btn = (Button)blumote.findViewById(
-							getResourceFromString("btn_misc"+Integer.toString(i)));					
-					btn.setText(miscButton);
-				} catch (Exception e) {
-					// oops something didn't work, oh well
+		String dropDown = getCurrentDropDown();
+		if (dropDown != null) {
+			dropDown = dropDown.replace(" ", "_");
+			String miscButton;
+			for (int i=1; i<= NUM_MISC_BTNS; i++) {
+				miscButton = blumote.prefs.getString(
+						dropDown + "btn_misc"+Integer.toString(i), null);
+				if (miscButton != null) {
+					// update btn on interface with text value from prefs file
+					try {
+						Button btn = (Button)blumote.findViewById(
+								getResourceFromString("btn_misc"+Integer.toString(i)));					
+						btn.setText(miscButton);
+					} catch (Exception e) {
+						// oops something didn't work, oh well
+					}
+				} else {
+					// if prefs getString() returns null then lets restore the default misc button
+					// text - need this so when changing drop-down it restores default text
+					try {
+						Button btn = (Button)blumote.findViewById(
+								getResourceFromString("btn_misc"+Integer.toString(i)));					
+						btn.setText("Misc "+Integer.toString(i));
+					} catch (Exception e) {
+						// oops something didn't work, oh well
+					}
 				}
-			} else {
-				// if prefs getString() returns null then lets restore the default misc button
-				// text - need this so when changing drop-down it restores default text
-				try {
-					Button btn = (Button)blumote.findViewById(
-							getResourceFromString("btn_misc"+Integer.toString(i)));					
-					btn.setText("Misc "+Integer.toString(i));
-				} catch (Exception e) {
-					// oops something didn't work, oh well
-				}
+					//button_map.get(misc_btn)
 			}
-				//button_map.get(misc_btn)
-		}		
+		}				
 	}	
 
 	/**

@@ -28,8 +28,14 @@ public class ManageDevices extends Activity {
     private Button add_config_btn;
     
     ListView devicesListView;
-	String table_name; // holds table that we were working on (like when rename is called)
+	String deviceName; // holds table that we were working on (like when rename is called)
 
+	// used to convert device/activity names into IDs that do not change
+	InterfaceLookup lookup;
+	
+	// Shared preferences class - for storing config settings between runs
+	SharedPreferences prefs;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -37,6 +43,12 @@ public class ManageDevices extends Activity {
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.manage_devices);
         
+        // get preferences file
+		prefs = getSharedPreferences(BluMote.PREFS_FILE, MODE_PRIVATE);
+		
+        // initialize the InterfaceLookup
+		lookup = new InterfaceLookup(prefs);
+		
         // Initialize array adapters. One for already paired devices and
         // one for newly discovered devices
         mDevicesArrayAdapter = new ArrayAdapter<String>(this, R.layout.manage_devices_item);
@@ -100,6 +112,8 @@ public class ManageDevices extends Activity {
     			// spaces don't work for table names, so replace with underscore
     			return_string = return_string.replace(" ", "_");
         		device_data.addDevice(return_string);
+        		// create a new lookup ID for this item
+        		lookup.addLookupId(return_string);
     		}
         	// refresh the display of items
     		populateDisplay();    		
@@ -109,12 +123,13 @@ public class ManageDevices extends Activity {
     		return_bundle = intent.getExtras();
     		if ( return_bundle != null ) {
     			return_string = return_bundle.getString("returnStr");
-        		device_data.renameDevice(table_name, return_string);
+        		device_data.renameDevice(deviceName, return_string);
         		
-        		SharedPreferences prefs = getSharedPreferences("droidMoteSettings",
-						MODE_PRIVATE);
+        		SharedPreferences prefs = getSharedPreferences(BluMote.PREFS_FILE, MODE_PRIVATE);
         		// rename all MISC buttons stored
-        		MainInterface.renameMiscButtons(table_name, return_string, prefs);
+        		MainInterface.renameMiscButtons(deviceName, return_string, prefs);
+        		// update lookup with new name
+        		lookup.updateLookupName(return_string, deviceName);
     		}
         	// refresh the display of items
     		populateDisplay();    		
@@ -129,15 +144,16 @@ public class ManageDevices extends Activity {
 		switch(item.getItemId()) {
 		case ID_DELETE:
 			// need to remove this table and repopulate list
-			table_name = mDevicesArrayAdapter.getItem((int)(info.id));
+			deviceName = mDevicesArrayAdapter.getItem((int)(info.id));
 			// replace spaces with underscores
-			table_name = table_name.replace(" ", "_");
-			device_data.removeDevice(table_name);
+			deviceName = deviceName.replace(" ", "_");
+			device_data.removeDevice(deviceName);
+			lookup.deleteLookupId(deviceName);
 			populateDisplay();
 			return true;
 		case ID_RENAME:
 			// need to remove this table and repopulate list
-			table_name = mDevicesArrayAdapter.getItem((int)(info.id));
+			deviceName = mDevicesArrayAdapter.getItem((int)(info.id));
 			//launch window to get new name to use
 			Intent i = new Intent(this, EnterDevice.class);
             startActivityForResult(i, ACTIVITY_RENAME);

@@ -55,6 +55,9 @@ public class ActivityInitEdit extends Activity {
 
     SharedPreferences prefs; 
     
+    // used to convert device/activity names into IDs that do not change
+	InterfaceLookup lookup;
+    
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -66,8 +69,11 @@ public class ActivityInitEdit extends Activity {
         activityName = i.getStringExtra(ACTIVITY_NAME);
         
         // initialize shared preferences
-        prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
-        
+        prefs = getSharedPreferences(BluMote.PREFS_FILE, MODE_PRIVATE);
+
+        // initialize the InterfaceLookup
+		lookup = new InterfaceLookup(prefs);
+		
         // Initialize array adapters. 
         activityArrayAdapter = new ArrayAdapter<String>(this, R.layout.manage_devices_item);
         
@@ -158,7 +164,7 @@ public class ActivityInitEdit extends Activity {
 			}
 			
 			// now replace the old init items with the new
-			Activities.addActivityInitSequence(activityName, newItems, prefs);
+			Activities.addActivityInitSequence(activityName, newItems, prefs, lookup);
 			
 			populateDisplay();
 			return true;
@@ -262,7 +268,7 @@ public class ActivityInitEdit extends Activity {
 		}
 		
 		// replace old activity init items with the new ones
-		Activities.addActivityInitSequence(activityName, initItems, prefs);
+		Activities.addActivityInitSequence(activityName, initItems, prefs, lookup);
 		populateDisplay();
 	}
 }

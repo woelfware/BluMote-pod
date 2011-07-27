@@ -99,7 +99,7 @@ public class PodListActivity extends Activity {
 //        Set<BluetoothDevice> pairedDevices = mBtAdapter.getBondedDevices();
 
         // pull in preferences for known devices, add to array adapter
-        prefs = getSharedPreferences("droidMoteSettings", MODE_PRIVATE);
+        prefs = getSharedPreferences(BluMote.PREFS_FILE, MODE_PRIVATE);
     	String prefs_table = prefs.getString("knownDevices", null);       	
     	// structure is \t"device name"\n"MAC ID" and then repeats for multiple devices
     	
