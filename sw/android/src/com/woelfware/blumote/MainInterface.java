@@ -83,6 +83,8 @@ public class MainInterface {
 	private Button btn_misc7;
 	private Button btn_misc8;
 	
+	static final String BTN_MISC = "btn_misc";
+	
 //    private  ImageButton move_left_a_btn;
 //    private  ImageButton move_right_a_btn;
 
@@ -624,10 +626,10 @@ public class MainInterface {
 		String miscButton;
 		for (int i=0; i< NUM_MISC_BTNS; i++) {
 			miscButton = prefs.getString(
-					oldName + "btn_misc"+Integer.toString(i), null);
+					oldName + MainInterface.BTN_MISC+Integer.toString(i), null);
 			if (miscButton != null) {
-				mEditor.remove(oldName + "btn_misc"+Integer.toString(i));
-				mEditor.putString(newName + "btn_misc"+Integer.toString(i), miscButton);
+				mEditor.remove(oldName + MainInterface.BTN_MISC+Integer.toString(i));
+				mEditor.putString(newName + MainInterface.BTN_MISC+Integer.toString(i), miscButton);
 			}
 		}
 		mEditor.commit();
@@ -688,12 +690,12 @@ public class MainInterface {
 			String miscButton;
 			for (int i=1; i<= NUM_MISC_BTNS; i++) {
 				miscButton = blumote.prefs.getString(
-						dropDown + "btn_misc"+Integer.toString(i), null);
+						dropDown + MainInterface.BTN_MISC+Integer.toString(i), null);
 				if (miscButton != null) {
 					// update btn on interface with text value from prefs file
 					try {
 						Button btn = (Button)blumote.findViewById(
-								getResourceFromString("btn_misc"+Integer.toString(i)));					
+								getResourceFromString(MainInterface.BTN_MISC+Integer.toString(i)));					
 						btn.setText(miscButton);
 					} catch (Exception e) {
 						// oops something didn't work, oh well
@@ -703,7 +705,7 @@ public class MainInterface {
 					// text - need this so when changing drop-down it restores default text
 					try {
 						Button btn = (Button)blumote.findViewById(
-								getResourceFromString("btn_misc"+Integer.toString(i)));					
+								getResourceFromString(MainInterface.BTN_MISC+Integer.toString(i)));					
 						btn.setText("Misc "+Integer.toString(i));
 					} catch (Exception e) {
 						// oops something didn't work, oh well

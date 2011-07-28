@@ -87,7 +87,7 @@ public class Activities {
 				}
 				boolean foundIt = false;
 				for (int i=0; i< MainInterface.NUM_MISC_BTNS; i++) {
-					if (item.endsWith("btn_misc" + Integer.toString(i))) {
+					if (item.endsWith(MainInterface.BTN_MISC + Integer.toString(i))) {
 						foundIt = true;
 						break;
 					}
@@ -703,7 +703,7 @@ public class Activities {
 			// refresh interface buttons
 			mainint.fetchButtons();
 		} // end if						
-	}	
+	}			
 	
 	/** 
 	 * Removes a key binding from an activity button to a device button.

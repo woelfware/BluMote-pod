@@ -583,7 +583,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		if (INTERFACE_STATE == Codes.INTERFACE_STATE.RENAME_STATE) {
 			// store the button that we want to update if it is a valid misc key
 			// if it isn't then exit and Toast user, change state back to idle
-			if (buttonName.startsWith("btn_misc")) {
+			if (buttonName.startsWith(MainInterface.BTN_MISC)) {
 				// if compare works then we can go ahead and implement the rename
 				misc_button = buttonName;
 				// launch window to get new name to use
@@ -865,6 +865,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (resultCode == Activity.RESULT_OK) {
 				// refresh drop-down items				
 				mainScreen.populateDropDown();
+				// refresh InterfaceLookup
+				lookup.refreshLookup();
 			}
 			break;
 
