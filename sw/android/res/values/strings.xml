@@ -35,7 +35,8 @@
     <string name="button_scan">Scan for pods</string>
 
     <!-- Options Menu -->
-    <string name="connect">Connect a pod</string>
+    <string name="connect">Connect pod</string>
+    <string name="disconnect">Disconnect pod</string>
     <string name="discoverable">Make discoverable</string>
     
 	<string name="spinner_prompt">Choose</string>

@@ -126,8 +126,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// Data associated with the power_off button of an activity
 	ButtonData[] activityPowerOffData = null;
-//	// this holds the list of devices that get their power-on buttons pushed while setting up an activity INIT
-//	ArrayList<String> activityInitPowerOnDevices = new ArrayList<String>();
 	
 	// currently selected device
 	String cur_device;
@@ -394,7 +392,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			activities = new Activities(this, mainScreen);
 			
 			// setup interface
-			setupInterface();
+			mainScreen.initialize(activities);		
+			button_map = mainScreen.getButtonMap();
+			
 			flip.showNext(); // start out one screen to the right (main)
 			// context menu on array list
 			registerForContextMenu(findViewById(R.id.activities_list));
@@ -436,6 +436,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				}
 			}
 		}
+
 	}
 
 	@Override
@@ -644,10 +645,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_INIT) {
 			// store init entries by device, button-id
 			if (Activities.isValidActivityButton(BUTTON_ID)) {
-//				// check if the button is a power on button, if so accumulate this to our list
-//				if (BUTTON_ID == R.id.power_on_btn) {
-//					activityInitPowerOnDevices.add(mainScreen.getCurrentDropDown());
-//				}
 				activityInit.add(cur_device+" "+button_map.get(BUTTON_ID));
 				Toast.makeText(this, "Button press added to initialization list!",
 						Toast.LENGTH_SHORT).show();
@@ -680,16 +677,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 
 	/**
-	 * called to setup the buttons on the main screen.  Should be called once in onStart()
-	 */
-	private void setupInterface() {
-		mainScreen.initialize(activities);		
-		button_map = mainScreen.getButtonMap();		
-	}
-
-	/**
 	 * Ensure that the bluetooth device is discoverable, if it is not it requests it
 	 */
+	@SuppressWarnings("unused")
 	private void ensureDiscoverable() {
 		if (mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
 			Intent discoverableIntent = new Intent(
@@ -912,7 +902,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					if (request.equals(ActivityInitEdit.REDO)) {
 						// check if the "REDO" was requested, if so re-enter ACTIVITY_INIT mode
 						activityInit.clear();
-//						activityInitPowerOnDevices.clear();
 						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
 					}
 					else if (request.equals(ActivityInitEdit.APPEND) ) {
@@ -928,15 +917,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 								activityInit.add(newInitItems[i]);
 							}
 						}
-						
-//						activityInitPowerOnDevices.clear();
-//						// get list of power-on devices to populate
-//						String[] powerOffDevices = activities.getPowerOffDevices(activities.getWorkingActivity());
-//						if (powerOffDevices != null) {
-//							for (int i=0; i< powerOffDevices.length; i++) {
-//								activityInitPowerOnDevices.add(powerOffDevices[i]);
-//							}
-//						}
 						// enter ACTIVITY_INIT mode to begin adding more items
 						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
 					}
@@ -960,11 +940,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		// called everytime menu is shown
 		menu.clear();
-		if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY) {
-			MenuInflater inflater = getMenuInflater();
-			inflater.inflate(R.menu.activities_menu, menu);
-		}
-		else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_EDIT) {
+		
+		if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_EDIT) {
 			MenuInflater inflater = getMenuInflater();
 			inflater.inflate(R.menu.activity_edit_menu, menu);
 		}
@@ -972,19 +949,30 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			MenuInflater inflater = getMenuInflater();
 			inflater.inflate(R.menu.initialization_menu, menu);
 		}
-		else {		
-			MenuInflater inflater = getMenuInflater();
-			inflater.inflate(R.menu.options_menu, menu);
-			if (BT_STATE == Codes.BT_STATE.LEARN) {
-				// if we are currently in learn mode, then offer up the 'cancel learn' item
-				menu.findItem(R.id.stop_learn).setVisible(true);
-				menu.findItem(R.id.learn_button).setVisible(false);
+		else {	
+			if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY) {
+				MenuInflater inflater = getMenuInflater();
+				inflater.inflate(R.menu.activities_menu, menu);
+			} else { // use default menu (MAIN menu)
+				MenuInflater inflater = getMenuInflater();
+				inflater.inflate(R.menu.options_menu, menu);
+				if (BT_STATE == Codes.BT_STATE.LEARN) {
+					// if we are currently in learn mode, then offer up the 'cancel learn' item
+					menu.findItem(R.id.stop_learn).setVisible(true);
+					menu.findItem(R.id.learn_mode).setVisible(false);
+				} else {
+					// else hide stop learn and show learn
+					menu.findItem(R.id.stop_learn).setVisible(false);
+					menu.findItem(R.id.learn_mode).setVisible(true);;															
+				}
+			}			
+			if (mChatService.getState() == BluetoothChatService.STATE_CONNECTED) {
+				menu.findItem(R.id.disconnect).setVisible(true);
+				menu.findItem(R.id.scan).setVisible(false);
 			} else {
-				// else hide stop learn and show learn
-				menu.findItem(R.id.stop_learn).setVisible(false);
-				menu.findItem(R.id.learn_button).setVisible(true);
-			}
-			
+				menu.findItem(R.id.disconnect).setVisible(false);
+				menu.findItem(R.id.scan).setVisible(true);
+			}	
 		}
 		return true;
 	}
@@ -1002,12 +990,18 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			Intent serverIntent = new Intent(this, PodListActivity.class);
 			startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
 			return true;
-
+		
+		case R.id.disconnect:
+			// disconnect the bluetooth link
+			mChatService.stop();
+			return true;
+			
+		/*	This function removed except for debug cases
 		case R.id.discoverable:
 			// Ensure this device is discoverable by others
 			ensureDiscoverable();
 			return true;
-
+		*/
 			// this is to manage the button configurations in database
 		case R.id.manage_devices:
 			// need to launch the manage devices view now
@@ -1019,7 +1013,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			sendCode(Codes.Pod.GET_VERSION);
 			return true;
 
-		case R.id.learn_button:
+		case R.id.learn_mode:
 			Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT)
 					.show();
 			BT_STATE = Codes.BT_STATE.LEARN;
@@ -1062,9 +1056,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// when ending the activity init then we should store the init sequence to the prefs file
 			activities.addActivityInitSequence(activityInit);
 			// after we add it then we need to clear out the activityInit
-//			 and activityInitPowerOnDevices objects for the next usage
 			activityInit.clear();
-//			activityInitPowerOnDevices.clear();
 			Toast.makeText(this, "Press a button to associate with a device...", Toast.LENGTH_SHORT).show();
 			// now put us back into the original activity for the drop-down
 			mainScreen.setDropDown(activities.getWorkingActivity());

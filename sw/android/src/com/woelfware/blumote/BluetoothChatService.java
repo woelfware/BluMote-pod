@@ -182,8 +182,6 @@ class BluetoothChatService {
      * Indicate that the connection attempt failed and notify the UI Activity.
      */
     private void connectionFailed() {
-        setState(STATE_LISTEN);
-
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(BluMote.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
@@ -196,8 +194,6 @@ class BluetoothChatService {
      * Indicate that the connection was lost and notify the UI Activity.
      */
     private void connectionLost() {
-        setState(STATE_LISTEN);
-
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(BluMote.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
@@ -214,8 +210,8 @@ class BluetoothChatService {
      * succeeds or fails.
      */
     private class ConnectThread extends Thread {
-        private BluetoothSocket mmSocket;
-        private BluetoothDevice mmDevice;
+        private final BluetoothSocket mmSocket;
+        private final BluetoothDevice mmDevice;
 
         public ConnectThread(BluetoothDevice device) {
             mmDevice = device;
@@ -225,16 +221,27 @@ class BluetoothChatService {
             // given BluetoothDevice
             try {
             	if (Build.VERSION.SDK_INT >= 10 && !(Build.MANUFACTURER.equals("HTC")) ) {
+            		Log.v(TAG, "Using connection method 1");
             		// the newer SDK includes this function call, but it doesn't appear to work on HTC phones
             		// so the tryConnect() tries to use reflection before giving up entirely
-            		tmp = mmDevice.createInsecureRfcommSocketToServiceRecord(MY_UUID);
+            		tmp = device.createInsecureRfcommSocketToServiceRecord(MY_UUID);            		
+            	}
+            	else if (Build.VERSION.SDK_INT >= 10 && Build.MANUFACTURER.equals("HTC")) {
+            		Log.v(TAG, "Using connection method 2");
+            		// Even newer HTC phones need to use the reflection technique
+            		Method m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});                       			
+        			tmp = (BluetoothSocket) m.invoke(device, 1);	        		
+            	}
+            	else if (Build.MANUFACTURER.equals("HTC")) {
+            		Log.v(TAG, "Using connection method 3");
+            		// older phones will have to use secure which requires a PIN
+            		Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});                       			
+        			tmp = (BluetoothSocket) m.invoke(device, 1);	        		
             	}
             	else {
-            		// old frameworks need to use the reflection technique
-            		//tmp = mmDevice.createRfcommSocketToServiceRecord(MY_UUID);
-            		Method m = mmDevice.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});               
-        			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
-        			tmp = (BluetoothSocket) m.invoke(mmDevice, 1);	
+            		Log.v(TAG, "Using connection method 4");
+            		// older non HTC phones use standard protocol
+            		tmp = device.createRfcommSocketToServiceRecord(MY_UUID);            		
             	}
             }
             catch (Exception e) {           
@@ -253,16 +260,14 @@ class BluetoothChatService {
             // Make a connection to the BluetoothSocket
             try {
                 tryConnect();
-            } catch (Exception e) {
-                connectionFailed();
+            } catch (Exception e) {	                
                 // Close the socket
                 try {
                     mmSocket.close();
                 } catch (IOException e2) {
                     Log.e(TAG, "unable to close() socket during connection failure", e2);
                 }
-                // Start the service over to restart listening mode
-                BluetoothChatService.this.start();
+                connectionFailed();
                 return;
             }
 
@@ -296,9 +301,22 @@ class BluetoothChatService {
         			mmSocket = (BluetoothSocket) m.invoke(mmDevice, 1);	
         			mmSocket.connect();
         		} catch (Exception e1) {
+        			tryConnect2();
         			Log.e(TAG, "tryConnect failed", e1);
         		}   
-
+        	}        	
+        }
+        
+        public void tryConnect2() {
+        	try {
+        		// could be an HTC device, try to connect that way.
+    			Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});               
+    			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
+    			mmSocket = (BluetoothSocket) m.invoke(mmDevice, 1);	
+        		mmSocket.connect();
+        	} catch (Exception e) {
+        		// give up
+        		Log.e(TAG, "tryConnect2 failed", e);
         	}
         	
         }
@@ -357,6 +375,8 @@ class BluetoothChatService {
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
+                    // Start the service over to restart listening mode
+                    BluetoothChatService.this.start();
                     break;
                 }
             }

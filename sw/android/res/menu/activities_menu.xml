@@ -17,23 +17,26 @@
 	<item android:id="@+id/scan"
           android:icon="@android:drawable/ic_menu_search"
           android:title="@string/connect" />
+	<item 	android:id="@+id/disconnect"
+			android:icon="@android:drawable/ic_delete"
+			android:title="@string/disconnect" />          
  	<item android:id="@+id/manage_devices"
           android:icon="@android:drawable/ic_menu_manage"
-          android:title="@string/manage_devices" ></item>  
-	<item android:id="@+id/rename_misc"
-          android:icon="@android:drawable/ic_menu_edit"
-          android:title="Rename Misc Button" ></item>                  
-    <item android:id="@+id/activity_edit_init"
-          android:icon="@android:drawable/ic_menu_edit"
-          android:title="Edit Startup Sequence" ></item>
+          android:title="@string/manage_devices" ></item>  	                     
     <item android:id="@+id/activity_associate_btn"
           android:icon="@android:drawable/star_big_on"
           android:title="Setup Button(s)" ></item>  
     <item android:id="@+id/advanced"
-          android:title="Advanced" 
+          android:title="More" 
           android:icon ="@android:drawable/ic_menu_more">
 		<menu>
-			<item android:title="@string/discoverable" android:id="@+id/discoverable" android:icon="@android:drawable/ic_menu_add" />
+			<item android:id="@+id/activity_edit_init"
+         		  android:icon="@android:drawable/ic_menu_edit"
+         		  android:title="Edit Startup Sequence" ></item>
+          	<item android:id="@+id/rename_misc"
+		          android:icon="@android:drawable/ic_menu_edit"
+		          android:title="Rename Misc Button" ></item>
+			<!-- <item android:title="@string/discoverable" android:id="@+id/discoverable" android:icon="@android:drawable/ic_menu_add" />  -->
 			<item android:title="@string/get_pod_info" android:id="@+id/get_info" android:icon="@android:drawable/ic_menu_info_details" />			
 		</menu>
 	</item>

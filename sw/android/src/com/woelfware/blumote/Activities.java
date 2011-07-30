@@ -244,14 +244,6 @@ public class Activities {
 		name = formatActivityInitSuffix(name);
 		mEditor.remove(name);
 		
-		// iterate through button_map to search for any button name suffixes
-		// to clean up and remove from prefs file
-//		Set<Integer> toIterate = mainint.button_map.keySet();
-//		String entry;
-//		for (int i : toIterate) {
-//			entry = mainint.button_map.get(i);
-//			mEditor.remove(name+entry);
-//		}
 		mEditor.commit();
 		
 		// refresh drop-down
@@ -783,19 +775,6 @@ public class Activities {
 		switch (buttonId) {
 		case R.id.power_off_btn:
 			return false;
-		
-//		case R.id.move_left_a_btn:
-//			return false;
-//		
-//		case R.id.move_right_a_btn:
-//			return false;
-			
-//		case R.id.move_left_n_btn:
-//			return false;
-//			
-//		case R.id.move_right_n_btn:
-//			return false;
-			
 		default:
 			return true;
 		}
@@ -862,7 +841,6 @@ public class Activities {
 						devices[i] = blumote.lookup.getName(devices[i]);
 						
 						// try to insert data from database if it exists
-//						String deviceName = devices[i].split(" ");
 						buttonData = blumote.device_data.getButton(devices[i], blumote.button_map.get(R.id.power_on_btn));
 						returnData[i] = new ButtonData( R.id.power_on_btn, blumote.button_map.get(R.id.power_on_btn),
 								buttonData,	Constants.CATEGORIES.TV_DVD.getValue() );
@@ -883,27 +861,6 @@ public class Activities {
 			return null;
 		}
 	}
-	
-	/**
-	 * Get the list of all the devices that have power-on commands associated with the activities'
-	 * initialization list.  
-	 * @param activityName the name of the activity
-	 * @return the array of data or null if nothing was found
- 	 */
-//	String[] getPowerOffDevices(String activityName) {
-//		// pull power off / toggle codes from prefs file
-//		// populate blumote's field with this data
-//		// BluMote needs to look for the power off button push and execute this data
-//		// this function loads 'null' if no data is stored
-//		try {
-//			String powerOffCodes = blumote.prefs.getString(formatActivityOffSuffix(getWorkingActivity()), null);
-//			// powerOffCodes is csv
-//			String[] devices = powerOffCodes.split(",");
-//			return devices;
-//		} catch (Exception e) {
-//			return null;
-//		}
-//	}
 	
 	/**
 	 * This is a helper class to encapsulate all the parameters of a
