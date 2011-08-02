@@ -15,7 +15,7 @@ def parse_bm(fh):
 	remote = {'attributes' : {}, 'codes' : {}}
 	begin_remote = False
 	begin_codes = False
-	version = None
+	version = None	# not used at the moment, but for when the api stabilizes
 
 	for line in fh:
 		if line.startswith('#'):
@@ -23,7 +23,6 @@ def parse_bm(fh):
 				comment = line.split()
 				if comment[1:-1] == ['BluMote', 'config', 'spec', 'version']:
 					version = comment[-1]
-					print('BluMote version {}'.format(version))
 			else:
 				continue
 
