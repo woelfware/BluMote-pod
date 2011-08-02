@@ -161,6 +161,6 @@ if __name__ == '__main__':
 	print('Parsing LIRC config file {}'.format(sys.argv[1]))
 	remotes = parse_lirc(fin)
 	fin.close()
-	print('Finished parsing {}'.format(sys.argv[1]))
+	print('Finished parsing {}'.format(os.path.basename(sys.argv[1])))
 
-	write_bm_config(sys.argv[1], remotes)
+	write_bm_config(os.path.basename(sys.argv[1]), remotes)

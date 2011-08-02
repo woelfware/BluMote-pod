@@ -15,10 +15,17 @@ def parse_bm(fh):
 	remote = {'attributes' : {}, 'codes' : {}}
 	begin_remote = False
 	begin_codes = False
+	version = None
 
 	for line in fh:
 		if line.startswith('#'):
-			continue
+			if not version:
+				comment = line.split()
+				if comment[1:-1] == ['BluMote', 'config', 'spec', 'version']:
+					version = comment[-1]
+					print('BluMote version {}'.format(version))
+			else:
+				continue
 
 		words = line.split()
 		if len(words) == 0:
@@ -89,6 +96,6 @@ if __name__ == '__main__':
 	print('Parsing BluMote config file {}'.format(sys.argv[1]))
 	remote = parse_bm(fin)
 	fin.close()
-	print('Finished parsing {}'.format(sys.argv[1]))
+	print('Finished parsing {}'.format(os.path.basename(sys.argv[1])))
 
-	write_bm_config(sys.argv[1], remote)
+	write_bm_config(os.path.basename(sys.argv[1]), remote)
