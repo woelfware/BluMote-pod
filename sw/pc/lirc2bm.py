@@ -131,7 +131,7 @@ def write_bm_config(name, remotes):
 		# file header
 		fout.write('# This file was automatically generated with {}'
 			' using {} from the LIRC project.\n'.format(os.path.basename(__file__), name))
-		fout.write('# BluMote config spec v{}\n\n'.format(config_spec_ver))
+		fout.write('# BluMote config spec version {}\n\n'.format(config_spec_ver))
 
 		# attributes section
 		fout.write('Section Attributes\n')
