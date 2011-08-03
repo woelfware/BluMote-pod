@@ -45,7 +45,7 @@ class BluetoothChatService {
     
     // Constants that indicate the current connection state
     static final int STATE_NONE = 0;       // we're doing nothing
-    static final int STATE_LISTEN = 1;     // now listening for incoming connections
+//    static final int STATE_LISTEN = 1;     // now listening for incoming connections
     static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     static final int STATE_CONNECTED = 3;  // now connected to a remote device
 
@@ -95,7 +95,8 @@ class BluetoothChatService {
 //            mAcceptThread = new AcceptThread();
 //            mAcceptThread.start();
 //        }
-        setState(STATE_LISTEN);
+//        setState(STATE_LISTEN);
+        setState(STATE_NONE);
     }
 
     /**
@@ -182,6 +183,7 @@ class BluetoothChatService {
      * Indicate that the connection attempt failed and notify the UI Activity.
      */
     private void connectionFailed() {
+    	setState(STATE_NONE);
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(BluMote.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
@@ -194,6 +196,7 @@ class BluetoothChatService {
      * Indicate that the connection was lost and notify the UI Activity.
      */
     private void connectionLost() {
+    	setState(STATE_NONE);
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(BluMote.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
@@ -210,8 +213,8 @@ class BluetoothChatService {
      * succeeds or fails.
      */
     private class ConnectThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
+        private BluetoothSocket mmSocket;
+        private BluetoothDevice mmDevice;
 
         public ConnectThread(BluetoothDevice device) {
             mmDevice = device;
@@ -232,17 +235,15 @@ class BluetoothChatService {
             		Method m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});                       			
         			tmp = (BluetoothSocket) m.invoke(device, 1);	        		
             	}
-            	else if (Build.MANUFACTURER.equals("HTC")) {
+            	else {
             		Log.v(TAG, "Using connection method 3");
             		// older phones will have to use secure which requires a PIN
-            		Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});                       			
-        			tmp = (BluetoothSocket) m.invoke(device, 1);	        		
-            	}
-            	else {
-            		Log.v(TAG, "Using connection method 4");
-            		// older non HTC phones use standard protocol
-            		tmp = device.createRfcommSocketToServiceRecord(MY_UUID);            		
-            	}
+//            		Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});                       			
+//        			tmp = (BluetoothSocket) m.invoke(device, 1);	    
+            		// Note, HTC Eris works with this call using android 2.1
+            		tmp = device.createRfcommSocketToServiceRecord(MY_UUID);  
+            	} 
+    			
             }
             catch (Exception e) {           
                 Log.e(TAG, "create() failed", e);
@@ -259,25 +260,32 @@ class BluetoothChatService {
 
             // Make a connection to the BluetoothSocket
             try {
-                tryConnect();
-            } catch (Exception e) {	                
-                // Close the socket
-                try {
-                    mmSocket.close();
-                } catch (IOException e2) {
-                    Log.e(TAG, "unable to close() socket during connection failure", e2);
+            	// This is a blocking call and will only return on a
+        		// successful connection or an exception
+        		mmSocket.connect();
+        		
+                // Reset the ConnectThread because we're done
+                synchronized (BluetoothChatService.this) {
+                    mConnectThread = null;
                 }
-                connectionFailed();
-                return;
-            }
+                
+                // Start the connected thread
+                connected(mmSocket, mmDevice);
+            } catch (Exception e) {	  
+            	Log.e(TAG, "original call to connect() failed!", e);
 
-            // Reset the ConnectThread because we're done
-            synchronized (BluetoothChatService.this) {
-                mConnectThread = null;
-            }
-
-            // Start the connected thread
-            connected(mmSocket, mmDevice);
+            	// if we got here then the tryConnectSecureReflection failed
+            	connectionFailed();
+            	// Close the socket
+            	try {
+            		mmSocket.close();
+            	} catch (IOException e2) {
+            		Log.e(TAG, "unable to close() socket during connection failure", e2);
+            	}        
+            	// Start the service over to restart listening mode
+            	BluetoothChatService.this.start();
+            	return;
+            }                       
         }
 
         public void cancel() {
@@ -286,40 +294,8 @@ class BluetoothChatService {
             } catch (IOException e) {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
-        }
-        
-        public void tryConnect() {
-        	try {
-        		// This is a blocking call and will only return on a
-        		// successful connection or an exception
-        		mmSocket.connect();
-        	} catch (Exception e) {
-        		try {
-        			// could be an HTC device, try to connect that way.
-        			Method m = mmDevice.getClass().getMethod("createInsecureRfcommSocket", new Class[] {int.class});               
-        			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
-        			mmSocket = (BluetoothSocket) m.invoke(mmDevice, 1);	
-        			mmSocket.connect();
-        		} catch (Exception e1) {
-        			tryConnect2();
-        			Log.e(TAG, "tryConnect failed", e1);
-        		}   
-        	}        	
-        }
-        
-        public void tryConnect2() {
-        	try {
-        		// could be an HTC device, try to connect that way.
-    			Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});               
-    			//Method m = mmDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
-    			mmSocket = (BluetoothSocket) m.invoke(mmDevice, 1);	
-        		mmSocket.connect();
-        	} catch (Exception e) {
-        		// give up
-        		Log.e(TAG, "tryConnect2 failed", e);
-        	}
-        	
-        }
+        }       
+
     }
 
     /**

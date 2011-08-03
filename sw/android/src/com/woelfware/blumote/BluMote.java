@@ -13,10 +13,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.view.ContextMenu;
 import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
@@ -71,6 +73,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static final int ACTIVITY_RENAME = 6;
 	private static final int MISC_RENAME = 7;
 	static final int ACTIVITY_INIT_EDIT = 8;
+	private static final int PREFERENCES = 9;
 	
 	// Message types sent from the BluetoothChatService Handler
 	static final int MESSAGE_STATE_CHANGE = 1;
@@ -89,6 +92,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static final int DIALOG_SHOW_INFO = 0;
 	private static final int DIALOG_INIT_DELAY = 1;
 	static final int DIALOG_INIT_PROGRESS = 2; 
+	private static final int DIALOG_ABOUT = 3;
+	private static final int DIALOG_LEARN_WAIT = 4;
 
 	// Layout Views
 	private TextView mTitle;
@@ -220,6 +225,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static boolean isButtonTimerStarted = false;
     private static View lastView;
     private static boolean isButtonPushed;
+    
+    // preference : haptic button feedback
+    private boolean hapticFeedback = true;
         
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {	
@@ -285,7 +293,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 			if (!isButtonTimerStarted) {
                 				isButtonTimerStarted = true;
                 				lastView = v; // save the last view 
-                				executeBuzzer();
+                				// provide haptic feedback on button click if that preference is set
+                				if (hapticFeedback) {
+                					lastView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                				}
                 				// fire off count down timer before executing button press (ms)
                 				new ButtonCountDown(LONG_DELAY_TIME, buttonPushID) {
                 					public void onFinish() {
@@ -326,17 +337,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// get SQL database class
 		device_data = new DeviceDB(this);
 		device_data.open();
+		
+		// refresh the haptic feedback pref
+		SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
+		hapticFeedback = myprefs.getBoolean("hapticPREF", true);
 	}	
-
-	/**
-	 * Buzzes the phone if a button is pushed
-	 */
-	private void executeBuzzer() {
-		// buzz
-		// TODO have prefs to turn buzz on and off
-		lastView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-	}
-
+	
 	/**
 	 * Execute a button long press event.  This is called after a timer expires.
 	 * The button will repeat for as long as the user keeps their finger on the button.
@@ -425,7 +431,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		// See if the bluetooth device is connected, if not try to connect
 		if (mBluetoothAdapter.isEnabled()) {
-			if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
+			if ( (mChatService.getState() != BluetoothChatService.STATE_CONNECTING) &&
+					(mChatService.getState() != BluetoothChatService.STATE_CONNECTED)) {
 				String address = prefs.getString("lastPod", null);
 				// Get the BLuetoothDevice object
 				if (address != null) {
@@ -442,7 +449,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	@Override
 	protected synchronized void onPause() {
 		super.onPause();
-
 	}
 
 	@Override
@@ -574,8 +580,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// interface implementation for buttons
 	public void onClick(View v) {
 		BUTTON_ID = v.getId(); // save Button ID - besides this function, also referenced in storeButton()
-								// when a new button is learned
-		executeBuzzer();
+								// when a new button is learned	
 		String buttonName = null;
 		buttonName = button_map.get(BUTTON_ID); // convert ID to button name
 		if (mainScreen.isNavigationButton(BUTTON_ID)) {
@@ -652,9 +657,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "Invalid button!",	Toast.LENGTH_SHORT).show();
 			}
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
-			Toast.makeText(this, "Aim remote at pod and press button...",
-					Toast.LENGTH_SHORT).show();
+			//TODO - convert to dialog window
 			sendCode(Codes.Pod.LEARN);
+			showDialog(DIALOG_LEARN_WAIT);
+//			Toast.makeText(this, "Aim remote at pod and press button...",
+//					Toast.LENGTH_SHORT).show();
+			
 		} else { 
 			if (mChatService.getState() == BluetoothChatService.STATE_CONNECTED) {				
 				if (BUTTON_LOOPING == false) {
@@ -733,8 +741,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					// append to it
 					if (connectingDevice != null) {
 						prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
-						String prefs_table = prefs.getString("knownDevices",
-								null);
+						String prefs_table = prefs.getString("knownDevices",null);
 
 						// then pull name of device off and append
 						if (prefs_table == null) {
@@ -768,7 +775,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					mTitle.setText(R.string.title_connecting);
 					break;
 
-				case BluetoothChatService.STATE_LISTEN:
+//				case BluetoothChatService.STATE_LISTEN:
 				case BluetoothChatService.STATE_NONE:
 					mTitle.setText(R.string.title_not_connected);
 					break;
@@ -800,6 +807,28 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	};	
 
+	/**
+	 * Connect a new pod that was selected in the PodListActivity
+	 * @param data the Intent data returned from PodListActivity
+	 */
+	protected void connectNewPod(Intent data) {		
+		// if already connected, break connection
+		if (mChatService.getState() != BluetoothChatService.STATE_NONE) {
+			mChatService.stop();
+		}					
+		// save device for future use - no need to re-scan
+		connectingDevice = (data.getExtras()
+				.getString(PodListActivity.EXTRA_DEVICE_NAME));
+		// .replaceAll("\\\\", "blah"); //for some reason strings get
+		// double backslash when pulling out
+
+		// Store the address of device to preferences for connect in
+		// onResume()
+		Editor mEditor = prefs.edit();
+		mEditor.putString("lastPod", connectingMAC);
+		mEditor.commit();
+	}
+	
 	// called when activities finish running and return to this activity
 	// strangely this is called BEFORE the onResume() function
 	@Override
@@ -811,29 +840,19 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case REQUEST_CONNECT_DEVICE:
 			// When DeviceListActivity returns with a device to connect
 			if (resultCode == Activity.RESULT_OK) {
-				// if already connected, break connection
-				if (mChatService.getState() != BluetoothChatService.STATE_NONE) {
-					mChatService.stop();
-				}
+				// check if we are requesting to connect to a different pod
+				String curAddress = prefs.getString("lastPod", null);
 				// Get the device MAC address
 				connectingMAC = data.getExtras().getString(
 						PodListActivity.EXTRA_DEVICE_ADDRESS);
-
-				// save device for future use - no need to re-scan
-				connectingDevice = (data.getExtras()
-						.getString(PodListActivity.EXTRA_DEVICE_NAME));
-				// .replaceAll("\\\\", "blah"); //for some reason strings get
-				// double backslash when pulling out
-
-				// Store the address of device to preferences for connect in
-				// onResume()
-				Editor mEditor = prefs.edit();
-				mEditor.putString("lastPod", connectingMAC);
-				mEditor.commit();
-
-				// Attempt to connect to the device
-				// device.getName(); // grab the friendly name, a rename command
-				// can change this
+				if (curAddress == null) {
+					// if null we know we have not connected to anything before
+					connectNewPod(data);
+				}
+				else if ( !curAddress.equals(connectingMAC) ) {
+					// if doesn't match from what we were connected to before
+					connectNewPod(data);
+				} 
 			}
 			break;
 
@@ -878,7 +897,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Bundle return_bundle = data.getExtras();
 				if (return_bundle != null) {
 					String return_string = return_bundle.getString("returnStr");
-
 					activities.renameActivity(return_string, activity_rename);					
 				}				
 			}
@@ -923,6 +941,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					// otherwise just go back into normal activity mode
 				}								
 			}
+			break;
+			
+		case PREFERENCES:
+			// refresh the haptic feedback pref
+			SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
+			hapticFeedback = myprefs.getBoolean("hapticPREF", true);			
 			break;
 		}		
 	}
@@ -994,6 +1018,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case R.id.disconnect:
 			// disconnect the bluetooth link
 			mChatService.stop();
+			return true;
+			
+		case R.id.about:
+			showDialog(DIALOG_ABOUT);
+			return true;
+			
+		case R.id.preferences:
+			// display the preferences
+			Intent prefsIntent = new Intent(this,MyPreferences.class);
+			startActivityForResult(prefsIntent, PREFERENCES);
 			return true;
 			
 		/*	This function removed except for debug cases
@@ -1298,7 +1332,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
 		Codes.learn_state = Codes.LEARN_STATE.IDLE; // ready to start a new
 													// learn command now
-		Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
+		dismissDialog(DIALOG_LEARN_WAIT);
+//		Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
 		mainScreen.fetchButtons();
 	}
 
@@ -1324,6 +1359,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		if (code == 1) {
 			Toast.makeText(this, "Error occured, exiting learn mode!",
 					Toast.LENGTH_SHORT).show();
+			try {
+				dismissDialog(DIALOG_LEARN_WAIT);
+			} catch (Exception e) {
+				// if dialog had not been shown it throws an error, ignore
+			}
 			BT_STATE = Codes.BT_STATE.IDLE;
 			Codes.learn_state = Codes.LEARN_STATE.IDLE;
 		} else if (code == 2) {
@@ -1533,8 +1573,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return alert;
 			
 		case DIALOG_INIT_DELAY:
-			// create a custom alertdialog using our xml interface for it	
-			
+			// create a custom alertdialog using our xml interface for it				
 			LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
 			View layout = inflater.inflate(R.layout.dialog_init_delay,
 			                               (ViewGroup) findViewById(R.id.dialog_init_root));
@@ -1577,6 +1616,37 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             progressDialog.setCancelable(false); // don't allow back button to cancel it
             progressDialog.setMessage("Sending commands, please wait...");
             return progressDialog;
+            
+		case DIALOG_LEARN_WAIT:
+			// should create a new progressdialog 
+			// the dialog should exit after all the initItems are processed
+			ProgressDialog learnWait = new ProgressDialog(BluMote.this);
+			learnWait.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			learnWait.setCancelable(true); // don't allow back button to cancel it
+			learnWait.setMessage("Aim the remote control at the pod and push the selected button");
+            return learnWait;
+			
+		case DIALOG_ABOUT:
+			// define dialog			
+			StringBuilder aboutDialog = new StringBuilder();
+			aboutDialog.append("Copyright 2011 Woelfware \n" +
+					"BluMote is free software: you can redistribute it and/or modify it under the terms of the " +
+					"GNU General Public License as published by the Free Software Foundation, " +					
+					"BluMote is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; " +
+					"See the GNU General Public License at http://www.gnu.org/licenses/.\n");
+			aboutDialog.append("\nSW Revision: ");
+			String versionName = "";
+			try {
+				versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+			} catch (NameNotFoundException e) {
+				e.printStackTrace();				
+			}
+			aboutDialog.append(versionName + "\n");			
+			builder = new AlertDialog.Builder(this);
+			// .setCancelable(false)
+			builder.setMessage(aboutDialog).setTitle("About BluMote");
+			alert = builder.create();
+			return alert;
 			
 		default:
 			return alert;

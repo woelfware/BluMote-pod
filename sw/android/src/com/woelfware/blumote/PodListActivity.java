@@ -57,7 +57,7 @@ public class PodListActivity extends Activity {
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.pod_list);
 
-        // Set result CANCELED incase the user backs out
+        // Set result CANCELED in case the user backs out
         setResult(Activity.RESULT_CANCELED);
 
         // Initialize the button to perform device discovery
@@ -200,11 +200,16 @@ public class PodListActivity extends Activity {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (BluMote.D) {
+                	String name = device.getName();
+                	if (name.endsWith("\n") || name == "" || name == null) {
+                		Log.e(TAG, "found a malformed device name: "+ name);
+                	}
                     mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                 }
                 else {
                 	// if we are not in debug mode then screen the entries
                 	if (device.getName().matches("BluMote*")) {
+                		String test = device.getName();
                 		mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                 	}
                 }

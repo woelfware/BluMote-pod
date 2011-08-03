@@ -21,6 +21,7 @@ public class DeviceDB {
 	private final Context context;
 	private final MyDBhelper dbhelper;	
 	
+	private static final String TAG = "DeviceDB";
 	
 	public DeviceDB(Context c){
 		context = c;
@@ -54,28 +55,31 @@ public class DeviceDB {
 	 */
 	public long insertButton(String curTable, String buttonID, String buttonCategory, byte[] content)
 	{
+		curTable = curTable.replace(" ", "_");
+		curTable = "["+curTable+"]";
+		
 		try {
-		Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
-				null, null, null, null);
-		if (c.getCount() > 0) { // then we already have this entry so call updateButton
-			updateButton(curTable, buttonID, buttonCategory, content);
-			return -1;
-		}
-		else { // this must be a new entry , so try to insert it
-			try{
-				ContentValues newTaskValue = new ContentValues();
-				newTaskValue.put(Constants.DB_FIELDS.BUTTON_ID.getValue(), buttonID);
-				newTaskValue.put(Constants.DB_FIELDS.BUTTON_DATA.getValue(), content);
-				newTaskValue.put(Constants.DB_FIELDS.CATEGORY.getValue(), buttonCategory);
-				db = dbhelper.getWritableDatabase();
-				return db.insertOrThrow(curTable, null, newTaskValue);
-			} catch(SQLiteException ex) {
-				Log.v("Insert into database exception caught", ex.getMessage());
+			Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
+					null, null, null, null);
+			if (c.getCount() > 0) { // then we already have this entry so call updateButton
+				updateButton(curTable, buttonID, buttonCategory, content);
 				return -1;
 			}
-		}
+			else { // this must be a new entry , so try to insert it
+				try{
+					ContentValues newTaskValue = new ContentValues();
+					newTaskValue.put(Constants.DB_FIELDS.BUTTON_ID.getValue(), buttonID);
+					newTaskValue.put(Constants.DB_FIELDS.BUTTON_DATA.getValue(), content);
+					newTaskValue.put(Constants.DB_FIELDS.CATEGORY.getValue(), buttonCategory);
+					db = dbhelper.getWritableDatabase();
+					return db.insertOrThrow(curTable, null, newTaskValue);
+				} catch(SQLiteException ex) {
+					Log.v("Insert into database exception caught", ex.getMessage());
+					return -1;
+				}
+			}
 		} catch (Exception e) {
-			Log.e("Oops",e.getMessage());
+			Log.e(TAG,e.getMessage());
 			return -1;
 		}
 	}
@@ -87,6 +91,9 @@ public class DeviceDB {
 	 */
 	public ButtonData[] getButtons(String curTable)
 	{
+		curTable = curTable.replace(" ", "_");
+		curTable = "["+curTable+"]";
+		
 		Cursor c = db.query(curTable, null, null,
 				null, null, null, null);
 		
@@ -111,6 +118,9 @@ public class DeviceDB {
 	 */
 	public byte[] getButton(String device, String buttonID)
 	{
+		device = device.replace(" ", "_");
+		device = "["+device+"]";
+		
 		byte[] button;
 		
 		Cursor c = db.query(device, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
@@ -130,9 +140,11 @@ public class DeviceDB {
 	 * @return 1 if successful, 0 if there was an error and 2 if a duplicate exists
 	 */
 	public int addDevice(String table) {
+		table = table.replace(" ", "_");
+		table = "["+table+"]";
+		
 		Log.v("MyDB createTable","Creating table");
-		String TABLE="create table "+
-		table+" ("+
+		String TABLE="create table "+ table +" ("+
 		Constants.KEY_ID+" integer primary key autoincrement, "+
 		Constants.DB_FIELDS.BUTTON_ID.getValue()+" text not null, "+
 		Constants.DB_FIELDS.BUTTON_DATA.getValue()+" text not null, "+
@@ -153,6 +165,9 @@ public class DeviceDB {
 	 * @param table the name of the device to delete
 	 */
 	public void removeDevice(String table) {
+		table = table.replace(" ", "_");
+		table = "["+table+"]";
+		
 		try {
 			db.execSQL("drop table if exists "+table);
 		} catch (SQLiteException ex) {
@@ -166,6 +181,10 @@ public class DeviceDB {
 	 * @param rename the new name
 	 */
 	public void renameDevice(String table, String rename) {
+		table = table.replace(" ", "_");
+		table = "["+table+"]";
+		rename = rename.replace(" ", "_");
+		rename = "["+rename+"]";
 		try {
 			db.execSQL("ALTER TABLE "+table+" RENAME TO "+rename);
 		} catch (SQLiteException ex) {
@@ -221,6 +240,9 @@ public class DeviceDB {
 	 */
     public boolean deleteButton(String curTable, String buttonID) 
     {
+    	curTable = curTable.replace(" ", "_");
+    	curTable = "["+curTable+"]";
+    	
         return db.delete(curTable, Constants.DB_FIELDS.BUTTON_ID.getValue() + 
         		"=" + buttonID, null) > 0;
     }
@@ -235,6 +257,9 @@ public class DeviceDB {
      */
     private boolean updateButton(String curTable, String buttonID, String buttonCategory, byte[] content) 
     {
+    	curTable = curTable.replace(" ", "_");
+    	curTable = "["+curTable+"]";
+    	
     	// DEBUG var
     	boolean debug;
         ContentValues args = new ContentValues();

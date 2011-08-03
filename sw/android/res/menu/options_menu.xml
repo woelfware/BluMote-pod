@@ -38,7 +38,9 @@
 		          android:icon="@android:drawable/ic_menu_edit"
 		          android:title="Rename Misc Button" ></item>
 			 <!--<item android:title="@string/discoverable" android:id="@+id/discoverable" android:icon="@android:drawable/ic_menu_add" /> -->			 
-			<item android:title="@string/get_pod_info" android:id="@+id/get_info" android:icon="@android:drawable/ic_menu_info_details" />			
+			<item android:title="@string/get_pod_info" android:id="@+id/get_info" android:icon="@android:drawable/ic_menu_info_details" />
+			<item android:title="About" android:id="@+id/about" android:icon="@android:drawable/ic_menu_info_details" />
+			<item android:title="Preferences" android:id="@+id/preferences" android:icon="@android:drawable/ic_menu_preferences" />			
 		</menu>
 	</item>
 </menu>

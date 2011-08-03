@@ -632,7 +632,6 @@ public class MainInterface {
 	 * sets spinner to a default error condition
 	 */
 	void setSpinnerErrorState() {
-		device_spinner.setSelection(0);
 		blumote.buttons = null;
 		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; 
 		
