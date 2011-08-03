@@ -36,16 +36,19 @@ static bool blumote_process_cmd()
 		learn_ir_code = true;
 		break;
 
-	case BLUMOTE_IR_TRANSMIT:
+	case BLUMOTE_IR_TRANSMIT: {
 		/* pop the reserved and length fields and let
 		 * the ir handle the code
 		 */
-		(void)buf_deque(&gp_rx_tx, NULL);	/* reserved */
+		uint8_t c;
+		(void)buf_deque(&gp_rx_tx, &c);	/* reserved */
+		set_ir_repeat_cnt(c & 0x07);
 		(void)buf_deque(&gp_rx_tx, NULL);	/* length */
 		tx_ir_code = true;
 		gp_buf_owner = gp_buf_owner_none;
+		}
 		break;
-	
+
 	default: {
 		char const response[] = {BLUMOTE_NAK};
 		(void)bluetooth_puts(response, sizeof(response));
