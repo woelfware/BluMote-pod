@@ -76,10 +76,11 @@ public final class R {
         public static final int roundbtnunpushed=0x7f020031;
         public static final int spacer=0x7f020032;
         public static final int spinner_look=0x7f020033;
-        public static final int top_rocker_look=0x7f020034;
-        public static final int unpushedbutton=0x7f020035;
-        public static final int unpushedbuttonnew=0x7f020036;
-        public static final int yellow=0x7f020037;
+        public static final int testbtn=0x7f020034;
+        public static final int top_rocker_look=0x7f020035;
+        public static final int unpushedbutton=0x7f020036;
+        public static final int unpushedbuttonnew=0x7f020037;
+        public static final int yellow=0x7f020038;
     }
     public static final class id {
         public static final int about=0x7f0a005a;

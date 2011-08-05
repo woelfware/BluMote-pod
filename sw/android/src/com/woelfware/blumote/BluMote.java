@@ -60,6 +60,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Debugging
 	// private static final String TAG = "BlueMote";
 	static final boolean D = true;
+	
+	// set false for using the emulator for testing UI
+	static final boolean ENABLE_BT = true;
 
 	// Preferences file for this application
 	static final String PREFS_FILE = "BluMoteSettings";
@@ -241,10 +244,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		lookup = new InterfaceLookup(prefs);
 		
 		// Get local Bluetooth adapter
-		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		if (ENABLE_BT) {
+			mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		}
 
 		// If the adapter is null, then Bluetooth is not supported
-		if (mBluetoothAdapter == null) {
+		if (ENABLE_BT && mBluetoothAdapter == null) {
 			Toast.makeText(this, "Bluetooth is not available",
 					Toast.LENGTH_SHORT).show();
 			finish();
@@ -253,7 +258,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		// If BT is not on, request that it be enabled.
 		// setupChat() will then be called during onActivityResult
-		if (!mBluetoothAdapter.isEnabled()) {
+		if (ENABLE_BT && !mBluetoothAdapter.isEnabled() ) {
 			Intent enableIntent = new Intent(
 					BluetoothAdapter.ACTION_REQUEST_ENABLE);
 			startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
@@ -421,7 +426,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// started already
 			if (mChatService.getState() == BluetoothChatService.STATE_NONE) {
 				// Start the Bluetooth chat services
-				mChatService.start();
+				if (ENABLE_BT) {
+					mChatService.start();
+				}
 			}
 		}
 
@@ -429,21 +436,22 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// call to managedevices)
 		mainScreen.fetchButtons(); // update buttons from DB
 
-		// See if the bluetooth device is connected, if not try to connect
-		if (mBluetoothAdapter.isEnabled()) {
-			if ( (mChatService.getState() != BluetoothChatService.STATE_CONNECTING) &&
-					(mChatService.getState() != BluetoothChatService.STATE_CONNECTED)) {
-				String address = prefs.getString("lastPod", null);
-				// Get the BLuetoothDevice object
-				if (address != null) {
-					BluetoothDevice device = mBluetoothAdapter
-							.getRemoteDevice(address);
-					// Attempt to connect to the device
-					mChatService.connect(device);
+		if (ENABLE_BT) {
+			// See if the bluetooth device is connected, if not try to connect
+			if (mBluetoothAdapter.isEnabled()) {
+				if ( (mChatService.getState() != BluetoothChatService.STATE_CONNECTING) &&
+						(mChatService.getState() != BluetoothChatService.STATE_CONNECTED)) {
+					String address = prefs.getString("lastPod", null);
+					// Get the BLuetoothDevice object
+					if (address != null) {
+						BluetoothDevice device = mBluetoothAdapter
+						.getRemoteDevice(address);
+						// Attempt to connect to the device
+						mChatService.connect(device);
+					}
 				}
 			}
 		}
-
 	}
 
 	@Override
@@ -1333,7 +1341,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		Codes.learn_state = Codes.LEARN_STATE.IDLE; // ready to start a new
 													// learn command now
 		dismissDialog(DIALOG_LEARN_WAIT);
-//		Toast.makeText(this, "Button Learned", Toast.LENGTH_SHORT).show();
+		Toast.makeText(this, "Button Code Received", Toast.LENGTH_SHORT).show();
 		mainScreen.fetchButtons();
 	}
 
