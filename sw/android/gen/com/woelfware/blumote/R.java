@@ -96,6 +96,7 @@ public final class R {
         public static final int append_init_btn=0x7f0a0005;
         public static final int back_btn=0x7f0a0016;
         public static final int back_skip_btn=0x7f0a0015;
+        public static final int backup=0x7f0a0062;
         public static final int blue_btn=0x7f0a0047;
         public static final int btn_channel_down=0x7f0a002b;
         public static final int btn_channel_up=0x7f0a002a;
@@ -170,6 +171,7 @@ public final class R {
         public static final int red_btn=0x7f0a0048;
         public static final int redo_init_btn=0x7f0a0004;
         public static final int rename_misc=0x7f0a0058;
+        public static final int restore=0x7f0a0063;
         public static final int return_btn=0x7f0a0026;
         public static final int right_btn=0x7f0a0046;
         public static final int scan=0x7f0a0052;

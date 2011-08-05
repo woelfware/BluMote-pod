@@ -1,5 +1,6 @@
 package com.woelfware.database;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import android.content.ContentValues;
@@ -23,6 +24,8 @@ public class DeviceDB {
 	
 	private static final String TAG = "DeviceDB";
 	
+	public final static String DB_NAME = "/data/com.woelfware.blumote/databases/"+Constants.DATABASE_NAME;
+	
 	public DeviceDB(Context c){
 		context = c;
 		dbhelper = new MyDBhelper(context, Constants.DATABASE_NAME, null,
@@ -40,6 +43,19 @@ public class DeviceDB {
 			db = dbhelper.getWritableDatabase();
 		} catch(SQLiteException ex) {
 			Log.v("Open database exception caught", ex.getMessage());
+		}
+	}
+	
+	// returns true on success, false otherwise
+	public boolean restore() 
+	{
+		try {
+			dbhelper.importDatabase("device_data.bak");
+			open();
+			return true;
+		} catch (IOException e) {
+			Log.v("restore database exception caught", e.getMessage());
+			return false;
 		}
 	}
 	

@@ -1,11 +1,15 @@
 package com.woelfware.database;
 
+import java.io.File;
+import java.io.IOException;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-//import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
-//import android.util.Log;
+import android.os.Environment;
+
+import com.woelfware.blumote.Utilities;
 
 public class MyDBhelper extends SQLiteOpenHelper{
 
@@ -15,22 +19,37 @@ public class MyDBhelper extends SQLiteOpenHelper{
 	}
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		// NOTE: going to create each table programatically instead of hard coded create table statement
-		
-//		Log.v("MyDBhelper onCreate","Creating all the tables");
-//		try {
-//			db.execSQL(CREATE_TABLE);
-//		} catch(SQLiteException ex) {
-//			Log.v("Create table exception", ex.getMessage());
-//		}
+
 	}
+	
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion,
 			int newVersion) {
-//		Log.w("TaskDBAdapter", "Upgrading from version "+oldVersion
-//				+" to "+newVersion
-//				+", which will destroy all old data");
-//		db.execSQL("drop table if exists "+Constants.TABLE_NAME);
-//		onCreate(db);
+	}
+	
+	/**
+	 * Copies the database file at the specified location over the current
+	 * internal application database.
+	 * */
+	public boolean importDatabase(String backupDBName) throws IOException {
+
+	    // Close the SQLiteOpenHelper so it will commit the created empty
+	    // database to internal storage.
+	    close();
+	    File sd = Environment.getExternalStorageDirectory();
+        File data = Environment.getDataDirectory();
+        String currentDBPath = DeviceDB.DB_NAME;        
+        
+        File currentDB = new File(data, currentDBPath);
+        File backupDB = new File(sd, backupDBName);
+        	  
+	    if (backupDB.exists()) {
+	        Utilities.FileUtils.copyFile(backupDB, currentDB);
+	        // Access the copied database so SQLiteHelper will cache it and mark
+	        // it as created.
+	        getWritableDatabase().close();
+	        return true;
+	    }
+	    return false;
 	}
 }

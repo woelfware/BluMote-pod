@@ -1,5 +1,10 @@
 package com.woelfware.blumote;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -9,16 +14,20 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
@@ -46,6 +55,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
+import com.woelfware.database.Constants;
 import com.woelfware.database.DeviceDB;
 import com.woelfware.database.Constants.CATEGORIES;
 
@@ -1038,13 +1048,30 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			startActivityForResult(prefsIntent, PREFERENCES);
 			return true;
 			
+		case R.id.backup:
+			// start the backup to the SD card 			
+			ExportDatabaseFileTask backupStuff = new ExportDatabaseFileTask(this);
+			backupStuff.execute("");
+			return true;
+
+		case R.id.restore:
+			// restores a backup from the SD card
+			if (device_data.restore()) {
+				Toast.makeText(this, "Successfully restored!", Toast.LENGTH_SHORT).show();
+			} else {
+				Toast.makeText(this, "Import failed!", Toast.LENGTH_SHORT).show();
+			}
+			mainScreen.populateDropDown();
+			return true;
+			
 		/*	This function removed except for debug cases
 		case R.id.discoverable:
 			// Ensure this device is discoverable by others
 			ensureDiscoverable();
 			return true;
 		*/
-			// this is to manage the button configurations in database
+		
+		// this is to manage the button configurations in database
 		case R.id.manage_devices:
 			// need to launch the manage devices view now
 			i = new Intent(this, ManageDevices.class);
@@ -1056,8 +1083,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 
 		case R.id.learn_mode:
-			Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT)
-					.show();
+			Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
 			BT_STATE = Codes.BT_STATE.LEARN;
 			INTERFACE_STATE = Codes.INTERFACE_STATE.LEARN;
 			return true;
@@ -1717,5 +1743,4 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             // this method unused
         }
     }
-
 }
