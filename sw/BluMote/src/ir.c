@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <string.h>
 
+static int repeat_cnt = NBR_IR_BURSTS;
+
 static inline bool is_space()
 {
 	return (P1IN & BIT3) ? true : false;
@@ -34,7 +36,7 @@ bool ir_learn(int_fast32_t us)
 	};
 	static enum state current_state = default_state;
 	static int_fast32_t ttl = IR_LEARN_CODE_TIMEOUT;
-	static uint16_t duration = 0;
+	static uint_fast32_t duration = 0;
 	bool run_again = true;
 
 	ttl -= us;
@@ -116,7 +118,6 @@ bool ir_main(int_fast32_t us)
 	};
 	static enum state current_state = default_state;
 	static struct circular_buffer m_ir_buf;
-	static int repeat_cnt = NBR_IR_BURSTS;
 	static int_fast32_t ttl;
 	bool run_again = true;
 	uint8_t c;
@@ -211,9 +212,18 @@ bool ir_main(int_fast32_t us)
 		gp_buf_owner = gp_buf_owner_none;
 		current_state = default_state;
 		run_again = false;
-		repeat_cnt = 3;
+		repeat_cnt = NBR_IR_BURSTS;
 		break;
 	}
 
 	return run_again;
+}
+
+void set_ir_repeat_cnt(int cnt)
+{
+	if (cnt) {
+		repeat_cnt = cnt;
+	} else {
+		repeat_cnt = NBR_IR_BURSTS;
+	}
 }
