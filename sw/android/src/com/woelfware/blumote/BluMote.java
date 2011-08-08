@@ -1,10 +1,7 @@
 package com.woelfware.blumote;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -14,13 +11,13 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
@@ -55,7 +52,6 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
-import com.woelfware.database.Constants;
 import com.woelfware.database.DeviceDB;
 import com.woelfware.database.Constants.CATEGORIES;
 
@@ -1049,15 +1045,27 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.backup:
-			// start the backup to the SD card 			
+			// start the backup to the SD card 	
+			//TODO	    
 			ExportDatabaseFileTask backupStuff = new ExportDatabaseFileTask(this);
 			backupStuff.execute("");
+			// now backup prefs file
+			exportPreferences();
 			return true;
 
 		case R.id.restore:
-			// restores a backup from the SD card
-			if (device_data.restore()) {
+			// restores a backup from the SD card of databases and prefs file
+			if (device_data.restore() && importPreferences() ) {
 				Toast.makeText(this, "Successfully restored!", Toast.LENGTH_SHORT).show();
+				// get preferences file
+				prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
+
+				// initialize the InterfaceLookup
+				lookup = new InterfaceLookup(prefs);	
+				
+				// populate activities arraylist with initial items
+				// need to pass in the arrayadapter we want to populate
+				activities.populateActivites(true, activities.mActivitiesArrayAdapter); 
 			} else {
 				Toast.makeText(this, "Import failed!", Toast.LENGTH_SHORT).show();
 			}
@@ -1140,6 +1148,58 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return false;
 	}
 
+	private String getDataDir() { 
+		try { 
+			PackageInfo packageInfo = 
+				getPackageManager().getPackageInfo(getPackageName(), 0); 
+			if (packageInfo == null) return null; 
+			ApplicationInfo applicationInfo = 
+				packageInfo.applicationInfo; 
+			if (applicationInfo == null) return null; 
+			if (applicationInfo.dataDir == null) return null; 
+			return applicationInfo.dataDir; 
+		} catch (NameNotFoundException ex) { 
+			return null; 
+		} 
+	} 
+
+	private boolean importPreferences() {   
+        
+		File sd = Environment.getExternalStorageDirectory();
+		File currentDB = new File(getDataDir(),"/shared_prefs/"+PREFS_FILE+".xml");
+        File backupDB = new File(sd, BluMote.PREFS_FILE+".bak");
+
+        if (backupDB.exists()) {
+        	try {
+        		Utilities.FileUtils.copyFile(backupDB, currentDB);	       
+        	} catch (IOException e) {
+        		Log.e("IMPORT",e.getMessage(),e);
+        		Toast.makeText(this, "Import failed", Toast.LENGTH_SHORT).show();
+        		return false;
+        	}
+	    }
+	    return true;
+	}
+	
+	private boolean exportPreferences() {
+		// backup the preferences file for activities/etc
+		File sd = Environment.getExternalStorageDirectory();
+        File prefsFile = new File(getDataDir(),"/shared_prefs/"+PREFS_FILE+".xml");
+        File backupDB = new File(sd,BluMote.PREFS_FILE+".bak");
+        
+        if (prefsFile.exists()) {
+        	try {
+            	backupDB.createNewFile();
+            	Utilities.FileUtils.copyFile(prefsFile, backupDB);
+            } catch (IOException e) {
+            	Log.e("BACKUP",e.getMessage(),e);
+            	Toast.makeText(this, "Export failed", Toast.LENGTH_SHORT).show();
+        		return false;  
+            }
+        }
+        return true;
+	}
+	
 	void startActivityEdit() {
 		Intent i = new Intent(this, ActivityInitEdit.class);
 		// tack on data to tell the activity what the "activities" item is
