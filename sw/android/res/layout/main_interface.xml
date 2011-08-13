@@ -3,13 +3,7 @@
 	android:layout_height="fill_parent"
 	android:layout_width="fill_parent"
 	android:layout_gravity="center"
-	android:background="@drawable/background" >   
-	<LinearLayout
-		android:orientation="vertical"
-		android:layout_height="wrap_content"
-		android:layout_width="fill_parent"
-		android:layout_gravity="center"
-		android:layout_alignParentTop="true" > 	
+	android:background="@drawable/background" >   	
 	<ViewFlipper 
 	    android:id="@+id/flipper"
 	    android:layout_width="fill_parent"
@@ -18,7 +12,6 @@
 	    <include android:id="@+id/mainView"  layout="@layout/main_screen" />
 	    <include android:id="@+id/numbersView"  layout="@layout/number_screen" />    
 	</ViewFlipper>	
-	</LinearLayout>
 	<LinearLayout
 		android:orientation="vertical"
 		android:layout_height="wrap_content"

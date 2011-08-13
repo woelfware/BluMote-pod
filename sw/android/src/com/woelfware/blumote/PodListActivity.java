@@ -11,17 +11,20 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 
 
@@ -35,7 +38,11 @@ public class PodListActivity extends Activity {
     // Debugging
     private static final String TAG = "DeviceListActivity";
     private static final boolean D = true;
-
+	
+    private static final int ID_RENAME = 0;
+	private static final String POD_PREFIX = "P0D_";
+	private static final int POD_NAME = 0;
+	
     // Return Intent extra
     public static String EXTRA_DEVICE_ADDRESS = "device_address";
     public static String EXTRA_DEVICE_NAME = "device_name";
@@ -49,6 +56,8 @@ public class PodListActivity extends Activity {
     //Shared preferences class - for storing config settings between runs
     private SharedPreferences prefs;
 
+    private static String pod_rename;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,6 +93,9 @@ public class PodListActivity extends Activity {
         newDevicesListView.setAdapter(mNewDevicesArrayAdapter);
         newDevicesListView.setOnItemClickListener(mDeviceClickListener);
 
+        // register for context menu
+        registerForContextMenu(findViewById(R.id.paired_devices));
+        
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         this.registerReceiver(mReceiver, filter);
@@ -107,9 +119,12 @@ public class PodListActivity extends Activity {
     		String devices[] = prefs_table.split("\t");    	
     	
     		findViewById(R.id.title_paired_devices).setVisibility(View.VISIBLE);
+    		String deviceName;
     		// iterate through and add to arrayadapter list
     		for (String device : devices) {
-    			mPairedDevicesArrayAdapter.add(device);
+    			deviceName = translatePodName(device.split("\n")[0], prefs) + 
+    					"\n" + device.split("\n")[1];
+    			mPairedDevicesArrayAdapter.add(deviceName);
     		}
     	}
     	else {
@@ -204,13 +219,14 @@ public class PodListActivity extends Activity {
                 	if (name.endsWith("\n") || name == "" || name == null) {
                 		Log.e(TAG, "found a malformed device name: "+ name);
                 	}
-                    mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                	addToNewDevices(translatePodName(device.getName(), prefs)
+                    		+ "\n" + device.getAddress());
                 }
                 else {
                 	// if we are not in debug mode then screen the entries
-                	if (device.getName().matches("BluMote*")) {
-                		String test = device.getName();
-                		mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                	if (device.getName().startsWith("BluMote")) {                		
+                		addToNewDevices(translatePodName(device.getName(), prefs)
+                				+ "\n" + device.getAddress());
                 	}
                 }
             // When discovery is finished, change the Activity title
@@ -225,13 +241,99 @@ public class PodListActivity extends Activity {
             }
         }
     };
-
+    
+    private void addToNewDevices(String name) {
+    	// make sure the item is not already in the list....
+    	boolean foundIt = false;
+    	for (int i=0; i< mNewDevicesArrayAdapter.getCount(); i++) {
+    		if (name.split("\n")[0].startsWith(mNewDevicesArrayAdapter.getItem(i))) {
+    			foundIt = true;
+    			break;     	
+    		}
+    	} 
+    	if (foundIt != true) {
+    		// add to list if it is unique
+    		mNewDevicesArrayAdapter.add(name);
+    	}
+    }
+    
+    /**
+     * This function re-displays the known pod names while mapping the name to the user-specified
+     * name if it exists in the prefs file
+     */
+    private void displayPodNames() {
+    	String displayedItem;
+    	String newName;
+    	String[] podNames = new String[mPairedDevicesArrayAdapter.getCount()];
+    	
+    	for (int i = 0; i< mPairedDevicesArrayAdapter.getCount(); i++) {
+    		displayedItem = mPairedDevicesArrayAdapter.getItem(i);
+    		newName = translatePodName(displayedItem.split("\n")[0], prefs); // pass in the
+    																	     // first token
+    		// reconstruct the item with the translated name
+    		podNames[i] = newName + "\n" + displayedItem.split("\n")[1];
+    	}
+    	
+    	mPairedDevicesArrayAdapter.clear();  // clear before re-populating
+    	
+    	// now repopulate the arraylist with the new podNames[]
+    	for (int i=0; i<podNames.length; i++) {
+    		mPairedDevicesArrayAdapter.add(podNames[i]);
+    	}
+    }
+    
+    /**
+     * This function will find the user specified name in the prefs file that maps to the name
+     * given to the function.
+     * @param podName
+     * @return the name that was stored in prefs file
+     */
+    static String translatePodName(String podName, SharedPreferences prefs) {
+    	String podKey = convertToPodKey(podName);
+    	if (prefs.contains(podKey)) {
+    		// if it is contained then return the mapping
+    		return prefs.getString(podKey, "");
+    	} else {
+    		return podName; // just return the same name
+    	}
+    }
+    
+    /**
+     * This function will translate a re-named pod name to the actual pod name
+     * @param podName
+     * @return
+     */
+//    String lookupPodName(String podName) {
+//    	
+//    }
+    
+    private static String convertToPodKey(String podName) {
+    	if (podName.startsWith(POD_PREFIX)) {
+    		return podName;    		
+    	} else {
+    		return POD_PREFIX + podName;
+    	}
+    }
+    
+    /**
+     * Creates a new prefs item for mapping between the actual pod name and the user
+     * defined one.
+     * @param oldName
+     * @param newName
+     */
+    private void addNewPodMapping(String oldName, String newName) {
+    	Editor mEditor = prefs.edit();
+		mEditor.putString(convertToPodKey(oldName), newName);
+		mEditor.commit();
+    }    
+    	
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.device_list_options, menu);
         return true;
     }
+    
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -244,4 +346,52 @@ public class PodListActivity extends Activity {
         }
         return false;        
     }
+    
+    @Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
+		switch (item.getItemId()) {
+		case ID_RENAME:
+			// store ID of the item to be renamed
+			pod_rename = mPairedDevicesArrayAdapter.getItem((int)info.id);
+			pod_rename = pod_rename.split("\n")[0]; // store only the name
+			// Launch the function to ask for a name for device
+        	Intent i = new Intent(this, EnterDevice.class);
+            startActivityForResult(i, POD_NAME);
+			return true;
+		}
+		return super.onContextItemSelected(item);
+	}
+
+	// context menu is for activities list
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		if (v.getId() == R.id.paired_devices) {
+			// AdapterView.AdapterContextMenuInfo info =
+			// (AdapterView.AdapterContextMenuInfo)menuInfo;
+			menu.setHeaderTitle("Menu");
+			menu.add(0, ID_RENAME, 0, "Rename Device");
+		}
+		super.onCreateContextMenu(menu, v, menuInfo);
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		
+		String return_string;
+    	Bundle return_bundle;
+    	
+    	if (requestCode == POD_NAME && resultCode == RESULT_OK) {
+    		// add the new item to the database
+    		return_bundle = data.getExtras();
+    		if ( return_bundle != null ) {
+    			return_string = return_bundle.getString("returnStr");
+        		addNewPodMapping(pod_rename, return_string);
+        		// refresh the display of items
+        		displayPodNames();   
+    		}        	
+    	}
+	}
 }

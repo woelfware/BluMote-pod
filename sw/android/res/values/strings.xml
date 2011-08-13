@@ -38,6 +38,11 @@
     <string name="connect">Connect pod</string>
     <string name="disconnect">Disconnect pod</string>
     <string name="discoverable">Make discoverable</string>
+    <string name="about_license">Copyright 2011 Woelfware\n\nBluMote is free software: 
+    				you can redistribute it and/or modify it under the terms of the 
+					GNU General Public License as published by the Free Software Foundation,	
+					BluMote is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+					See the GNU General Public License at http://www.gnu.org/licenses/.\n</string>
     
 	<string name="spinner_prompt">Choose</string>
 	<string name="title_devices_list">List of Button Configurations</string>

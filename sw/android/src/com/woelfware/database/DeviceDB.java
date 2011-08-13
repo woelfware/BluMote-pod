@@ -72,7 +72,7 @@ public class DeviceDB {
 	public long insertButton(String curTable, String buttonID, String buttonCategory, byte[] content)
 	{
 		curTable = curTable.replace(" ", "_");
-		curTable = "["+curTable+"]";
+		curTable = deviceNameFormat(curTable);
 		
 		try {
 			Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
@@ -108,7 +108,7 @@ public class DeviceDB {
 	public ButtonData[] getButtons(String curTable)
 	{
 		curTable = curTable.replace(" ", "_");
-		curTable = "["+curTable+"]";
+		curTable = deviceNameFormat(curTable);
 		
 		Cursor c = db.query(curTable, null, null,
 				null, null, null, null);
@@ -135,7 +135,7 @@ public class DeviceDB {
 	public byte[] getButton(String device, String buttonID)
 	{
 		device = device.replace(" ", "_");
-		device = "["+device+"]";
+		device = deviceNameFormat(device);
 		
 		byte[] button;
 		
@@ -157,7 +157,7 @@ public class DeviceDB {
 	 */
 	public int addDevice(String table) {
 		table = table.replace(" ", "_");
-		table = "["+table+"]";
+		table = deviceNameFormat(table);
 		
 		Log.v("MyDB createTable","Creating table");
 		String TABLE="create table "+ table +" ("+
@@ -182,7 +182,7 @@ public class DeviceDB {
 	 */
 	public void removeDevice(String table) {
 		table = table.replace(" ", "_");
-		table = "["+table+"]";
+		table = deviceNameFormat(table);
 		
 		try {
 			db.execSQL("drop table if exists "+table);
@@ -198,7 +198,7 @@ public class DeviceDB {
 	 */
 	public void renameDevice(String table, String rename) {
 		table = table.replace(" ", "_");
-		table = "["+table+"]";
+		table = deviceNameFormat(table);
 		rename = rename.replace(" ", "_");
 		rename = "["+rename+"]";
 		try {
@@ -257,7 +257,7 @@ public class DeviceDB {
     public boolean deleteButton(String curTable, String buttonID) 
     {
     	curTable = curTable.replace(" ", "_");
-    	curTable = "["+curTable+"]";
+    	curTable = deviceNameFormat(curTable);
     	
         return db.delete(curTable, Constants.DB_FIELDS.BUTTON_ID.getValue() + 
         		"=" + buttonID, null) > 0;
@@ -274,7 +274,7 @@ public class DeviceDB {
     private boolean updateButton(String curTable, String buttonID, String buttonCategory, byte[] content) 
     {
     	curTable = curTable.replace(" ", "_");
-    	curTable = "["+curTable+"]";
+    	curTable = deviceNameFormat(curTable);
     	
     	// DEBUG var
     	boolean debug;
@@ -284,5 +284,12 @@ public class DeviceDB {
         debug = db.update(curTable, args, 
                   Constants.DB_FIELDS.BUTTON_ID.getValue() + "='" + buttonID+"'", null) > 0;
         return debug;
+    }
+    
+    private String deviceNameFormat( String deviceName ) {
+    	if (deviceName.startsWith("[")) {
+    		return deviceName;
+    	}
+    	return "["+deviceName+"]";    		
     }
 }

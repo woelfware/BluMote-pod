@@ -96,7 +96,7 @@ public final class R {
         public static final int append_init_btn=0x7f0a0005;
         public static final int back_btn=0x7f0a0016;
         public static final int back_skip_btn=0x7f0a0015;
-        public static final int backup=0x7f0a0062;
+        public static final int backup=0x7f0a005c;
         public static final int blue_btn=0x7f0a0047;
         public static final int btn_channel_down=0x7f0a002b;
         public static final int btn_channel_up=0x7f0a002a;
@@ -128,7 +128,7 @@ public final class R {
         public static final int btn_volume_down=0x7f0a0020;
         public static final int btn_volume_up=0x7f0a001f;
         public static final int button_scan=0x7f0a0051;
-        public static final int clear_devices=0x7f0a005d;
+        public static final int clear_devices=0x7f0a005f;
         public static final int device_name=0x7f0a000a;
         public static final int device_spinner=0x7f0a0011;
         public static final int devices_list=0x7f0a002d;
@@ -138,8 +138,8 @@ public final class R {
         public static final int disconnect=0x7f0a0053;
         public static final int down_btn=0x7f0a004a;
         public static final int eject_btn=0x7f0a001d;
-        public static final int end_activity_edit=0x7f0a005c;
-        public static final int end_init=0x7f0a005f;
+        public static final int end_activity_edit=0x7f0a005e;
+        public static final int end_init=0x7f0a0061;
         public static final int enter_button=0x7f0a000b;
         public static final int enter_init_dly=0x7f0a0009;
         public static final int exit_btn=0x7f0a0028;
@@ -150,8 +150,8 @@ public final class R {
         public static final int green_btn=0x7f0a0043;
         public static final int guide_btn=0x7f0a0027;
         public static final int info_btn=0x7f0a0022;
-        public static final int insert_delay=0x7f0a005e;
-        public static final int learn_mode=0x7f0a0060;
+        public static final int insert_delay=0x7f0a0060;
+        public static final int learn_mode=0x7f0a0062;
         public static final int left_btn=0x7f0a0044;
         public static final int mainView=0x7f0a000e;
         public static final int manage_devices=0x7f0a0054;
@@ -171,13 +171,13 @@ public final class R {
         public static final int red_btn=0x7f0a0048;
         public static final int redo_init_btn=0x7f0a0004;
         public static final int rename_misc=0x7f0a0058;
-        public static final int restore=0x7f0a0063;
+        public static final int restore=0x7f0a005d;
         public static final int return_btn=0x7f0a0026;
         public static final int right_btn=0x7f0a0046;
         public static final int scan=0x7f0a0052;
         public static final int skip_forward_btn=0x7f0a0018;
         public static final int stop_btn=0x7f0a001a;
-        public static final int stop_learn=0x7f0a0061;
+        public static final int stop_learn=0x7f0a0063;
         public static final int title_left_text=0x7f0a0006;
         public static final int title_new_devices=0x7f0a004f;
         public static final int title_paired_devices=0x7f0a004d;
@@ -211,25 +211,26 @@ public final class R {
         public static final int options_menu=0x7f090004;
     }
     public static final class string {
-        public static final int add_device_text=0x7f080014;
+        public static final int about_license=0x7f080011;
+        public static final int add_device_text=0x7f080015;
         public static final int app_name=0x7f080000;
         public static final int bt_not_enabled_leaving=0x7f080003;
         public static final int button_scan=0x7f08000d;
         /**  Options Menu 
          */
         public static final int connect=0x7f08000e;
-        public static final int delete_devices=0x7f08001a;
+        public static final int delete_devices=0x7f08001b;
         public static final int disconnect=0x7f08000f;
         public static final int discoverable=0x7f080010;
-        public static final int enter_device_title=0x7f080015;
-        public static final int get_pod_info=0x7f080018;
-        public static final int learn_button=0x7f080019;
-        public static final int manage_devices=0x7f080016;
-        public static final int menu_add=0x7f080013;
+        public static final int enter_device_title=0x7f080016;
+        public static final int get_pod_info=0x7f080019;
+        public static final int learn_button=0x7f08001a;
+        public static final int manage_devices=0x7f080017;
+        public static final int menu_add=0x7f080014;
         public static final int none_found=0x7f08000a;
         public static final int none_paired=0x7f080009;
         public static final int not_connected=0x7f080002;
-        public static final int rename_pod=0x7f080017;
+        public static final int rename_pod=0x7f080018;
         /**   DeviceListActivity 
          */
         public static final int scanning=0x7f080007;
@@ -237,10 +238,10 @@ public final class R {
         /**   BluetoothChat 
          */
         public static final int send=0x7f080001;
-        public static final int spinner_prompt=0x7f080011;
+        public static final int spinner_prompt=0x7f080012;
         public static final int title_connected_to=0x7f080005;
         public static final int title_connecting=0x7f080004;
-        public static final int title_devices_list=0x7f080012;
+        public static final int title_devices_list=0x7f080013;
         public static final int title_not_connected=0x7f080006;
         public static final int title_other_devices=0x7f08000c;
         public static final int title_paired_devices=0x7f08000b;

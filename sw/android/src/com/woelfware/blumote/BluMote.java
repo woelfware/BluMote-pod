@@ -481,12 +481,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// Stop the Bluetooth chat services
 		if (mChatService != null)
 			mChatService.stop();
-		// device_data.close();
-		// save the last table in preferences for next time we launch
-		// Editor mEditor = prefs.edit();
-		// mEditor.putString("lastDevice",cur_table);
-		// mEditor.commit();
-
 	}
 
 	// this is called after resume from another full-screen activity
@@ -671,11 +665,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "Invalid button!",	Toast.LENGTH_SHORT).show();
 			}
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
-			//TODO - convert to dialog window
 			sendCode(Codes.Pod.LEARN);
 			showDialog(DIALOG_LEARN_WAIT);
-//			Toast.makeText(this, "Aim remote at pod and press button...",
-//					Toast.LENGTH_SHORT).show();
 			
 		} else { 
 			if (mChatService.getState() == BluetoothChatService.STATE_CONNECTED) {				
@@ -748,13 +739,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					// Store the address of connecting device to preferences for
 					// re-connect on resume
 					// this global gets setup in onActivityResult()
-
 					Editor mEditor = prefs.edit();
 					mEditor.putString("lastPod", connectingMAC);
+					
 					// first need to pull current known devices list so we can
 					// append to it
 					if (connectingDevice != null) {
-						prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
+//						prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
 						String prefs_table = prefs.getString("knownDevices",null);
 
 						// then pull name of device off and append
@@ -808,8 +799,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			case MESSAGE_DEVICE_NAME:
 				// save the connected device's name
 				mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-				//Toast.makeText(getApplicationContext(),"Connected to " + mConnectedDeviceName,
-				//		Toast.LENGTH_SHORT).show();
+				// see if there is a user-defined name attached to this device name
+				mConnectedDeviceName = PodListActivity.translatePodName(
+						mConnectedDeviceName, prefs);
 				break;
 
 			case MESSAGE_TOAST:
@@ -820,28 +812,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			}
 		}
 	};	
-
-	/**
-	 * Connect a new pod that was selected in the PodListActivity
-	 * @param data the Intent data returned from PodListActivity
-	 */
-	protected void connectNewPod(Intent data) {		
-		// if already connected, break connection
-		if (mChatService.getState() != BluetoothChatService.STATE_NONE) {
-			mChatService.stop();
-		}					
-		// save device for future use - no need to re-scan
-		connectingDevice = (data.getExtras()
-				.getString(PodListActivity.EXTRA_DEVICE_NAME));
-		// .replaceAll("\\\\", "blah"); //for some reason strings get
-		// double backslash when pulling out
-
-		// Store the address of device to preferences for connect in
-		// onResume()
-		Editor mEditor = prefs.edit();
-		mEditor.putString("lastPod", connectingMAC);
-		mEditor.commit();
-	}
 	
 	// called when activities finish running and return to this activity
 	// strangely this is called BEFORE the onResume() function
@@ -855,18 +825,22 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// When DeviceListActivity returns with a device to connect
 			if (resultCode == Activity.RESULT_OK) {
 				// check if we are requesting to connect to a different pod
-				String curAddress = prefs.getString("lastPod", null);
+//				String curAddress = prefs.getString("lastPod", null);
 				// Get the device MAC address
 				connectingMAC = data.getExtras().getString(
 						PodListActivity.EXTRA_DEVICE_ADDRESS);
-				if (curAddress == null) {
-					// if null we know we have not connected to anything before
-					connectNewPod(data);
-				}
-				else if ( !curAddress.equals(connectingMAC) ) {
-					// if doesn't match from what we were connected to before
-					connectNewPod(data);
-				} 
+				connectingDevice = data.getExtras().getString(
+						PodListActivity.EXTRA_DEVICE_NAME);
+				// the onResume() function will connect to the "lastPod" item,
+				// it is called after this function completes.
+//				if (curAddress == null) {
+//					// if null we know we have not connected to anything before
+//					connectNewPod(data);
+//				}
+//				else if ( !curAddress.equals(connectingMAC) ) {
+//					// if doesn't match from what we were connected to before
+//					connectNewPod(data);
+//				} 
 			}
 			break;
 
@@ -1723,11 +1697,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case DIALOG_ABOUT:
 			// define dialog			
 			StringBuilder aboutDialog = new StringBuilder();
-			aboutDialog.append("Copyright 2011 Woelfware \n" +
-					"BluMote is free software: you can redistribute it and/or modify it under the terms of the " +
-					"GNU General Public License as published by the Free Software Foundation, " +					
-					"BluMote is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; " +
-					"See the GNU General Public License at http://www.gnu.org/licenses/.\n");
+			aboutDialog.append(getString(R.string.about_license));
 			aboutDialog.append("\nSW Revision: ");
 			String versionName = "";
 			try {
