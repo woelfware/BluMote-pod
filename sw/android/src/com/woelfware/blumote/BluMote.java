@@ -352,6 +352,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// refresh the haptic feedback pref
 		SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
 		hapticFeedback = myprefs.getBoolean("hapticPREF", true);
+		
+		// Load the last pod that we connected to, onResume() will try to connect to this
+		connectingMAC = prefs.getString("lastPod", null);
 	}	
 	
 	/**
@@ -447,11 +450,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (mBluetoothAdapter.isEnabled()) {
 				if ( (mChatService.getState() != BluetoothChatService.STATE_CONNECTING) &&
 						(mChatService.getState() != BluetoothChatService.STATE_CONNECTED)) {
-					String address = prefs.getString("lastPod", null);
 					// Get the BLuetoothDevice object
-					if (address != null) {
-						BluetoothDevice device = mBluetoothAdapter
-						.getRemoteDevice(address);
+					if (connectingMAC != null) {
+						BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(connectingMAC);
 						// Attempt to connect to the device
 						mChatService.connect(device);
 					}
