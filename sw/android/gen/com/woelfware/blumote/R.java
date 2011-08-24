@@ -202,7 +202,8 @@ public final class R {
         public static final int message=0x7f03000a;
         public static final int number_screen=0x7f03000b;
         public static final int pod_list=0x7f03000c;
-        public static final int spinner_entry=0x7f03000d;
+        public static final int roku_screen=0x7f03000d;
+        public static final int spinner_entry=0x7f03000e;
     }
     public static final class menu {
         public static final int activities_menu=0x7f090000;
