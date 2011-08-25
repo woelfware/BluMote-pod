@@ -57,7 +57,7 @@ public class Activities {
 		
 		// Initialize array adapter
 		mActivitiesArrayAdapter = new ArrayAdapter<String>(blumote,
-				R.layout.manage_devices_item);
+				R.layout.activities_item);
 	}
 		
 	/**

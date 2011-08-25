@@ -63,9 +63,6 @@ import com.woelfware.database.Constants.CATEGORIES;
  */
 public class BluMote extends Activity implements OnClickListener,OnItemClickListener,OnItemSelectedListener
 {
-	/*****
-	 * THIS IS A TEST OF BRANCHING!
-	 */
 	// Debugging
 	// private static final String TAG = "BlueMote";
 	static final boolean D = true;
