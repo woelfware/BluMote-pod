@@ -16,13 +16,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
+    android:layout_height="wrap_content"
     android:baselineAligned="false">
-    <ImageButton android:src="@drawable/dvd" android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/testing_btn" android:scaleType="centerInside"></ImageButton>    
-	<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"
-	    android:textSize="18sp"
-	    android:padding="5dp"
-	/>
+    <ImageView 	
+    	android:src="@drawable/dvd" android:layout_width="wrap_content" 
+    	android:id="@+id/testing_btn" 
+    	android:layout_gravity="left" android:layout_height="fill_parent" />
+	<TextView
+		android:id="@+id/activity_label"
+		android:text="Testing"
+		android:textSize="30sp"
+	    android:paddingLeft="10dip"
+        android:layout_gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </LinearLayout>
