@@ -2,8 +2,10 @@
  * Copyright (c) 2011 Woelfware
  */
 
+#include "blumote.h"
 #include "config.h" 
 #include "hw.h"
+#include "ir.h"
 #include "msp430.h"
 
 enum gp_buf_owner gp_buf_owner = gp_buf_owner_none;
@@ -83,6 +85,17 @@ __interrupt void USCI0RX_ISR(void)
 {
 	(void)buf_enque(&uart_rx, UCA0RXBUF);
 	_BIC_SR(LPM4_EXIT);	/* wake up from low power mode */
+
+	/* A hack to abort an IR transmission.
+	 * The IR is the only task running when an IR code is being transmitted.
+	 * When we get an IR abort command, this will allow the IR task to
+	 * service the abort.
+	 */
+	if (UCA0RXBUF == BLUMOTE_IR_TRANSMIT_ABORT) {
+		if (ir_tx_abort()) {
+			(void)buf_deque(&uart_rx, NULL);
+		}
+	}
 }
 
 #pragma vector = TIMERA0_VECTOR
@@ -102,3 +115,4 @@ __interrupt void TIMERA1_ISR(void)
 		break;
 	}
 }
+

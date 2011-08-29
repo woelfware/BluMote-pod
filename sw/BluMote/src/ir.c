@@ -7,6 +7,8 @@
 #include <string.h>
 
 static int repeat_cnt = NBR_IR_BURSTS;
+static bool txing_ir_code = false,
+	abort_tx = false;
 
 static inline bool is_space()
 {
@@ -140,6 +142,7 @@ bool ir_main(int_fast32_t us)
 			if (!buf_deque(&gp_rx_tx, &c)) {
 				ttl += c;
 				current_state = tx_pulses;
+				txing_ir_code = true;
 				carrier_freq(true);
 			} else {
 				/* incomplete ir code */
@@ -151,6 +154,13 @@ bool ir_main(int_fast32_t us)
 
 	case tx_pulses:
 		ttl -= us;
+		
+		if (abort_tx) {
+			ttl = 0;
+			repeat_cnt = 0;
+			buf_clear(&gp_rx_tx);
+		}
+		
 		if (ttl <= 0) {
 			carrier_freq(false);
 			if (!buf_deque(&gp_rx_tx, &c)) {
@@ -166,7 +176,7 @@ bool ir_main(int_fast32_t us)
 			} else {
 				/* done */
 				repeat_cnt--;
-				if (repeat_cnt) {
+				if (repeat_cnt > 0) {
 					memcpy(&gp_rx_tx, &m_ir_buf, sizeof(gp_rx_tx));
 					current_state = wait_for_code;
 				} else {
@@ -179,6 +189,13 @@ bool ir_main(int_fast32_t us)
 
 	case tx_spaces:
 		ttl -= us;
+		
+		if (abort_tx) {
+			ttl = 0;
+			repeat_cnt = 0;
+			buf_clear(&gp_rx_tx);
+		}
+		
 		if (ttl <= 0) {
 			if (!buf_deque(&gp_rx_tx, &c)) {
 				ttl = (int_fast32_t)c << 8;
@@ -194,7 +211,7 @@ bool ir_main(int_fast32_t us)
 			} else {
 				/* done */
 				repeat_cnt--;
-				if (repeat_cnt) {
+				if (repeat_cnt > 0) {
 					memcpy(&gp_rx_tx, &m_ir_buf, sizeof(gp_rx_tx));
 					current_state = wait_for_code;
 				} else {
@@ -213,10 +230,24 @@ bool ir_main(int_fast32_t us)
 		current_state = default_state;
 		run_again = false;
 		repeat_cnt = NBR_IR_BURSTS;
+		txing_ir_code = false;
+		abort_tx = false;
 		break;
 	}
 
 	return run_again;
+}
+
+bool ir_tx_abort()
+{
+	bool aborted = false;
+
+	if (txing_ir_code) {
+		abort_tx = true;
+		aborted = true;
+	}
+
+	return aborted;
 }
 
 void set_ir_repeat_cnt(int cnt)
@@ -227,3 +258,4 @@ void set_ir_repeat_cnt(int cnt)
 		repeat_cnt = NBR_IR_BURSTS;
 	}
 }
+

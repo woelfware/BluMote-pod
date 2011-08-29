@@ -56,3 +56,4 @@ bool buf_undeque(struct circular_buffer *que, uint8_t k);
 void buf_clear(struct circular_buffer *que);
 
 #endif /*BUFFER_H_*/
+

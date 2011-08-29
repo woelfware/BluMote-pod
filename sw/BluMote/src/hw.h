@@ -46,3 +46,4 @@ int_fast32_t get_us();
 bool own_gp_buf(enum gp_buf_owner owner);
 
 #endif /*HW_H_*/
+
