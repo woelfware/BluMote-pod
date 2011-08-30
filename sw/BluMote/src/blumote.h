@@ -8,6 +8,7 @@ enum command_codes {
 	BLUMOTE_GET_VERSION,
 	BLUMOTE_LEARN,
 	BLUMOTE_IR_TRANSMIT,
+	BLUMOTE_IR_TRANSMIT_ABORT,
 	BLUMOTE_DEBUG = 0xFF	/* specialized debug command whose functionality may change any time */
 };
 
@@ -37,3 +38,4 @@ bool blumote_main(int_fast32_t us);
 bool tx_learned_code();
 
 #endif /*BLUMOTE_H_*/
+

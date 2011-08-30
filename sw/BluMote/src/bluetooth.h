@@ -37,3 +37,4 @@ bool issue_bluetooth_reset(int_fast32_t us);
 bool bluetooth_main(int_fast32_t us);
 
 #endif /*BLUETOOTH_H_*/
+
