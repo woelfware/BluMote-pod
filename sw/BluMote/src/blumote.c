@@ -6,6 +6,7 @@
 #include "blumote.h"
 #include "config.h"
 #include "hw.h"
+#include "ir.h"
 #include <string.h>
 
 enum m_strcmp_rc {
@@ -42,7 +43,7 @@ static bool blumote_process_cmd()
 		 */
 		uint8_t c;
 		(void)buf_deque(&gp_rx_tx, &c);	/* reserved */
-		set_ir_repeat_cnt(c & 0x07);
+		set_ir_repeat_cnt(c & IR_REPEAT_MASK);
 		(void)buf_deque(&gp_rx_tx, NULL);	/* length */
 		tx_ir_code = true;
 		gp_buf_owner = gp_buf_owner_none;
@@ -491,3 +492,4 @@ bool tx_learned_code()
 
 	return run_again; 
 }
+

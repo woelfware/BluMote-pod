@@ -214,7 +214,7 @@ public class PodListActivity extends Activity {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (BluMote.D) {
+                if (BluMote.DEBUG) {
                 	String name = device.getName();
                 	if (name.endsWith("\n") || name == "" || name == null) {
                 		Log.e(TAG, "found a malformed device name: "+ name);

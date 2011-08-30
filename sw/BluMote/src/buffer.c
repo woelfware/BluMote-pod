@@ -52,3 +52,4 @@ void buf_clear(struct circular_buffer *que)
 	que->cnt = 0;
 	que->wr_ptr = que->rd_ptr = 0;
 }
+

@@ -543,8 +543,8 @@ public class Activities {
 						// problem is that normally PKTS_SENT gets decremented by an ACTION_UP which
 						// in this case is not an option....need to either clear it or find some way to wait
 						// until the ACK is received but also prevent locking up
-						BluMote.PKTS_SENT = 0;
-						blumote.sendButton(toSend);
+//						BluMote.PKTS_SENT = 0;
+						blumote.sendButtonCode(toSend);
 					}
 				}
 			}				
@@ -570,7 +570,7 @@ public class Activities {
 	
 	public void nextPowerOffData() {
 		if (powerOffDataIndex < powerOffData.length) {
-			blumote.sendButton(powerOffData[powerOffDataIndex].getButtonData());
+			blumote.sendButtonCode(powerOffData[powerOffDataIndex].getButtonData());
 			powerOffDataIndex++;
 
 			if (powerOffDataIndex < powerOffData.length) {
