@@ -31,6 +31,7 @@ class Codes {
         public static final byte DEBUG = (byte)0xFF;  // testing purpose only
         public static final byte ACK = (byte)0x06;
         public static final byte NACK = (byte)0x15;
+        public static final byte ABORT_TRANSMIT = (byte)0x03; // stop repeating IR command
     }
     
     // this keeps track of what state the interface is in
@@ -55,6 +56,7 @@ class Codes {
         IR_TRANSMIT, // transmit an ir code
         ABORT_LEARN, // aborting the learn mode
         DEBUG, // debug mode for testing
+        ABORT_TRANSMIT,
     }    
     
     static int debug_send = 0;

@@ -52,6 +52,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
+import com.woelfware.blumote.Codes.Pod;
 import com.woelfware.database.DeviceDB;
 import com.woelfware.database.Constants.CATEGORIES;
 
@@ -64,8 +65,9 @@ import com.woelfware.database.Constants.CATEGORIES;
 public class BluMote extends Activity implements OnClickListener,OnItemClickListener,OnItemSelectedListener
 {
 	// Debugging
-	// private static final String TAG = "BlueMote";
-	static final boolean D = true;
+	@SuppressWarnings("unused")
+	private static final String TAG = "BlueMote";
+	static final boolean DEBUG = true;
 	
 	// set false for using the emulator for testing UI
 	static final boolean ENABLE_BT = true;
@@ -158,11 +160,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	Codes.INTERFACE_STATE INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
 	
 	// these are all in ms (milli-seconds)
-	private static int DELAY_TIME = 300; // minimum time pod needs before receiving a new button press
-	static int MEDIUM_DELAY_TIME = 750; // repeat button click delay
+	private static int DELAY_TIME = 750; // timeout to release IR transmit lock if pod doesn't send us an ACK
+	static int MEDIUM_DELAY_TIME = 50000; // repeat button click delay (after button held)
 	private static int LONG_DELAY_TIME = 1500; // starts repeated button clicks
 
-	// Flag that tells us if we are holding our finger on a buttona and should
+	// number of times that pod should repeat when button held down
+	private static final byte REPEAT_IR_LONG = (byte) 200;
+	
+	// Flag that tells us if we are holding our finger on a button and should
 	// loop
 	private static boolean BUTTON_LOOPING = false;
 	
@@ -175,9 +180,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// a unique integer code for each time a button is pushed, used for preventing
 	// a user from double pushing a button and the long timer accidentally activates
 	private static int buttonPushID = 0;
-
-	// producer/consumer variable for messages sent versus ACK'd
-	static int PKTS_SENT = 0;
 
 	// Hash map to keep track of all the buttons on the interface and associated
 	// properties
@@ -296,7 +298,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 {                     	
                 	if (button_map.get(v.getId()) != null) {
                 		// if this is a valid button press then execute the button logic
-
                 		if (e.getAction() == MotionEvent.ACTION_DOWN) {
                 			isButtonPushed = true;
                 			buttonPushID++;
@@ -313,9 +314,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 					public void onFinish() {
                 						// called when timer expired
                 						isButtonTimerStarted = false;
-                						if (getButtonID() == buttonPushID) {
+                						if ((getButtonID() == buttonPushID) && isButtonPushed) {
                 							// if this was the original button push we started with
-                							// then execute the long button push
+                							// and button is still being pushed then execute the long button push
                 							executeButtonLongDown();        
                 						}
                 					}
@@ -328,7 +329,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 		// and hold finger on button and you'll get duplicates
                 		if (e.getAction() == MotionEvent.ACTION_UP) {
                 			isButtonTimerStarted = false;
-                			isButtonPushed = false; 
+                			isButtonPushed = false;                 			
                 		}
                 	}
                 } // END else
@@ -366,7 +367,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// This method entered if the long key press is triggered from countdown timer,
 		// also if we re-launch the method after a short delay time which is done if 
 		// the user is still holding the button down.
-		
 		if (isButtonPushed) { // check if user moved finger off button before firing button press
 			// indicate to onClick() that we are in repeat key mode, prevents double click of final release
 			BUTTON_LOOPING = true;
@@ -375,12 +375,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (mainScreen.isNavigationButton(lastView.getId())) {
 				// execute navigation
 				executeNavigationButton(lastView.getId());
-			}
-
-			else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY || 
+			} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY || 
 					INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {				
-
-				buttonSend(lastView.getId());
+				sendButton(lastView.getId());
 				// start a new shorter timer that will call this method
 				buttonPushID++; // increment global button push id
 				new ButtonCountDown(MEDIUM_DELAY_TIME, buttonPushID) {
@@ -395,6 +392,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			}		
 		} else {
 			BUTTON_LOOPING = false;
+			// send abort IR transmit command if button not being held any longer
+			sendCode(Pod.ABORT_TRANSMIT);
 		}
 	}
 	
@@ -672,7 +671,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		} else { 
 			if (mChatService.getState() == BluetoothChatService.STATE_CONNECTED) {				
 				if (BUTTON_LOOPING == false) {
-					buttonSend(BUTTON_ID);
+					sendButton(BUTTON_ID);
 				}
 			} else {
 			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT)
@@ -1020,8 +1019,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.backup:
-			// start the backup to the SD card 	
-			//TODO	    
+			// start the backup to the SD card	    
 			ExportDatabaseFileTask backupStuff = new ExportDatabaseFileTask(this);
 			backupStuff.execute("");
 			// now backup prefs file
@@ -1279,7 +1277,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * that was selected.
 	 * @param buttonID The resource ID of the button that was pushed
 	 */
-	protected void buttonSend(int buttonID) {		
+	protected void sendButton(int buttonID) {		
 		boolean foundIt = false;
 		if (buttonID == R.id.power_off_btn) {
 			// if this is an activity power off button, then treat differently
@@ -1298,7 +1296,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						byte[] code = buttons[i].getButtonData();
 						if (code != null) {
 							foundIt = true;
-							sendButton(code);
+							sendButtonCode(code);
 						}
 					}				 
 				}
@@ -1315,10 +1313,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * this function sends the byte[] for a button to the pod
 	 * @param code the IR code data to send
 	 */
-	protected void sendButton(byte[] code) {
+	protected void sendButtonCode(byte[] code) {
 		if (!buttonLock && code != null) { // make sure we have not recently sent a button
 			buttonLock = true;
-			// create a new timer to avoid flooding pod with button data
+			//create a new timer to avoid flooding pod with button data
 			new CountDownTimer(DELAY_TIME, DELAY_TIME) {
 				public void onTick(long millisUntilFinished) {
 					// no need to use this function
@@ -1330,22 +1328,23 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			}.start();	
 			
 			byte command = (byte) (Codes.Pod.IR_TRANSMIT);
-			byte[] toSend = new byte[code.length + 1]; // 1 extra bytes
-			// for command
-			// byte
+			byte[] toSend = new byte[code.length + 1]; // 1 extra byte for command byte
 			toSend[0] = command;
 			for (int j = 1; j < toSend.length; j++) {
-				toSend[j] = code[j - 1];
+				// insert different repeat flags based on if this
+				// is a long press or a short press of the button
+				if (BUTTON_LOOPING && j == 1) {
+					toSend[j] = REPEAT_IR_LONG; // long press
+				} else if (!BUTTON_LOOPING && j == 1) {
+					toSend[j] = 0; // short press
+				} else {
+					toSend[j] = code[j - 1];
+				}
 			}
 			// {command, 0x00, code}; // 0x00 is reserved byte
 			BT_STATE = Codes.BT_STATE.IR_TRANSMIT;
 
-			// increment producer/consumer, ACK received will consume,
-			// removing finger from button clears
-			if (PKTS_SENT == 0) {
-				sendMessage(toSend); // send data if matches
-				PKTS_SENT = PKTS_SENT + 2;
-			}
+			sendMessage(toSend); // send data if matches
 		}
 	}
 	
@@ -1359,16 +1358,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		switch (code) {
 		case Codes.Pod.LEARN:
 			toSend = new byte[1];
-			toSend[0] = Codes.Pod.LEARN;
-			toSend[0] = (byte) toSend[0];
+			toSend[0] = (byte)Codes.Pod.LEARN;
 			BT_STATE = Codes.BT_STATE.LEARN;
 			sendMessage(toSend);
 			break;
 
 		case Codes.Pod.ABORT_LEARN:
 			toSend = new byte[1];
-			toSend[0] = Codes.Pod.ABORT_LEARN;
-			toSend[0] = (byte) toSend[0];
+			toSend[0] = (byte)Codes.Pod.ABORT_LEARN;
 			BT_STATE = Codes.BT_STATE.ABORT_LEARN;
 			sendMessage(toSend);
 			break;
@@ -1376,11 +1373,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case Codes.Pod.GET_VERSION:
 			BT_STATE = Codes.BT_STATE.GET_VERSION;
 			toSend = new byte[1];
-			toSend[0] = Codes.Pod.GET_VERSION;
-			toSend[0] = (byte) toSend[0];
+			toSend[0] = (byte)Codes.Pod.GET_VERSION;
 			sendMessage(toSend);
 			break;
 
+		case Codes.Pod.ABORT_TRANSMIT:
+			BT_STATE = Codes.BT_STATE.ABORT_TRANSMIT;
+			toSend = new byte[1];
+			toSend[0] = (byte)Codes.Pod.ABORT_TRANSMIT;
+			sendMessage(toSend);
+			break;
 		} // end switch
 	}
 
@@ -1485,10 +1487,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						// if we got here then we are on the third byte of data
 						if (Utilities.isGreaterThanUnsignedByte(
 								response[index], 0)) {
-							Codes.pod_data = new byte[(0x00FF & response[index]) + 2];
+							Codes.pod_data = new byte[(0x00FF & response[index]) + 2]; 
 							// store length of data as first two bytes (used in
 							// transmitting back)
-							Codes.pod_data[Codes.data_index++] = 0;
+							Codes.pod_data[Codes.data_index++] = 0; // default to 0
 							Codes.pod_data[Codes.data_index++] = response[index];
 							bytes--;
 							index = (index + 1)
@@ -1505,7 +1507,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							Codes.pod_data[Codes.data_index++] = response[index];
 							// first check to see if this is the last byte
 							if (Utilities.isGreaterThanUnsignedByte(
-									Codes.data_index, Codes.pod_data[1] + 1)) {
+									Codes.data_index, Codes.pod_data[1] + 1)) { 
 								// if we got here then we are done, pod_data[1]
 								// is the expected message length
 								storeButton();
@@ -1602,16 +1604,20 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			break;
 
 		case IR_TRANSMIT:
-			BT_STATE = Codes.BT_STATE.IDLE;
-			// decrement PKTS_SENT - we need to prevent user from flooding
-			// pod with data
-			if (PKTS_SENT > 1) {
-				PKTS_SENT = PKTS_SENT - 2;
-			} else if (PKTS_SENT > 0) {
-				PKTS_SENT--;
-			}
+			BT_STATE = Codes.BT_STATE.IDLE;			
 			if (response[index] == Codes.Pod.ACK) {
-				// right now we don't do anything differently for ACK/NACK
+				// release lock if we get an ACK
+				buttonLock = false;
+				if (DEBUG) {
+					Toast.makeText(this, "ACK received", Toast.LENGTH_SHORT).show();
+				}
+			}
+			break;
+			
+		case ABORT_TRANSMIT:
+			BT_STATE = Codes.BT_STATE.IDLE; // reset state
+			if (response[index] == Codes.Pod.ACK) {
+				Toast.makeText(this, "ACK received for abort transmit", Toast.LENGTH_SHORT).show();
 			}
 			break;
 		}
