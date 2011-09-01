@@ -67,7 +67,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Debugging
 	@SuppressWarnings("unused")
 	private static final String TAG = "BlueMote";
-	static final boolean DEBUG = true;
+	static final boolean DEBUG = false;
 	
 	// set false for using the emulator for testing UI
 	static final boolean ENABLE_BT = true;
@@ -160,12 +160,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	Codes.INTERFACE_STATE INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
 	
 	// these are all in ms (milli-seconds)
-	private static int DELAY_TIME = 750; // timeout to release IR transmit lock if pod doesn't send us an ACK
-	static int MEDIUM_DELAY_TIME = 50000; // repeat button click delay (after button held)
-	private static int LONG_DELAY_TIME = 1500; // starts repeated button clicks
+	private static int LOCK_RELEASE_TIME = 5000; // timeout to release IR transmit lock if pod doesn't send us an ACK
+	static int DELAY_TIME = 200; // repeat button click delay (after button held)
+	private static int LONG_DELAY_TIME = 1000; // starts repeated button clicks
 
 	// number of times that pod should repeat when button held down
-	private static final byte REPEAT_IR_LONG = (byte) 200;
+	private static final byte REPEAT_IR_LONG = (byte) 150;
 	
 	// Flag that tells us if we are holding our finger on a button and should
 	// loop
@@ -329,7 +329,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 		// and hold finger on button and you'll get duplicates
                 		if (e.getAction() == MotionEvent.ACTION_UP) {
                 			isButtonTimerStarted = false;
-                			isButtonPushed = false;                 			
+                			isButtonPushed = false; 
+                			// if we were doing a long press, 
+							// make sure that we exit repeat mode
+                			if (BUTTON_LOOPING) {  	
+                				sendCode(Pod.ABORT_TRANSMIT); 
+                				BUTTON_LOOPING = false;
+                			}
                 		}
                 	}
                 } // END else
@@ -380,7 +386,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				sendButton(lastView.getId());
 				// start a new shorter timer that will call this method
 				buttonPushID++; // increment global button push id
-				new ButtonCountDown(MEDIUM_DELAY_TIME, buttonPushID) {
+				new ButtonCountDown(DELAY_TIME, buttonPushID) {
 					public void onFinish() {
 						// called when timer expired
 						if (getButtonID() == buttonPushID) {
@@ -1064,9 +1070,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 
 		case R.id.learn_mode:
-			Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
-			BT_STATE = Codes.BT_STATE.LEARN;
-			INTERFACE_STATE = Codes.INTERFACE_STATE.LEARN;
+			// TODO need to make sure that user has a device selected in the drop down before
+			// entering learn mode
+			if (mainScreen.getCurrentDropDown() != null) {
+				Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
+				BT_STATE = Codes.BT_STATE.LEARN;
+				INTERFACE_STATE = Codes.INTERFACE_STATE.LEARN;
+			} else {
+				Toast.makeText(this, "You must have a device selected in the drop-down menu!", Toast.LENGTH_SHORT).show();
+			}
 			return true;
 
 		case R.id.stop_learn:
@@ -1317,7 +1329,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		if (!buttonLock && code != null) { // make sure we have not recently sent a button
 			buttonLock = true;
 			//create a new timer to avoid flooding pod with button data
-			new CountDownTimer(DELAY_TIME, DELAY_TIME) {
+			new CountDownTimer(LOCK_RELEASE_TIME, LOCK_RELEASE_TIME) {
 				public void onTick(long millisUntilFinished) {
 					// no need to use this function
 				}
@@ -1609,7 +1621,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				// release lock if we get an ACK
 				buttonLock = false;
 				if (DEBUG) {
-					Toast.makeText(this, "ACK received", Toast.LENGTH_SHORT).show();
+					Toast.makeText(this, "ACK received - lock removed", Toast.LENGTH_SHORT).show();
 				}
 			}
 			break;

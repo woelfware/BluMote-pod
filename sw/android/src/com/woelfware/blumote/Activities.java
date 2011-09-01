@@ -575,7 +575,7 @@ public class Activities {
 
 			if (powerOffDataIndex < powerOffData.length) {
 				//need to start a wait timer for this period of time
-				new CountDownTimer(BluMote.MEDIUM_DELAY_TIME, BluMote.MEDIUM_DELAY_TIME) {
+				new CountDownTimer(BluMote.DELAY_TIME, BluMote.DELAY_TIME) {
 					public void onTick(long millisUntilFinished) {
 						// no need to use this function
 					}
