@@ -167,8 +167,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// number of times that pod should repeat when button held down
 	private static final byte REPEAT_IR_LONG = (byte) 150;
 	
-	// Flag that tells us if we are holding our finger on a button and should
-	// loop
+	// Flag that tells us if we are holding our finger on a button and should loop
 	private static boolean BUTTON_LOOPING = false;
 	
 	// arraylist position of activity that we want to rename
@@ -1317,7 +1316,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "No IR code found!", Toast.LENGTH_SHORT).show();
 			}
 		} else {
-			Toast.makeText(this, "Button not setup!", Toast.LENGTH_SHORT).show();
+			// if not looping let user know button not setup
+			if (!BUTTON_LOOPING) {
+				Toast.makeText(this, "Button not setup!", Toast.LENGTH_SHORT).show();
+			}
 		}		
 	}
 	
