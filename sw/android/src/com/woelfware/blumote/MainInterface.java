@@ -394,7 +394,7 @@ public class MainInterface {
 					// first clear the arraylist that keeps track if initialization entries
 					blumote.activityInit.clear();
 					// Launch the function to ask for a name for device
-					Intent i = new Intent(blumote, EnterDevice.class);
+					Intent i = new Intent(blumote, CreateActivity.class);
 					blumote.startActivityForResult(i, BluMote.ACTIVITY_ADD);
 				}
 			});

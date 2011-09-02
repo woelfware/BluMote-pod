@@ -873,9 +873,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Bundle return_bundle = data.getExtras();
 				if (return_bundle != null) {
 					String return_string = return_bundle.getString("returnStr");
-					
+					int image_id = return_bundle.getInt(CreateActivity.IMAGE_ID);
 					// Add item to list
-					activities.addActivity(return_string);							
+					activities.addActivity(return_string, image_id);							
 				}				
 			}
 			break;

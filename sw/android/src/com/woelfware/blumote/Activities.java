@@ -253,8 +253,10 @@ public class Activities {
 	/**
 	 * add a new activity to the arraylist on the interface
 	 * @param s the name of the activity to add to the arraylist
+	 * @param image the resource ID of the image to use in the list
 	 */
-	public void addActivity(String s) {
+	public void addActivity(String s, int image) {
+		// TODO - add the image logic
 		// add to arraylist
 		mActivitiesArrayAdapter.add(s);
 

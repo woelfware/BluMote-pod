@@ -19,8 +19,8 @@
     android:layout_height="wrap_content"
     android:baselineAligned="false">
     <ImageView 	
-    	android:src="@drawable/dvd" android:layout_width="wrap_content" 
-    	android:id="@+id/testing_btn" 
+    	android:src="@drawable/tv" android:layout_width="wrap_content" 
+    	android:id="@+id/activity_image" 
     	android:layout_gravity="left" android:layout_height="fill_parent" />
 	<TextView
 		android:id="@+id/activity_label"
