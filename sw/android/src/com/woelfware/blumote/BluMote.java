@@ -1038,7 +1038,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				
 				// populate activities arraylist with initial items
 				// need to pass in the arrayadapter we want to populate
-				activities.populateActivites(true, activities.mActivitiesArrayAdapter); 
+				Activities.populateImageActivities(activities.mActivitiesArrayAdapter, prefs); 
 			} else {
 				Toast.makeText(this, "Import failed!", Toast.LENGTH_SHORT).show();
 			}

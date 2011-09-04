@@ -401,7 +401,7 @@ public class MainInterface {
 			
 			// populate activities arraylist with initial items
 			// need to pass in the arrayadapter we want to populate
-			activities.populateActivites(true, activities.mActivitiesArrayAdapter); 
+			Activities.populateImageActivities(activities.mActivitiesArrayAdapter, blumote.prefs); 
 			
 			/*************************************
 			* SPINNER SETUP
@@ -480,7 +480,7 @@ public class MainInterface {
 			}
 
 			//put activities into drop-down
-			activities.populateActivites(false, spinnerAdapter);
+			Activities.populateActivities(spinnerAdapter, blumote.prefs);
 
 			// always fetch buttons after we populate the drop down
 			fetchButtons();
