@@ -72,7 +72,7 @@ public class CreateActivity extends Activity {
 	    gallery.setAdapter(imageAdapter);
 
 	    gallery.setOnItemClickListener(new OnItemClickListener() {
-	        public void onItemClick(AdapterView parent, View v, int position, long id) {
+	        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
 	            Toast.makeText(CreateActivity.this, "" + position + " RID: "+
 	            		(Integer)imageAdapter.getItem(position), Toast.LENGTH_SHORT).show();
 	            // save the image that was selected
@@ -90,7 +90,17 @@ public class CreateActivity extends Activity {
 	    private Integer[] mImageIds = {
 	            R.drawable.tv,
 	            R.drawable.oldgamecontroller,
-	            R.drawable.dvd
+	            R.drawable.dvd,
+	            R.drawable.cinema,
+	            R.drawable.headphones,
+	            R.drawable.movie,
+	            R.drawable.musicnote,
+	            R.drawable.nintendo,
+	            R.drawable.playstation,
+	            R.drawable.popcorn,
+	            R.drawable.vintage,
+	            R.drawable.wii,
+	            R.drawable.xbox360
 	    };
 
 	    public ImageAdapter(Context c) {
@@ -116,8 +126,8 @@ public class CreateActivity extends Activity {
 	    public View getView(int position, View convertView, ViewGroup parent) {
 	        ImageView imageView = new ImageView(mContext);
 	        imageView.setImageResource(mImageIds[position]);
-	        imageView.setLayoutParams(new Gallery.LayoutParams(150, 100));
-	        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+	        imageView.setLayoutParams(new Gallery.LayoutParams(120, 85));
+	        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 	        imageView.setBackgroundResource(mGalleryItemBackground);
 
 	        return imageView;

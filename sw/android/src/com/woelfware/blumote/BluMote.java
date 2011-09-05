@@ -52,6 +52,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
+import com.woelfware.blumote.Activities.ImageActivityItem;
 import com.woelfware.blumote.Codes.Pod;
 import com.woelfware.database.DeviceDB;
 import com.woelfware.database.Constants.CATEGORIES;
@@ -1259,7 +1260,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
 		
 		// extract the name of activity that was selected
-		String activity = ((TextView)v).getText().toString();
+		ImageActivityItem item = activities.mActivitiesArrayAdapter.getItem(position);
+		String activity = item.title;
 		
 		// set the working activity before using any activities functions
 		activities.setWorkingActivity(activity);
