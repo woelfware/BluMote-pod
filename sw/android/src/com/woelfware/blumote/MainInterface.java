@@ -394,14 +394,14 @@ public class MainInterface {
 					// first clear the arraylist that keeps track if initialization entries
 					blumote.activityInit.clear();
 					// Launch the function to ask for a name for device
-					Intent i = new Intent(blumote, EnterDevice.class);
+					Intent i = new Intent(blumote, CreateActivity.class);
 					blumote.startActivityForResult(i, BluMote.ACTIVITY_ADD);
 				}
 			});
 			
 			// populate activities arraylist with initial items
 			// need to pass in the arrayadapter we want to populate
-			activities.populateActivites(true, activities.mActivitiesArrayAdapter); 
+			Activities.populateImageActivities(activities.mActivitiesArrayAdapter, blumote.prefs); 
 			
 			/*************************************
 			* SPINNER SETUP
@@ -480,7 +480,7 @@ public class MainInterface {
 			}
 
 			//put activities into drop-down
-			activities.populateActivites(false, spinnerAdapter);
+			Activities.populateActivities(spinnerAdapter, blumote.prefs);
 
 			// always fetch buttons after we populate the drop down
 			fetchButtons();

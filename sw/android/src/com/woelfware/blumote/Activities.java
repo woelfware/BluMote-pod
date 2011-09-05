@@ -5,11 +5,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.CountDownTimer;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.woelfware.database.Constants;
 /**
@@ -26,7 +33,7 @@ public class Activities {
 
 	private MainInterface mainint = null;
 	private BluMote blumote = null;
-	ArrayAdapter<String> mActivitiesArrayAdapter = null;
+	ImageArrayAdapter mActivitiesArrayAdapter = null;
 	private String workingActivity = null;
 	
 	// prefix to put before a new activity to prefs file to find it easier
@@ -36,6 +43,8 @@ public class Activities {
 	private static final String INIT = "INIT";
 	// SUFFIX for power off codes to store
 	private static final String OFF = "_OFF";
+	// SUFFIX for image associated with activity
+	private static final String IMAGEID = "IMAGE#";
 	
 	// these member variables will deal with executing all the 
 	// initialization steps
@@ -56,35 +65,25 @@ public class Activities {
 		this.blumote = blumote;
 		
 		// Initialize array adapter
-		mActivitiesArrayAdapter = new ArrayAdapter<String>(blumote,
-				R.layout.manage_devices_item);
+		mActivitiesArrayAdapter = new ImageArrayAdapter(blumote, R.layout.activities_item);
 	}
-		
+	
 	/**
-	 * updates the arrayadapter parameter with all the activities from the
-	 * prefs file.  boolean suppressPrefix is used to remove the
-	 * ACTIVITIES_PREFIX if that is desired
+	 * Get the activities from prefs file as an ArrayList<ImageActivityItem>
 	 * @param suppressPrefix true if we want to remove the activity prefix ACTIVITY_PREFIX, 
 	 * false if we don't want to suppress when adding to the ArrayAdapter
-	 * @param adapter the ArrayAdapter that we want to add activities to
-	 * @param prefs the SharedPreferences object that we used to store activities in
-	 * 
+	 * @param prefs
+	 * @return
 	 */
-	static void populateActivities(boolean suppressPrefix, ArrayAdapter<String> adapter, 
-			SharedPreferences prefs) {
+	static ArrayList<ImageActivityItem> getImageActivities(boolean suppressPrefix, SharedPreferences prefs) {
 		Map<String,?> values = prefs.getAll();
+		ArrayList<ImageActivityItem> items = new ArrayList<ImageActivityItem>();
 		
 		// iterate through these values
 		for (String item : values.keySet()) {
 			// check if prefix is an activity and this is not an initialization item
 			if (item.startsWith(ACTIVITY_PREFIX)) {
-				// make sure none of the suffixes are present
-				if (item.endsWith(INIT) ) {
-					 continue;
-				}
-				if (item.endsWith(OFF)) {
-					continue;
-				}
+				// make sure it is not a misc button item				
 				boolean foundIt = false;
 				for (int i=0; i< MainInterface.NUM_MISC_BTNS; i++) {
 					if (item.endsWith(MainInterface.BTN_MISC + Integer.toString(i))) {
@@ -95,33 +94,54 @@ public class Activities {
 				if (foundIt) {
 					continue;
 				}
-				if (suppressPrefix == true) {
+				
+				// if we got here we have a valid item
+				
+				// see if there is an image associated with it
+				int imageId = prefs.getInt(formatActivityImageIdSuffix(item), R.drawable.tv);
+				
+				if (suppressPrefix == true) {					
 					// remove the prefix
 					item = item.replace(ACTIVITY_PREFIX, "");
 				}			
 				// convert underscores to spaces
 				item = item.replace("_", " ");
+				
 				// add it to arraylist
-				adapter.add(item);
+				items.add(new ImageActivityItem(imageId, item));
 			}
+		}
+		return items;
+	}
+	
+	/**
+	 * updates the arrayadapter parameter with all the activities from the
+	 * prefs file.  
+	 * @param adapter the ArrayAdapter that we want to add activities to
+	 * @param prefs the SharedPreferences object that we used to store activities in
+	 * 
+	 */
+	static void populateActivities(ArrayAdapter<String> adapter, SharedPreferences prefs) {
+		ArrayList<ImageActivityItem> items = getImageActivities(false, prefs);
+		for (int i=0; i < items.size(); i++) {
+			adapter.add(items.get(i).title); // just add title to adapter
 		}
 	}
 	
 	/**
 	 * updates the arrayadapter parameter with all the activities from the
-	 * prefs file.  boolean suppressPrefix is used to remove the
-	 * ACTIVITIES_PREFIX if that is desired
-	 * @param suppressPrefix true if we want to remove the activity prefix ACTIVITY_PREFIX, 
-	 * false if we don't want to suppress when adding to the ArrayAdapter
+	 * prefs file.  
 	 * @param adapter the ArrayAdapter that we want to add activities to
+	 * @param prefs the SharedPreferences object that we used to store activities in
+	 * 
 	 */
-	void populateActivites(boolean suppressPrefix, ArrayAdapter<String> adapter) { 
-		populateActivities(suppressPrefix, adapter, blumote.prefs);
-	}	
+	static void populateImageActivities(ArrayAdapter<ImageActivityItem> adapter, SharedPreferences prefs) {
+		ArrayList<ImageActivityItem> items = getImageActivities(true, prefs);
+		for (int i=0; i < items.size(); i++) {
+			adapter.add(items.get(i)); 
+		}
+	}
 	
-	// instead of continuously recreating the activity that we are working with
-	// this function allows the caller to set it once and then all functions
-	// use this handle to perform their actions
 	/**
 	 * sets the working activity.  The Activities class depends on this being set prior to usage
 	 * of any member functions.
@@ -222,6 +242,21 @@ public class Activities {
 			return key + OFF;
 		}
 	}
+		
+	private static String formatActivityImageIdSuffix(String key) {
+		// convert spaces to underscores
+		key = key.replace(" ", "_");
+
+		if (key.startsWith(ACTIVITY_PREFIX)) {
+			// remove the prefix
+			key = key.replace(ACTIVITY_PREFIX, "");
+		}
+		if (key.endsWith(IMAGEID)) {
+			return key;
+		} else {
+			return key + IMAGEID;
+		}
+	}
 	
 	/**
 	 * delete an activity from the arraylist on the interface.  This function is usually
@@ -230,19 +265,19 @@ public class Activities {
 	 * @param position the position in the arraylist to delete
 	 */
 	public void deleteActivity(int position) {
-		String name = mActivitiesArrayAdapter.getItem(position);
+		ImageActivityItem name = mActivitiesArrayAdapter.getItem(position);
 		mActivitiesArrayAdapter.remove(name);
 				
-		name = addActivityPrefix(name);
+		name.title = addActivityPrefix(name.title);
 		
 		// remove the ID associated with the device
-		blumote.lookup.deleteLookupId(name);
+		blumote.lookup.deleteLookupId(name.title);
 		
 		Editor mEditor = blumote.prefs.edit();
 		// delete the activity record as well as it's associated INIT routine
-		mEditor.remove(name); 	
-		name = formatActivityInitSuffix(name);
-		mEditor.remove(name);
+		mEditor.remove(name.title); 	
+		name.title = formatActivityInitSuffix(name.title);
+		mEditor.remove(name.title);
 		
 		mEditor.commit();
 		
@@ -253,10 +288,14 @@ public class Activities {
 	/**
 	 * add a new activity to the arraylist on the interface
 	 * @param s the name of the activity to add to the arraylist
+	 * @param image the resource ID of the image to use in the list
 	 */
-	public void addActivity(String s) {
+	public void addActivity(String s, int image) {
+		// create object to hold string and image
+		ImageActivityItem item = new ImageActivityItem(image, s);
+		
 		// add to arraylist
-		mActivitiesArrayAdapter.add(s);
+		mActivitiesArrayAdapter.add(item);
 
 		s = addActivityPrefix(s);
 		
@@ -265,6 +304,7 @@ public class Activities {
 		
 		Editor mEditor = blumote.prefs.edit();
 		mEditor.putString(s, null); // key, value
+		mEditor.putInt(formatActivityImageIdSuffix(s), image);
 		mEditor.commit();	
 		
 		// set workingActivity to this
@@ -279,8 +319,7 @@ public class Activities {
 		// set program state
 		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
 				
-		//TODO - launch help window if first time creating activity
-			
+		//TODO - launch help window if first time creating activity			
 	}
 	
 	/**
@@ -289,10 +328,12 @@ public class Activities {
 	 * @param newName the new name
 	 * @param position the position of the old name in the arraylist
 	 */
-	public void renameActivity(String newName, int position) { 
-		String oldName = mActivitiesArrayAdapter.getItem(position);
-		mActivitiesArrayAdapter.remove(oldName);
-		mActivitiesArrayAdapter.add(newName);
+	public void renameActivity(String newName, int position) {  
+		ImageActivityItem oldItem = mActivitiesArrayAdapter.getItem(position);
+		String oldName = oldItem.title;
+		// update arraylist with new name (before adding prefix to it)
+		mActivitiesArrayAdapter.remove(oldItem);
+		mActivitiesArrayAdapter.add(new ImageActivityItem(oldItem.icon, newName));
 				
 		newName = addActivityPrefix(newName);
 		oldName = addActivityPrefix(oldName);
@@ -308,6 +349,13 @@ public class Activities {
 			mEditor.remove(oldName); // remove old one
 			mEditor.putString(newName, activity); // add new name with old data
 		}
+		// rename image ID tag
+		String oldImageTag = formatActivityImageIdSuffix(oldName);
+		String newImageTag = formatActivityImageIdSuffix(newName);
+		int oldImage = blumote.prefs.getInt(oldImageTag, R.drawable.tv);
+		mEditor.remove(oldImageTag);
+		mEditor.putInt(newImageTag, oldImage);
+		
 		// rename all MISC button keys stored
 		MainInterface.renameMiscButtons(oldName, newName, blumote.prefs);
 		
@@ -536,14 +584,7 @@ public class Activities {
 						}
 					}
 					// execute button code
-					if (toSend != null) {
-						// always clear out PKTS_SENT since when doing an init sequence
-						// we don't need to worry about flooding the pod as much...
-						//TODO - do we need some sort of wait to occur if PKTS_SENT is not 0?  
-						// problem is that normally PKTS_SENT gets decremented by an ACTION_UP which
-						// in this case is not an option....need to either clear it or find some way to wait
-						// until the ACK is received but also prevent locking up
-//						BluMote.PKTS_SENT = 0;
+					if (toSend != null) {					
 						blumote.sendButtonCode(toSend);
 					}
 				}
@@ -762,8 +803,8 @@ public class Activities {
 	 */
 	void setWorkingActivity(int position) {
 		// uses ListView index to set the working activity
-		String name = mActivitiesArrayAdapter.getItem(position);
-		setWorkingActivity(name);
+		ImageActivityItem name = mActivitiesArrayAdapter.getItem(position);
+		setWorkingActivity(name.title);
 	}
 	
 	/**
@@ -866,7 +907,6 @@ public class Activities {
 	 * This is a helper class to encapsulate all the parameters of a
 	 * activity button which is associated with a real device button.
 	 * @author keusej
-	 *
 	 */
 	private class ActivityButton {
 		private String deviceName;
@@ -971,4 +1011,68 @@ public class Activities {
 		}
 	}
 
+	/**
+	 * Custom array adapter to allow for an image to be put into the 
+	 * list along with a text title.  
+	 * @author keusej
+	 *
+	 */
+	public class ImageArrayAdapter extends ArrayAdapter<ImageActivityItem> {
+		Context context; 
+	    int layoutResourceId;    
+	    	    
+		public ImageArrayAdapter(Context context, int layoutResourceId) {
+			super(context, layoutResourceId);
+	        this.layoutResourceId = layoutResourceId;
+	        this.context = context;     
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View row = convertView;
+	        ImageTextHolder holder = null;
+
+	        if(row == null)
+	        {
+	            LayoutInflater inflater = ((Activity)context).getLayoutInflater();
+	            row = inflater.inflate(layoutResourceId, parent, false);
+	            
+	            holder = new ImageTextHolder();
+	            holder.imgIcon = (ImageView)row.findViewById(R.id.activity_image);
+	            holder.txtTitle = (TextView)row.findViewById(R.id.activity_label);
+	            
+	            row.setTag(holder);
+	        }
+	        else
+	        {
+	            holder = (ImageTextHolder)row.getTag();
+	        }
+	        
+	        ImageActivityItem weather = getItem(position);
+	        holder.txtTitle.setText(weather.title);
+	        holder.imgIcon.setImageResource(weather.icon);
+	        
+	        return row;
+		}
+						
+		class ImageTextHolder
+	    {
+	        ImageView imgIcon;
+	        TextView txtTitle;
+	    }
+	}
+	
+	static class ImageActivityItem {
+	    public int icon;
+	    public String title;
+	    public ImageActivityItem(){
+	        super();
+	    }
+	    
+	    public ImageActivityItem(int icon, String title) {
+	        super();
+	        this.icon = icon;
+	        this.title = title;
+	    }
+	}
 }
