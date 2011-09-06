@@ -63,13 +63,11 @@ public class DeviceDB {
 	 * Inserts a new button into the database
 	 * @param curTable the table name which is typically the device name
 	 * @param buttonID the name of the button that we want to insert into the table
-	 * @param buttonCategory the category for the button that we are adding to the database, typically all buttons
-	 * in a table are the same category
-	 * TODO - see if there is a way to move buttonCategory to be a single entry per table
+	 * @param buttonRepeat the number of times to tell pod to repeat the code, null is acceptable for default
 	 * @param content the button data (IR code) associated with the button
 	 * @return the row ID of the database, this return value is not currently used
 	 */
-	public long insertButton(String curTable, String buttonID, String buttonCategory, byte[] content)
+	public long insertButton(String curTable, String buttonID, String buttonRepeat, byte[] content)
 	{
 		curTable = curTable.replace(" ", "_");
 		curTable = deviceNameFormat(curTable);
@@ -78,7 +76,7 @@ public class DeviceDB {
 			Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
 					null, null, null, null);
 			if (c.getCount() > 0) { // then we already have this entry so call updateButton
-				updateButton(curTable, buttonID, buttonCategory, content);
+				updateButton(curTable, buttonID, buttonRepeat, content);
 				return -1;
 			}
 			else { // this must be a new entry , so try to insert it
@@ -86,7 +84,7 @@ public class DeviceDB {
 					ContentValues newTaskValue = new ContentValues();
 					newTaskValue.put(Constants.DB_FIELDS.BUTTON_ID.getValue(), buttonID);
 					newTaskValue.put(Constants.DB_FIELDS.BUTTON_DATA.getValue(), content);
-					newTaskValue.put(Constants.DB_FIELDS.CATEGORY.getValue(), buttonCategory);
+					newTaskValue.put(Constants.DB_FIELDS.BUTTON_REPEAT_TIMES.getValue(), buttonRepeat);
 					db = dbhelper.getWritableDatabase();
 					return db.insertOrThrow(curTable, null, newTaskValue);
 				} catch(SQLiteException ex) {
@@ -119,7 +117,7 @@ public class DeviceDB {
 			buttons = new ButtonData[c.getCount()];
 			// iterate through cursor to load up buttons array
 			for (int i= 0; i < buttons.length; i++) {
-				buttons[i] = new ButtonData(0, c.getString(1), c.getBlob(2), c.getString(3));
+				buttons[i] = new ButtonData(0, c.getString(1), c.getBlob(2), c.getInt(3));
 				c.moveToNext();
 			}
 		}
@@ -164,7 +162,8 @@ public class DeviceDB {
 		Constants.KEY_ID+" integer primary key autoincrement, "+
 		Constants.DB_FIELDS.BUTTON_ID.getValue()+" text not null, "+
 		Constants.DB_FIELDS.BUTTON_DATA.getValue()+" text not null, "+
-		Constants.DB_FIELDS.CATEGORY.getValue()+" text not null"+
+		//Constants.DB_FIELDS.CATEGORY.getValue()+" text not null"+
+		Constants.DB_FIELDS.BUTTON_REPEAT_TIMES + " integer" +
 		");";
 		try {
 			db.execSQL(TABLE);
@@ -173,6 +172,7 @@ public class DeviceDB {
 			Log.v("Create table exception", ex.getMessage());
 			return 0;
 			// TODO - add check for duplicate table
+			// TODO - add a entry (that is not a button) that is for button category
 		}
 	}
 	

@@ -17,8 +17,6 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-import com.woelfware.database.Constants;
 /**
  * This class handles activities which are created to 
  * allow combining devices on the interface - like "watch a DVD"
@@ -772,14 +770,11 @@ public class Activities {
 					// try to insert data from database if it exists
 					deviceButtons[index] = new ButtonData(
 							0, activityButton.getActivityButton(), 
-							blumote.device_data.getButton(activityButton.getDeviceName(), activityButton.getDeviceButton()),
-							Constants.CATEGORIES.ACTIVITY.getValue() );
+							blumote.device_data.getButton(activityButton.getDeviceName(), 
+							activityButton.getDeviceButton()), 0 );
 				} catch (Exception e) {
 					// if the call the getButtion() failed then lets just create a button with null for data
-					deviceButtons[index] = new ButtonData(
-							0, activityButton.getActivityButton(), 
-							null,
-							Constants.CATEGORIES.ACTIVITY.getValue() );
+					deviceButtons[index] = new ButtonData(0, activityButton.getActivityButton(),null, 0 );
 				}
 				
 			}
@@ -884,12 +879,12 @@ public class Activities {
 						// try to insert data from database if it exists
 						buttonData = blumote.device_data.getButton(devices[i], blumote.button_map.get(R.id.power_on_btn));
 						returnData[i] = new ButtonData( R.id.power_on_btn, blumote.button_map.get(R.id.power_on_btn),
-								buttonData,	Constants.CATEGORIES.TV_DVD.getValue() );
+								buttonData,	0 );
 					} catch (Exception e) {
 						// if the call the getButtion() failed then lets just create a button with null for data
 						returnData[i] = new ButtonData(
 								0, blumote.button_map.get(R.id.power_on_btn), 
-								null, Constants.CATEGORIES.TV_DVD.getValue() );
+								null, 0 );
 					}
 				}
 				
