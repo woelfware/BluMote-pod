@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -55,7 +54,6 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import com.woelfware.blumote.Activities.ImageActivityItem;
 import com.woelfware.blumote.Codes.Pod;
 import com.woelfware.database.DeviceDB;
-import com.woelfware.database.Constants.CATEGORIES;
 
 /**
  * Primary class for the project.
@@ -146,10 +144,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	
 	// currently selected device
 	String cur_device;
-	
-	// context of screen view, using this for categorizing in database
-	// hardcoding this for now, will need to adjust for new contexts
-	private String cur_context = CATEGORIES.TV_DVD.getValue();
 
 	// Currently selected button resource id (for training mode operations)
 	private int BUTTON_ID = 0;
@@ -1411,8 +1405,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		// make sure payload is not null and make sure we are in learn mode
 		if (buttonName != null && INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
-			device_data.insertButton(cur_device, buttonName,
-					cur_context, Codes.pod_data);
+			device_data.insertButton(
+					cur_device, 
+					buttonName,
+					Codes.pod_data);
 		}
 		// should we not drop out of learn mode?  Would reduce menu activity
 		BT_STATE = Codes.BT_STATE.IDLE; // reset state, drop out of learn mode

@@ -73,8 +73,8 @@ public class CreateActivity extends Activity {
 
 	    gallery.setOnItemClickListener(new OnItemClickListener() {
 	        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-	            Toast.makeText(CreateActivity.this, "" + position + " RID: "+
-	            		(Integer)imageAdapter.getItem(position), Toast.LENGTH_SHORT).show();
+	            Toast.makeText(CreateActivity.this, 
+	            		"Image Selected", Toast.LENGTH_SHORT).show();
 	            // save the image that was selected
 	            imageId = (Integer)imageAdapter.getItem(position);
 	        }

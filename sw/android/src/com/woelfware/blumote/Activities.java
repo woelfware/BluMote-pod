@@ -21,7 +21,7 @@ import android.widget.TextView;
  * This class handles activities which are created to 
  * allow combining devices on the interface - like "watch a DVD"
  * and also allows for initialization sequences to be sent in a sequence
- * The data is persistend in the SharedPreferences object 
+ * The data is persisted in the SharedPreferences object 
  * @author keusej
  *
  */
@@ -518,7 +518,7 @@ public class Activities {
 	 */
 	void nextActivityInitSequence() {
 		String item;
-		while (initItemsIndex < initItems.length) {
+		while (initItems != null && initItemsIndex < initItems.length) {
 			// use initItemIndex to deal with getting through all the items
 			// if run into a delay item then need to spawn CountDownTimer and then CountDownTimer
 			// will call this method after it finishes...			
@@ -589,7 +589,7 @@ public class Activities {
 			}				
 		} // end while	
 		// check if we are done processing, if so dismiss the progress dialog
-		if (initItemsIndex >= initItems.length) {
+		if (initItems == null || initItemsIndex >= initItems.length) {
 			blumote.dismissDialog(BluMote.DIALOG_INIT_PROGRESS);
 		}
 	} // end nextActivityInitSequence

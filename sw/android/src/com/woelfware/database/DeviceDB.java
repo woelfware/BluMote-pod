@@ -63,20 +63,18 @@ public class DeviceDB {
 	 * Inserts a new button into the database
 	 * @param curTable the table name which is typically the device name
 	 * @param buttonID the name of the button that we want to insert into the table
-	 * @param buttonRepeat the number of times to tell pod to repeat the code, null is acceptable for default
 	 * @param content the button data (IR code) associated with the button
 	 * @return the row ID of the database, this return value is not currently used
 	 */
-	public long insertButton(String curTable, String buttonID, String buttonRepeat, byte[] content)
-	{
-		curTable = curTable.replace(" ", "_");
+	public long insertButton(String curTable, String buttonID, byte[] content)
+	{	
 		curTable = deviceNameFormat(curTable);
 		
 		try {
 			Cursor c = db.query(curTable, null, Constants.DB_FIELDS.BUTTON_ID.getValue()+"='"+buttonID+"'",
 					null, null, null, null);
 			if (c.getCount() > 0) { // then we already have this entry so call updateButton
-				updateButton(curTable, buttonID, buttonRepeat, content);
+				updateButton(curTable, buttonID, content);
 				return -1;
 			}
 			else { // this must be a new entry , so try to insert it
@@ -84,8 +82,7 @@ public class DeviceDB {
 					ContentValues newTaskValue = new ContentValues();
 					newTaskValue.put(Constants.DB_FIELDS.BUTTON_ID.getValue(), buttonID);
 					newTaskValue.put(Constants.DB_FIELDS.BUTTON_DATA.getValue(), content);
-					newTaskValue.put(Constants.DB_FIELDS.BUTTON_REPEAT_TIMES.getValue(), buttonRepeat);
-					db = dbhelper.getWritableDatabase();
+//					db = dbhelper.getWritableDatabase();
 					return db.insertOrThrow(curTable, null, newTaskValue);
 				} catch(SQLiteException ex) {
 					Log.v("Insert into database exception caught", ex.getMessage());
@@ -105,14 +102,16 @@ public class DeviceDB {
 	 */
 	public ButtonData[] getButtons(String curTable)
 	{
-		curTable = curTable.replace(" ", "_");
 		curTable = deviceNameFormat(curTable);
-		
-		Cursor c = db.query(curTable, null, null,
+		Cursor c = null;
+		try {
+			c = db.query(curTable, null, null,
 				null, null, null, null);
-		
+		} catch (Exception e) { 
+			//error, so don't return anything 
+		}		
 		ButtonData[] buttons = null;		
-		if (c.getCount() > 0) {
+		if (c != null && c.getCount() > 0) {
 			c.moveToFirst();
 			buttons = new ButtonData[c.getCount()];
 			// iterate through cursor to load up buttons array
@@ -132,7 +131,6 @@ public class DeviceDB {
 	 */
 	public byte[] getButton(String device, String buttonID)
 	{
-		device = device.replace(" ", "_");
 		device = deviceNameFormat(device);
 		
 		byte[] button;
@@ -154,17 +152,54 @@ public class DeviceDB {
 	 * @return 1 if successful, 0 if there was an error and 2 if a duplicate exists
 	 */
 	public int addDevice(String table) {
-		table = table.replace(" ", "_");
-		table = deviceNameFormat(table);
-		
-		Log.v("MyDB createTable","Creating table");
-		String TABLE="create table "+ table +" ("+
-		Constants.KEY_ID+" integer primary key autoincrement, "+
-		Constants.DB_FIELDS.BUTTON_ID.getValue()+" text not null, "+
-		Constants.DB_FIELDS.BUTTON_DATA.getValue()+" text not null, "+
-		//Constants.DB_FIELDS.CATEGORY.getValue()+" text not null"+
-		Constants.DB_FIELDS.BUTTON_REPEAT_TIMES + " integer" +
+		// check that the master database even exists, if not create it 
+		// Alternate way:
+		//		SELECT name FROM sqlite_master WHERE type='table' AND name='table_name';
+		String TABLE; // used to build SQL commands
+		TABLE = "create table if not exists "+ Constants.DEVICES_TABLE +" ("+
+				Constants.KEY_ID+" integer primary key autoincrement, "+
+				Constants.DB_FIELDS.DEVICE_ID.getValue()+" text not null, "+
+				Constants.DB_FIELDS.DEVICE_CATEGORY.getValue()+" text, "+
+				Constants.DB_FIELDS.BUTTON_REPEAT_TIMES.getValue()+" integer, "+
+				Constants.DB_FIELDS.DEVICE_MAKE.getValue()+" text, "+
+				Constants.DB_FIELDS.DEVICE_MODEL.getValue()+" text, "+
+				Constants.DB_FIELDS.REMOTE_MODEL.getValue()+" text, "+
+				Constants.DB_FIELDS.DELAY.getValue()+" text, "+
+				Constants.DB_FIELDS.CONFIG.getValue()+" text, "+
+				Constants.DB_FIELDS.MODE.getValue()+" text"+
 		");";
+		try {
+			db.execSQL(TABLE);
+		} catch(SQLiteException ex) {
+			Log.v("Create table exception", ex.getMessage());
+		}
+		// now see if the table is in the DEVICES_TABLE, if not add it
+		// currently there are a lot of parameters that can be setup for the 
+		// device properties, but these are all optional and unused at this time
+		// Note: table is sent in verbatim, so spaces are spaces, etc
+		Cursor c = db.query(Constants.DEVICES_TABLE, null, 
+					Constants.DB_FIELDS.DEVICE_ID.getValue()+"='"+table+"'",
+					null, null, null, null);
+		if (c == null || c.getCount() == 0) { // if null then not present in table already
+			try{
+				ContentValues newTaskValue = new ContentValues();
+				newTaskValue.put(Constants.DB_FIELDS.DEVICE_ID.getValue(), table);
+				// TODO - add the rest of the parameters, will also then need
+				// to adjust addDevice() to add more paramters
+				db.insertOrThrow(Constants.DEVICES_TABLE, null, newTaskValue);
+			} catch(SQLiteException ex) {
+				Log.v("Insert into "+Constants.DEVICES_TABLE+" exception caught", ex.getMessage());				
+			}
+		}
+		
+		// format table name so it is suitable for usage as a table name
+		table = deviceNameFormat(table);
+		Log.v("MyDB createTable","Creating table");
+		TABLE="create table "+ table +" ("+
+				Constants.KEY_ID+" integer primary key autoincrement, "+
+				Constants.DB_FIELDS.BUTTON_ID.getValue()+" text not null, "+
+				Constants.DB_FIELDS.BUTTON_DATA.getValue()+" text not null"+				
+				");";
 		try {
 			db.execSQL(TABLE);
 			return 1;
@@ -172,7 +207,6 @@ public class DeviceDB {
 			Log.v("Create table exception", ex.getMessage());
 			return 0;
 			// TODO - add check for duplicate table
-			// TODO - add a entry (that is not a button) that is for button category
 		}
 	}
 	
@@ -181,14 +215,20 @@ public class DeviceDB {
 	 * @param table the name of the device to delete
 	 */
 	public void removeDevice(String table) {
-		table = table.replace(" ", "_");
+		try {
+			db.delete(Constants.DEVICES_TABLE, Constants.DB_FIELDS.DEVICE_ID.getValue() + 
+	        		"='" + table + "'", null);
+		} catch (SQLiteException ex) {
+			Log.v("Remove from "+Constants.DEVICES_TABLE+" exception", ex.getMessage());
+		}
+		
 		table = deviceNameFormat(table);
 		
 		try {
 			db.execSQL("drop table if exists "+table);
 		} catch (SQLiteException ex) {
 			Log.v("Remove table exception", ex.getMessage());
-		}	
+		}		
 	}
 
 	/**
@@ -197,14 +237,22 @@ public class DeviceDB {
 	 * @param rename the new name
 	 */
 	public void renameDevice(String table, String rename) {
-		table = table.replace(" ", "_");
-		table = deviceNameFormat(table);
-		rename = rename.replace(" ", "_");
-		rename = "["+rename+"]";
+		// TODO - add rename ot devices_table
+		try {
+			ContentValues args = new ContentValues();
+	        args.put(Constants.DB_FIELDS.DEVICE_ID.getValue(), rename);
+	        db.update(Constants.DEVICES_TABLE, args, 
+	        			Constants.DB_FIELDS.DEVICE_ID.getValue() + "='" + table +"'", null);
+		} catch (SQLiteException ex) {
+			Log.v("Remove from "+Constants.DEVICES_TABLE+" exception", ex.getMessage());
+		}
+		
+        table = deviceNameFormat(table);		
+		rename = deviceNameFormat(rename);
 		try {
 			db.execSQL("ALTER TABLE "+table+" RENAME TO "+rename);
 		} catch (SQLiteException ex) {
-			Log.v("Remove table exception", ex.getMessage());
+			Log.v("Rename table exception", ex.getMessage());
 		}	
 	}
 	
@@ -212,26 +260,19 @@ public class DeviceDB {
 	 * Returns all the devices that are currently being stored in the database
 	 */
 	public String[] getDevices() {		
-		try {
-			Cursor c = db.rawQuery("SELECT name FROM sqlite_master", null);
-			// create array to hold table names, exclude android_metadata and sqlite_sequence
-			if (c!=null) {
-				ArrayList<String> results = new ArrayList<String>();								 
-				String result = null;
-				c.moveToFirst(); 
-				// loop through items, add items in correct format to the String[]			
-				for (int cursorIndex = 0; cursorIndex < c.getCount(); cursorIndex++) {								
-					result = c.getString(0); // get first column (table name)
-					if (!(result.equals("android_metadata"))
-							&& !(result.equals("sqlite_sequence"))) {
-						// spaces are removed from table names, converted to
-						// underscores, so convert them back here
-						result = result.replace("_", " ");
-						results.add(result);
-					}
-
+		try {		
+			// query all the device_table rows of the device_id column
+			Cursor c = db.query(Constants.DEVICES_TABLE, new String[] { 
+					Constants.DB_FIELDS.DEVICE_ID.getValue()
+					}, null, null, null,null, null);
+			if (c != null && c.getCount() > 0) { 
+				ArrayList<String> results = new ArrayList<String>();
+				c.moveToFirst();		
+				while (c.isAfterLast() != true) {
+					results.add(c.getString(0));
 					c.moveToNext();
-				}
+				}	
+				
 				String[] returnValue = new String[results.size()];
 				// convert arraylist to a string[]
 				for (int i=0 ; i< results.size(); i++) {
@@ -256,37 +297,39 @@ public class DeviceDB {
 	 */
     public boolean deleteButton(String curTable, String buttonID) 
     {
-    	curTable = curTable.replace(" ", "_");
     	curTable = deviceNameFormat(curTable);
-    	
         return db.delete(curTable, Constants.DB_FIELDS.BUTTON_ID.getValue() + 
-        		"=" + buttonID, null) > 0;
+        		"='" + buttonID + "'", null) > 0;
     }
     
     /**
      * Updates a button with new data (IR code)
      * @param curTable the name of the device
      * @param buttonID the button name
-     * @param buttonCategory the button category
-     * TODO - consider category change to get rid of it per button
      * @param content the code associated with the button
      */
-    private boolean updateButton(String curTable, String buttonID, String buttonCategory, byte[] content) 
+    private boolean updateButton(String curTable, String buttonID, byte[] content) 
     {
-    	curTable = curTable.replace(" ", "_");
     	curTable = deviceNameFormat(curTable);
     	
     	// DEBUG var
     	boolean debug;
         ContentValues args = new ContentValues();
         args.put(Constants.DB_FIELDS.BUTTON_DATA.getValue(), content);
-        args.put(Constants.DB_FIELDS.CATEGORY.getValue(), buttonCategory);
         debug = db.update(curTable, args, 
                   Constants.DB_FIELDS.BUTTON_ID.getValue() + "='" + buttonID+"'", null) > 0;
         return debug;
     }
     
+    /**
+     * Formats a name for usage as a table in a database, specifies that the table
+     * should be used explicitly and puts '[ ]' around it. Also converts spaces to 
+     * underscores.
+     * @param deviceName
+     * @return
+     */
     private String deviceNameFormat( String deviceName ) {
+    	deviceName = deviceName.replace(" ", "_");
     	if (deviceName.startsWith("[")) {
     		return deviceName;
     	}

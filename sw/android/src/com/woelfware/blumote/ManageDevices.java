@@ -78,8 +78,8 @@ public class ManageDevices extends Activity {
 
 	private void populateDisplay() {
 		String[] devices = device_data.getDevices();
-		if (devices != null) {
-			mDevicesArrayAdapter.clear(); // clear before adding
+		mDevicesArrayAdapter.clear(); // clear before adding
+		if (devices != null) {			
 			for (int i= 0 ; i< devices.length; i++) {
 				mDevicesArrayAdapter.add(devices[i]);
 			}
@@ -108,9 +108,7 @@ public class ManageDevices extends Activity {
     		// add the new item to the database
     		return_bundle = intent.getExtras();
     		if ( return_bundle != null ) {
-    			return_string = return_bundle.getString("returnStr");
-    			// spaces don't work for table names, so replace with underscore
-    			return_string = return_string.replace(" ", "_");
+    			return_string = return_bundle.getString("returnStr");    			
         		device_data.addDevice(return_string);
         		// create a new lookup ID for this item
         		lookup.addLookupId(return_string);
@@ -145,8 +143,6 @@ public class ManageDevices extends Activity {
 		case ID_DELETE:
 			// need to remove this table and repopulate list
 			deviceName = mDevicesArrayAdapter.getItem((int)(info.id));
-			// replace spaces with underscores
-			deviceName = deviceName.replace(" ", "_");
 			device_data.removeDevice(deviceName);
 			lookup.deleteLookupId(deviceName);
 			populateDisplay();
