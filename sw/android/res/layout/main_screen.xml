@@ -16,7 +16,7 @@
 		android:textColor="#FFFFFF" >
 	</Spinner>		
 	<RelativeLayout
-		android:layout_width="wrap_content" 
+		android:layout_width="fill_parent" 
 		android:layout_height="0dp"
 		android:layout_gravity="center"
 		android:paddingLeft="5dp"
@@ -74,8 +74,8 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="2.0">
-				<ImageButton style="@style/TopRockerStyle" android:layout_weight="1" android:src="@drawable/plus" android:id="@+id/btn_volume_up" android:scaleType="centerInside"></ImageButton> 		    				    
-				<ImageButton style="@style/BottomRockerStyle" android:layout_weight="1" android:src="@drawable/minus" android:id="@+id/btn_volume_down" android:scaleType="centerInside"></ImageButton> 		    				    
+				<ImageButton android:layout_width="fill_parent" style="@style/TopRockerStyle" android:src="@drawable/plus" android:id="@+id/btn_volume_up" android:scaleType="centerInside"></ImageButton> 		    				    
+				<ImageButton android:layout_width="fill_parent" style="@style/BottomRockerStyle" android:src="@drawable/minus" android:id="@+id/btn_volume_down" android:scaleType="centerInside"></ImageButton> 		    				    
 			</LinearLayout>	    
 		    <LinearLayout
 				android:orientation="vertical"
@@ -84,9 +84,9 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="3.0">
-				<Button android:id="@+id/disc_btn" android:layout_weight="1" android:text="Disc Menu" style="@style/CustomBtnText"></Button>	
-				<Button android:id="@+id/info_btn" android:layout_weight="1" android:text="Info/ Display" style="@style/CustomBtnText" android:textSize="13sp"></Button>						
-				<ImageButton style="@style/CustomImageBtnText" android:layout_weight="1" android:src="@drawable/audio_volume_muted" android:id="@+id/mute_btn" android:scaleType="centerInside"></ImageButton>				    	    
+				<Button android:layout_width="fill_parent" android:id="@+id/disc_btn" android:text="Disc Menu" style="@style/CustomBtnText"></Button>	
+				<Button android:layout_width="fill_parent" android:id="@+id/info_btn" android:text="Info/ Display" style="@style/CustomBtnText" android:textSize="13sp"></Button>						
+				<ImageButton android:layout_width="fill_parent" style="@style/CustomImageBtnText" android:src="@drawable/audio_volume_muted" android:id="@+id/mute_btn" android:scaleType="centerInside"></ImageButton>				    	    
 			</LinearLayout>
 			<LinearLayout
 				android:orientation="vertical"
@@ -95,9 +95,9 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="3.0">									    					    
-				<ImageButton style="@style/CustomImageBtnText" android:layout_weight="1" android:src="@drawable/go_top" android:id="@+id/pgup_btn" android:scaleType="center" ></ImageButton>								    					    
-				<ImageButton style="@style/CustomImageBtnText" android:layout_weight="1" android:src="@drawable/go_bottom" android:id="@+id/pgdn_btn" android:scaleType="center"></ImageButton>
-				<ImageButton style="@style/CustomImageBtnText" android:layout_weight="1" android:src="@drawable/edit_redo" android:id="@+id/return_btn" android:scaleType="centerInside"></ImageButton>
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/go_top" android:id="@+id/pgup_btn" android:scaleType="center" ></ImageButton>								    					    
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/go_bottom" android:id="@+id/pgdn_btn" android:scaleType="center"></ImageButton>
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/edit_redo" android:id="@+id/return_btn" android:scaleType="centerInside"></ImageButton>
 			</LinearLayout>
 			<LinearLayout
 				android:orientation="vertical"
@@ -106,9 +106,9 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="3.0">			  									    					    
-				<Button android:id="@+id/guide_btn" android:layout_weight="1" android:text="Guide" style="@style/CustomBtnText"></Button>			
-				<Button android:id="@+id/exit_btn" android:layout_weight="1" android:text="Exit" style="@style/CustomBtnText"></Button>
-				<Button android:id="@+id/btn_last" android:layout_weight="1" android:text="Last" style="@style/CustomBtnText"></Button>												    				    					    
+				<Button android:id="@+id/guide_btn" android:layout_width="fill_parent" android:text="Guide" style="@style/CustomBtnText"></Button>			
+				<Button android:id="@+id/exit_btn" android:layout_width="fill_parent" android:text="Exit" style="@style/CustomBtnText"></Button>
+				<Button android:id="@+id/btn_last" android:layout_width="fill_parent" android:text="Last" style="@style/CustomBtnText"></Button>												    				    					    
 			</LinearLayout>
 			<LinearLayout
 				android:orientation="vertical"
@@ -117,13 +117,13 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="2.0">
-				<ImageButton style="@style/TopRockerStyle" android:layout_weight="1" android:src="@drawable/plus" android:id="@+id/btn_channel_up" android:scaleType="centerInside"></ImageButton> 		    				    
-				<ImageButton style="@style/BottomRockerStyle" android:layout_weight="1" android:src="@drawable/minus" android:id="@+id/btn_channel_down" android:scaleType="centerInside"></ImageButton>				    					
+				<ImageButton style="@style/TopRockerStyle" android:layout_width="fill_parent" android:src="@drawable/plus" android:id="@+id/btn_channel_up" android:scaleType="centerInside"></ImageButton> 		    				    
+				<ImageButton style="@style/BottomRockerStyle" android:layout_width="fill_parent" android:src="@drawable/minus" android:id="@+id/btn_channel_down" android:scaleType="centerInside"></ImageButton>				    					
 			</LinearLayout>
-		</LinearLayout>
-		<ImageView android:src="@drawable/middle_circle" android:layout_width="50dp"
-				android:layout_height="20dp" android:layout_marginTop="5dp"
-				android:scaleType="fitXY" android:layout_gravity="center_horizontal"
-				android:visibility="invisible"
-		></ImageView> 
+	</LinearLayout>
+	<ImageView android:src="@drawable/middle_circle" android:layout_width="50dp"
+			android:layout_height="20dp" android:layout_marginTop="5dp"
+			android:scaleType="fitXY" android:layout_gravity="center_horizontal"
+			android:visibility="invisible"
+	></ImageView> 
 </LinearLayout>
