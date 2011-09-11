@@ -12,11 +12,13 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Gallery;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
@@ -24,8 +26,10 @@ public class CreateActivity extends Activity {
 	private EditText entered_activity;
 	CharSequence activity_string;
 	private Button closeActivityButton;
-
+	private Spinner layoutSpinner;
+	
 	static final String IMAGE_ID = "image_id";
+	static final String BUTTON_CONFIG = "BUTTON_CONFIG";
 	
 	int imageId = R.drawable.tv; // set to default picture
 	
@@ -60,8 +64,10 @@ public class CreateActivity extends Activity {
 			public void onClick(View v) {
 				// grab the text for use in the activity
 				activity_string = entered_activity.getText();
+				String buttonLayout = (String)layoutSpinner.getSelectedItem();
 				i.putExtra("returnStr", activity_string.toString());
 				i.putExtra(IMAGE_ID, imageId);
+				i.putExtra(BUTTON_CONFIG, buttonLayout);
 				setResult(RESULT_OK,i);
 				finish();	
 			}
@@ -80,6 +86,17 @@ public class CreateActivity extends Activity {
 	        }
 	    });
 
+	    layoutSpinner = (Spinner) findViewById(R.id.activity_layout_spinner);
+		// populate drop-down with the list of button configs defined in MainInterface
+	    String[] layouts = new String[MainInterface.ACTIVITY_LAYOUTS.values().length];
+	    int index = 0;
+	    for (MainInterface.ACTIVITY_LAYOUTS item : MainInterface.ACTIVITY_LAYOUTS.values() ) {
+	    	layouts[index++] = item.getValue();
+	    }
+		ArrayAdapter<String> mAdapter = new ArrayAdapter<String>(this, R.layout.spinner_entry, layouts);
+		mAdapter.setDropDownViewResource(R.layout.spinner_entry);
+		layoutSpinner.setAdapter(mAdapter);
+		
 		setResult(RESULT_CANCELED,i);
 	} // end of oncreate
 	

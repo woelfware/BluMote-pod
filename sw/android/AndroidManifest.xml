@@ -16,8 +16,8 @@
 		<activity android:name="PodListActivity" android:screenOrientation="portrait"/>    
 		<activity android:name="ManageDevices" android:screenOrientation="portrait"/>
 		
-		<activity android:theme="@android:style/Theme.Dialog" android:label="@string/enter_device_title" android:name="EnterDevice" android:screenOrientation="portrait"></activity>
-		<activity android:theme="@android:style/Theme.Dialog" android:label="@string/enter_device_title" android:name="CreateActivity" android:screenOrientation="portrait"></activity>
+		<activity android:theme="@android:style/Theme.Dialog" android:label="New Device" android:name="EnterDevice" android:screenOrientation="portrait"></activity>
+		<activity android:theme="@android:style/Theme.Dialog" android:label="New Activity" android:name="CreateActivity" android:screenOrientation="portrait"></activity>
 		<activity android:name="ActivityInitEdit" android:screenOrientation="portrait"></activity>
 		<activity android:name="ActivityInitRun" android:theme="@android:style/Theme.Dialog" android:screenOrientation="portrait"></activity>
 	</application>

@@ -108,8 +108,9 @@ public class ManageDevices extends Activity {
     		// add the new item to the database
     		return_bundle = intent.getExtras();
     		if ( return_bundle != null ) {
-    			return_string = return_bundle.getString("returnStr");    			
-        		device_data.addDevice(return_string);
+    			return_string = return_bundle.getString("returnStr");
+    			String button_config = return_bundle.getString(EnterDevice.BUTTON_CONFIG);
+        		device_data.addDevice(return_string, button_config);
         		// create a new lookup ID for this item
         		lookup.addLookupId(return_string);
     		}

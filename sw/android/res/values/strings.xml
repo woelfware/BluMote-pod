@@ -55,4 +55,5 @@
 	<string name="learn_button">Button Learn</string>
 	
 	<string name="delete_devices">Clear known pods</string>
+	<string name="layout_spinner">Choose a button configuration</string>
 </resources>

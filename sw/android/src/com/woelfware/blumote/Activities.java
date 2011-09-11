@@ -43,6 +43,8 @@ public class Activities {
 	private static final String OFF = "_OFF";
 	// SUFFIX for image associated with activity
 	private static final String IMAGEID = "IMAGE#";
+	// SUFFIX for Button Configuration associated with activity
+	private static final String BTNCONFIG = "BTNCONFIG";
 	
 	// these member variables will deal with executing all the 
 	// initialization steps
@@ -256,6 +258,21 @@ public class Activities {
 		}
 	}
 	
+	private static String formatActivityBtnCnfgSuffix(String key) {
+		// convert spaces to underscores
+		key = key.replace(" ", "_");
+
+		if (key.startsWith(ACTIVITY_PREFIX)) {
+			// remove the prefix
+			key = key.replace(ACTIVITY_PREFIX, "");
+		}
+		if (key.endsWith(BTNCONFIG)) {
+			return key;
+		} else {
+			return key + BTNCONFIG;
+		}
+	}
+	
 	/**
 	 * delete an activity from the arraylist on the interface.  This function is usually
 	 * invoked on a context menu on the arraylist that displays all the activities to the user.
@@ -285,34 +302,36 @@ public class Activities {
 	
 	/**
 	 * add a new activity to the arraylist on the interface
-	 * @param s the name of the activity to add to the arraylist
+	 * @param activityName the name of the activity to add to the arraylist
 	 * @param image the resource ID of the image to use in the list
+	 * @param buttonConfig the button configuration setting
 	 */
-	public void addActivity(String s, int image) {
+	public void addActivity(String activityName, int image, String buttonConfig) {
 		// create object to hold string and image
-		ImageActivityItem item = new ImageActivityItem(image, s);
+		ImageActivityItem item = new ImageActivityItem(image, activityName);
 		
 		// add to arraylist
 		mActivitiesArrayAdapter.add(item);
 
-		s = addActivityPrefix(s);
+		activityName = addActivityPrefix(activityName);
 		
 		// assign new ID
-		blumote.lookup.addLookupId(s);
+		blumote.lookup.addLookupId(activityName);
 		
 		Editor mEditor = blumote.prefs.edit();
-		mEditor.putString(s, null); // key, value
-		mEditor.putInt(formatActivityImageIdSuffix(s), image);
+		mEditor.putString(activityName, null); // key, value
+		mEditor.putInt(formatActivityImageIdSuffix(activityName), image);
+		mEditor.putString(formatActivityBtnCnfgSuffix(activityName), buttonConfig); 
 		mEditor.commit();	
 		
 		// set workingActivity to this
-		setWorkingActivity(s);
+		setWorkingActivity(activityName);
 		
 		// replace underscores with spaces for setDropDown()
-		s = s.replace("_", " ");
+		activityName = activityName.replace("_", " ");
 
 		mainint.populateDropDown(); // always refresh dropdown when adding an activity
-		mainint.setDropDown(s); // always set active dropdown item to new activity
+		mainint.setDropDown(activityName); // always set active dropdown item to new activity
 		
 		// set program state
 		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
@@ -899,6 +918,17 @@ public class Activities {
 	}
 	
 	/**
+	 * Get the button config from the prefs file based on the activity name passed in.
+	 * @param activityName
+	 * @return
+	 */
+	public String getButtonConfig(String activityName) {
+		// format activityName for retrieving the button config from prefs file
+		activityName = formatActivityBtnCnfgSuffix(activityName);
+		return blumote.prefs.getString(activityName, null);		
+	}
+	
+	/**
 	 * This is a helper class to encapsulate all the parameters of a
 	 * activity button which is associated with a real device button.
 	 * @author keusej
@@ -1069,5 +1099,5 @@ public class Activities {
 	        this.icon = icon;
 	        this.title = title;
 	    }
-	}
+	}	
 }

@@ -241,9 +241,19 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		// get preferences file
 		prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
+		
+		// get SQL database class
+		device_data = new DeviceDB(this);
+		device_data.open();
 
+		// instantiate button screen helper classes
+		mainScreen = new MainInterface(this);
+		
 		// initialize the InterfaceLookup
 		lookup = new InterfaceLookup(prefs);
+		
+		// instantiate activities helper class
+		activities = new Activities(this, mainScreen);
 		
 		// Get local Bluetooth adapter
 		if (ENABLE_BT) {
@@ -269,7 +279,28 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		// Set up the window layout
 		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
-		setContentView(R.layout.main_interface);
+		
+		// determine last device, set layout to that device's preferred layout
+		String prefs_table = prefs.getString("lastDevice", null);
+		if (prefs_table != null) {
+			// TODO determine if it is a device or an activity
+			// note: lastDevice uses underscores in place of spaces
+			//prefs_table = prefs_table.replace("_", " ");
+			String buttonConfig;
+			if (prefs_table.startsWith(Activities.ACTIVITY_PREFIX)) { 
+				buttonConfig = activities.getButtonConfig(prefs_table);
+				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY);
+			} else {
+				//look into database for type of button layout
+				buttonConfig = device_data.getButtonConfig(prefs_table);
+				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE);
+			}			
+		} else {
+			// if something strange happens and we get here, just initialize the default layout
+			mainScreen.initializeInterface(MainInterface.DEVICE_LAYOUTS.MAIN.getValue(),
+					MainInterface.TYPE.DEVICE);
+		}
+		
 		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
 				R.layout.custom_title);
 		flip=(ViewFlipper)findViewById(R.id.flipper); // flips between our screens
@@ -344,11 +375,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// Set up the custom title
 		mTitle = (TextView) findViewById(R.id.title_left_text);
 		mTitle.setText(R.string.app_name);
-		mTitle = (TextView) findViewById(R.id.title_right_text);
-
-		// get SQL database class
-		device_data = new DeviceDB(this);
-		device_data.open();
+		mTitle = (TextView) findViewById(R.id.title_right_text);		
 		
 		// refresh the haptic feedback pref
 		SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -404,12 +431,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// Initialize the BluetoothChatService to perform bluetooth
 			// connections
 			mChatService = new BluetoothChatService(this, mHandler);						
-			
-			// instantiate button screen helper classes
-			mainScreen = new MainInterface(this);
-			// instantiate activities helper class
-			activities = new Activities(this, mainScreen);
-			
+						
 			// setup interface
 			mainScreen.initialize(activities);		
 			button_map = mainScreen.getButtonMap();
@@ -813,8 +835,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	};	
 	
-	// called when activities finish running and return to this activity
-	// strangely this is called BEFORE the onResume() function
+	// called when activities finish running and return to this activity,
+	// this is called BEFORE the onResume() function
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		// when returning from activity, make sure database is opened again
@@ -824,8 +846,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case REQUEST_CONNECT_DEVICE:
 			// When DeviceListActivity returns with a device to connect
 			if (resultCode == Activity.RESULT_OK) {
-				// check if we are requesting to connect to a different pod
-//				String curAddress = prefs.getString("lastPod", null);
 				// Get the device MAC address
 				connectingMAC = data.getExtras().getString(
 						PodListActivity.EXTRA_DEVICE_ADDRESS);
@@ -833,14 +853,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						PodListActivity.EXTRA_DEVICE_NAME);
 				// the onResume() function will connect to the "lastPod" item,
 				// it is called after this function completes.
-//				if (curAddress == null) {
-//					// if null we know we have not connected to anything before
-//					connectNewPod(data);
-//				}
-//				else if ( !curAddress.equals(connectingMAC) ) {
-//					// if doesn't match from what we were connected to before
-//					connectNewPod(data);
-//				} 
 			}
 			break;
 
@@ -873,9 +885,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Bundle return_bundle = data.getExtras();
 				if (return_bundle != null) {
 					String return_string = return_bundle.getString("returnStr");
+					String button_config = return_bundle.getString(CreateActivity.BUTTON_CONFIG);
 					int image_id = return_bundle.getInt(CreateActivity.IMAGE_ID);
 					// Add item to list
-					activities.addActivity(return_string, image_id);							
+					activities.addActivity(return_string, image_id, button_config);							
 				}				
 			}
 			break;

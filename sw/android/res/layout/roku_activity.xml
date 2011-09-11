@@ -71,10 +71,10 @@
 				android:layout_height="fill_parent"
 				android:layout_gravity="center"
 				android:layout_weight="1"
-				android:weightSum="3.0">		
+				android:weightSum="3.0">
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/edit_redo" android:id="@+id/return_btn" android:scaleType="centerInside"></ImageButton>		
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/asterisk_orange_icon" android:id="@+id/fav_btn" android:scaleType="centerInside"></ImageButton>
 				<Button android:layout_width="fill_parent" android:id="@+id/btn_misc1" android:text="Misc 1" style="@style/CustomBtnText"></Button>
-				<Button android:layout_width="fill_parent" android:id="@+id/btn_misc2" android:text="Misc 2" style="@style/CustomBtnText"></Button> 			
-				<Button android:layout_width="fill_parent" android:id="@+id/btn_misc3" android:text="Misc 3" style="@style/CustomBtnText"></Button>
 			</LinearLayout>	    
 			<LinearLayout
 				android:orientation="vertical"
@@ -99,7 +99,7 @@
 			</LinearLayout>
 	</LinearLayout>
 	
-	<ImageView android:src="@drawable/middle_circle" android:layout_width="50dp"
+	<ImageView android:src="@drawable/right_circle_two" android:layout_width="50dp"
 			android:layout_height="20dp" android:layout_marginTop="5dp"
 			android:scaleType="fitXY" android:layout_gravity="center_horizontal"
 			android:visibility="invisible"

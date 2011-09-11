@@ -74,8 +74,7 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="3.0">		
-				<ImageView android:src="@drawable/spacer" android:layout_width="fill_parent"
-					android:layout_height="fill_parent" android:layout_marginTop="5dp" android:visibility="invisible"/> 
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/edit_redo" android:id="@+id/return_btn" android:scaleType="centerInside"></ImageButton>
 				<ImageView android:src="@drawable/spacer" android:layout_width="fill_parent"
 					android:layout_height="fill_parent" android:layout_marginTop="5dp" android:visibility="invisible"/> 
 				<ImageView android:src="@drawable/spacer" android:layout_width="fill_parent"
@@ -99,7 +98,8 @@
 				android:layout_height="fill_parent"
 				android:layout_gravity="center"
 				android:layout_weight="1"
-				android:weightSum="2.0">
+				android:weightSum="3.0">
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/asterisk_orange_icon" android:id="@+id/fav_btn" android:scaleType="centerInside"></ImageButton>
 				<ImageView android:src="@drawable/spacer" android:layout_width="fill_parent"
 					android:layout_height="fill_parent" android:layout_marginTop="5dp" android:visibility="invisible"/>  		    				    
 				<ImageView android:src="@drawable/spacer" android:layout_width="fill_parent"
@@ -107,7 +107,7 @@
 			</LinearLayout>
 	</LinearLayout>
 	
-	<ImageView android:src="@drawable/middle_circle" android:layout_width="50dp"
+	<ImageView android:src="@drawable/right_circle_two" android:layout_width="50dp"
 			android:layout_height="20dp" android:layout_marginTop="5dp"
 			android:scaleType="fitXY" android:layout_gravity="center_horizontal"
 			android:visibility="invisible"

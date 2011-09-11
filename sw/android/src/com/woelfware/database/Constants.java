@@ -37,7 +37,8 @@ public class Constants {
 		REMOTE_MODEL("remote_model"), //TODO
 		DELAY("delay"), //TODO
 		CONFIG("config"), //TODO
-		MODE("mode"); //TODO
+		MODE("mode"), //TODO
+		BUTTON_CONFIG("button_config");
 		private final String field;
 		DB_FIELDS(String field) {
 			this.field = field;

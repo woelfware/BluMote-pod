@@ -22,7 +22,7 @@
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
 		android:layout_weight="1"
-		android:layout_above="@+id/linearLayout1" android:dividerHeight="3px" android:divider="#000000"/>   
+		android:layout_above="@+id/linearLayout1" android:dividerHeight="3px" android:divider="#FFFFFF"/>   
 	 <LinearLayout
 		android:orientation="vertical"
 		android:layout_height="wrap_content"

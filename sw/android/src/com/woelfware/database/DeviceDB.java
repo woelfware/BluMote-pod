@@ -11,6 +11,7 @@ import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
 import com.woelfware.blumote.ButtonData;
+import com.woelfware.blumote.MainInterface;
 
 /**
  * Helper class to manage operating on the SQLite database
@@ -149,9 +150,10 @@ public class DeviceDB {
 	/**
 	 * Add a new device to the database
 	 * @param table the name of the device, which is also the table name in the DB
+	 * @param buttonConfig The name of the button configuration to use for this device
 	 * @return 1 if successful, 0 if there was an error and 2 if a duplicate exists
 	 */
-	public int addDevice(String table) {
+	public int addDevice(String table, String buttonConfig) {
 		// check that the master database even exists, if not create it 
 		// Alternate way:
 		//		SELECT name FROM sqlite_master WHERE type='table' AND name='table_name';
@@ -166,6 +168,7 @@ public class DeviceDB {
 				Constants.DB_FIELDS.REMOTE_MODEL.getValue()+" text, "+
 				Constants.DB_FIELDS.DELAY.getValue()+" text, "+
 				Constants.DB_FIELDS.CONFIG.getValue()+" text, "+
+				Constants.DB_FIELDS.BUTTON_CONFIG.getValue()+" text, "+
 				Constants.DB_FIELDS.MODE.getValue()+" text"+
 		");";
 		try {
@@ -175,7 +178,7 @@ public class DeviceDB {
 		}
 		// now see if the table is in the DEVICES_TABLE, if not add it
 		// currently there are a lot of parameters that can be setup for the 
-		// device properties, but these are all optional and unused at this time
+		// device properties, but most of these are all optional and unused at this time
 		// Note: table is sent in verbatim, so spaces are spaces, etc
 		Cursor c = db.query(Constants.DEVICES_TABLE, null, 
 					Constants.DB_FIELDS.DEVICE_ID.getValue()+"='"+table+"'",
@@ -184,6 +187,7 @@ public class DeviceDB {
 			try{
 				ContentValues newTaskValue = new ContentValues();
 				newTaskValue.put(Constants.DB_FIELDS.DEVICE_ID.getValue(), table);
+				newTaskValue.put(Constants.DB_FIELDS.BUTTON_CONFIG.getValue(), buttonConfig);
 				// TODO - add the rest of the parameters, will also then need
 				// to adjust addDevice() to add more paramters
 				db.insertOrThrow(Constants.DEVICES_TABLE, null, newTaskValue);
@@ -208,6 +212,16 @@ public class DeviceDB {
 			return 0;
 			// TODO - add check for duplicate table
 		}
+	}
+	
+	/**
+	 * Add a new device to the database
+	 * @param table the name of the device, which is also the table name in the DB
+	 * @return 1 if successful, 0 if there was an error and 2 if a duplicate exists
+	 */
+	public int addDevice(String table) {
+		// use default 'main' button layout
+		return addDevice(table, MainInterface.DEVICE_LAYOUTS.MAIN.getValue());
 	}
 	
 	/**
@@ -254,6 +268,22 @@ public class DeviceDB {
 		} catch (SQLiteException ex) {
 			Log.v("Rename table exception", ex.getMessage());
 		}	
+	}
+	
+	/**
+	 * Get the button configuration for the device
+	 * @param name name of device
+	 * @return the button configuration name
+	 */
+	public String getButtonConfig(String name) {
+		Cursor c = db.query(Constants.DEVICES_TABLE, new String[] { 
+				Constants.DB_FIELDS.DEVICE_ID.getValue(), Constants.DB_FIELDS.BUTTON_CONFIG.getValue()
+				}, Constants.DB_FIELDS.DEVICE_ID.getValue()+"='"+name+"'", null, null,null, null);
+		if (c != null && c.getCount() > 0) {
+			return c.getString(1); // return the button config name stored in DB
+		} else {
+			return MainInterface.DEVICE_LAYOUTS.MAIN.getValue(); // else return default interface
+		}
 	}
 	
 	/**
