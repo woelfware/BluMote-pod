@@ -84,7 +84,7 @@
 				android:layout_weight="1"
 				android:weightSum="3.0">			  			
 				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/go_down" android:id="@+id/down_btn" android:scaleType="centerInside"></ImageButton>										    					    
-				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/media_playback_start" android:id="@+id/play_btn" android:scaleType="centerInside"></ImageButton>
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/media_playback_start_pause" android:id="@+id/play_btn" android:scaleType="centerInside"></ImageButton>
 				<ImageButton android:layout_width="fill_parent" style="@style/CustomImageBtnText" android:src="@drawable/audio_volume_muted" android:id="@+id/mute_btn" android:scaleType="centerInside"></ImageButton>    															    				    					    
 			</LinearLayout>
 			<LinearLayout
