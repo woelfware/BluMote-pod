@@ -104,8 +104,6 @@ public class Activities {
 					// remove the prefix
 					item = item.replace(ACTIVITY_PREFIX, "");
 				}			
-				// convert underscores to spaces
-				item = item.replace("_", " ");
 				
 				// add it to arraylist
 				items.add(new ImageActivityItem(imageId, item));
@@ -169,8 +167,6 @@ public class Activities {
 	 *  
 	 */
 	private static String addActivityPrefix(String key) {
-		// convert spaces to underscores
-		key = key.replace(" ", "_");
 		// prepend prefix if it doesn't already exist
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			return key;
@@ -190,8 +186,6 @@ public class Activities {
 	 */
 	@SuppressWarnings("unused")
 	private static String removeActivityPrefix(String key) {
-		// convert spaces to underscores
-		key = key.replace(" ", "_");
 		// remove prefix if it doesn't already exist
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			return key.replace(ACTIVITY_PREFIX, "");
@@ -208,9 +202,6 @@ public class Activities {
 	 * @return the processed activity name that we passed in
 	 */
 	private static String formatActivityInitSuffix(String key) {
-		// convert spaces to underscores
-		key = key.replace(" ", "_");
-
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
@@ -229,9 +220,6 @@ public class Activities {
 	 * @return the processed activity name that we passed in
 	 */
 	private static String formatActivityOffSuffix(String key) {
-		// convert spaces to underscores
-		key = key.replace(" ", "_");
-
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
@@ -244,9 +232,6 @@ public class Activities {
 	}
 		
 	private static String formatActivityImageIdSuffix(String key) {
-		// convert spaces to underscores
-		key = key.replace(" ", "_");
-
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
@@ -259,9 +244,6 @@ public class Activities {
 	}
 	
 	private static String formatActivityBtnCnfgSuffix(String key) {
-		// convert spaces to underscores
-		key = key.replace(" ", "_");
-
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
@@ -326,9 +308,6 @@ public class Activities {
 		
 		// set workingActivity to this
 		setWorkingActivity(activityName);
-		
-		// replace underscores with spaces for setDropDown()
-		activityName = activityName.replace("_", " ");
 
 		mainint.populateDropDown(); // always refresh dropdown when adding an activity
 		mainint.setDropDown(activityName); // always set active dropdown item to new activity

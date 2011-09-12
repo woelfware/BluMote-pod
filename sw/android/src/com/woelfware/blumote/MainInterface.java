@@ -695,7 +695,6 @@ public class MainInterface {
 	 * @param s the item that we want to set the drop-down to
 	 */
 	void setDropDown(String s) {		
-		s = s.replace("_", " "); // need this so displays right
 		for (int i = 0; i < device_spinner.getCount(); i++) {
 			if (s.equals((String)device_spinner.getItemAtPosition(i))) {
 				device_spinner.setSelection(i);
@@ -703,7 +702,6 @@ public class MainInterface {
 			}
 		}
 		
-		s = s.replace(" ", "_"); // need this so activity prefix startsWith works
 		blumote.cur_device = s; // set device to this				
 		
 		// if we are in ACTIVITY or MAIN modes then toggle between them when
@@ -747,8 +745,8 @@ public class MainInterface {
 				setSpinnerErrorState();
 			}
 			if (spinnerItem != null) {
-				// replace spaces with underscores and then set cur_table to that				
-				String spinner_selected = spinnerItem.toString().replace(" ", "_");
+				// set cur_table				
+				String spinner_selected = spinnerItem.toString();
 				blumote.cur_device = spinner_selected;
 				
 				String buttonConfig;
@@ -855,7 +853,7 @@ public class MainInterface {
 		
 		if (getCurrentDropDown() != null) {
 			// the drop down will help create the key
-			misc_button = getCurrentDropDown().replace(" ", "_") + misc_button;
+			misc_button = getCurrentDropDown() + misc_button;
 			mEditor.putString(misc_button, return_string); // key, value
 			mEditor.commit();
 			refreshMiscBtns(); // update interface with new label
@@ -887,7 +885,6 @@ public class MainInterface {
 		
 		String dropDown = getCurrentDropDown();
 		if (dropDown != null) {
-			dropDown = dropDown.replace(" ", "_");
 			String miscButton;
 			for (int i=1; i<= NUM_MISC_BTNS; i++) {
 				miscButton = blumote.prefs.getString(

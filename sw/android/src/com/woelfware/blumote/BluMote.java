@@ -260,7 +260,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		if (prefs_table != null) {
 			// determine if it is a device or an activity
 			// note: lastDevice uses underscores in place of spaces
-			//prefs_table = prefs_table.replace("_", " ");
 			String buttonConfig;
 			if (prefs_table.startsWith(Activities.ACTIVITY_PREFIX)) { 
 				buttonConfig = activities.getButtonConfig(prefs_table);

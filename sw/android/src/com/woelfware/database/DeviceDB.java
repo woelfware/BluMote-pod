@@ -352,13 +352,11 @@ public class DeviceDB {
     
     /**
      * Formats a name for usage as a table in a database, specifies that the table
-     * should be used explicitly and puts '[ ]' around it. Also converts spaces to 
-     * underscores.
+     * should be used explicitly and puts '[ ]' around it. 
      * @param deviceName
      * @return
      */
     private String deviceNameFormat( String deviceName ) {
-    	deviceName = deviceName.replace(" ", "_");
     	if (deviceName.startsWith("[")) {
     		return deviceName;
     	}
