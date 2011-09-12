@@ -8,12 +8,16 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 
 /**
  * This class offloads several of the functions associated with dealing 
@@ -27,33 +31,45 @@ public class MainInterface {
 		DEVICE, ACTIVITY
 	}
 	
+	public int NUM_SCREENS = 3; // number of screens in the active layout
+	private String ACTIVE_BTN_CNFG = null;
+	
+	// TODO need to update screen based on what is selected in drop-down
+	
 	// all the device button layouts
 	public enum DEVICE_LAYOUTS {
-		MAIN("main", R.layout.main_interface), 
-		ROKU("roku", R.layout.rokud_interface);
+		MAIN("main", R.layout.main_interface, 3), 
+		ROKU("roku", R.layout.rokud_interface, 2);
 		private final String field;
 		private final int layout;
-		DEVICE_LAYOUTS(String field, int layout) {
+		private final int screens;
+		DEVICE_LAYOUTS(String field, int layout, int screens) {
 			this.field = field;
 			this.layout = layout;
+			this.screens = screens;
 		}
 		public String getValue() {
 			return field;
 		}
 		public int getLayout() {
 			return layout;
+		}
+		public int getScreens() {
+			return screens;
 		}
 	}
 		
 	// all the activity button layouts - in case they ever differ from devices
 	public enum ACTIVITY_LAYOUTS {
-		MAIN("main", R.layout.main_interface), 
-		ROKU("roku", R.layout.rokua_interface);
+		MAIN("main", R.layout.main_interface, 3), 
+		ROKU("roku", R.layout.rokua_interface, 2);
 		private final String field;
 		private final int layout;
-		ACTIVITY_LAYOUTS(String field, int layout) {
+		private final int screens;
+		ACTIVITY_LAYOUTS(String field, int layout, int screens) {
 			this.field = field;
 			this.layout = layout;
+			this.screens = screens;
 		}
 		public String getValue() {
 			return field;
@@ -61,7 +77,29 @@ public class MainInterface {
 		public int getLayout() {
 			return layout;
 		}
+		public int getScreens() {
+			return screens;
+		}
 	}
+	
+	/*********************************
+	 * Common screen elements
+	 *********************************/
+	// pager is for keeping track of what page we are on
+	ImageView pager;
+	// helps change interface pages
+	ViewFlipper flip;	
+	// viewflipper animations
+	Animation slide_right_anim;
+	Animation slide_left_anim;
+	Animation slide_right_out_anim;
+	Animation slide_left_out_anim;
+	// keep track of what the active page of buttons is
+	enum Pages {
+		MAIN, NUMBERS, ACTIVITIES
+	}
+
+	Pages page = Pages.MAIN;
 	
 	/*********************************
 	 *  MAIN SCREEN 
@@ -169,18 +207,35 @@ public class MainInterface {
 	 * @param type the type of interface which is a member of the local enum TYPE
 	 */
 	public void initializeInterface(String buttonConfig, TYPE type) {
-		if (type == TYPE.ACTIVITY) {
-			for (ACTIVITY_LAYOUTS i : ACTIVITY_LAYOUTS.values()) {
-				if (buttonConfig.matches(i.getValue())) {
-					blumote.setContentView(i.getLayout());
-				}			
+		// only execute the body of this function if the interface type
+		// has changed from before.  This is a performance improvement over always reloading.
+		if (ACTIVE_BTN_CNFG == null || !(ACTIVE_BTN_CNFG.matches(buttonConfig))) { 
+			ACTIVE_BTN_CNFG = buttonConfig.toString(); // create copy and save 
+			if (type == TYPE.ACTIVITY) {
+				for (ACTIVITY_LAYOUTS i : ACTIVITY_LAYOUTS.values()) {
+					if (buttonConfig.matches(i.getValue())) {
+						blumote.setContentView(i.getLayout());
+						NUM_SCREENS = i.getScreens();
+					}			
+				}
+			} else {
+				for (DEVICE_LAYOUTS i : DEVICE_LAYOUTS.values()) {
+					if (buttonConfig.matches(i.getValue())) {
+						blumote.setContentView(i.getLayout());
+						NUM_SCREENS = i.getScreens();
+					}			
+				}
 			}
-		} else {
-			for (DEVICE_LAYOUTS i : DEVICE_LAYOUTS.values()) {
-				if (buttonConfig.matches(i.getValue())) {
-					blumote.setContentView(i.getLayout());
-				}			
-			}
+			
+			// initialize interface items that are always present in a layout
+			// namely, pager and flipper and spinner
+			pager = (ImageView)blumote.findViewById(R.id.pager);
+			flip=(ViewFlipper)blumote.findViewById(R.id.flipper); // flips between our screens
+			flip.setOnTouchListener(blumote.gestureListener);
+			slide_right_anim = AnimationUtils.loadAnimation(blumote, R.anim.slide_right);
+			slide_left_anim = AnimationUtils.loadAnimation(blumote, R.anim.slide_left);
+			slide_left_out_anim = AnimationUtils.loadAnimation(blumote, R.anim.slide_left_out);
+			slide_right_out_anim = AnimationUtils.loadAnimation(blumote, R.anim.slide_right_out);
 		}
 	}
 	
@@ -475,6 +530,81 @@ public class MainInterface {
 	}
 	
 	/**
+	 * move screen to the left	
+	 */
+	void moveLeft() {
+		blumote.BUTTON_LOOPING = false;
+		
+		// setup flipper animations
+		flip.setInAnimation(slide_right_anim); // -100 -> 0
+		flip.setOutAnimation(slide_left_out_anim); // 0 -> 100
+		
+		switch (page) {
+		case MAIN:
+			flip.showPrevious();
+			page = Pages.ACTIVITIES;
+			// set pager to left
+			if (NUM_SCREENS == 3) {
+				pager.setImageDrawable(blumote.getResources().getDrawable(R.drawable.left_circle));
+			} else if (NUM_SCREENS == 2) {
+				pager.setImageDrawable(blumote.getResources().getDrawable(R.drawable.left_circle_two));
+			}
+			return;
+
+		case ACTIVITIES:
+			return;
+
+		case NUMBERS:
+			// NUMBERS can only be achieved if we have at least 3 screens,
+			// so no need for custom logic for 2 screens
+			flip.showPrevious();
+			page = Pages.MAIN;
+			// set pager to center
+			pager.setImageDrawable(blumote.getResources().getDrawable(R.drawable.middle_circle));
+			return;
+		}
+	}
+	
+
+	/**
+	 * move screen to the right
+	 */
+	void moveRight() {
+		blumote.BUTTON_LOOPING = false;
+		
+		// setup flipper animations
+		flip.setInAnimation(slide_left_anim); // 100 -> 0
+		flip.setOutAnimation(slide_right_out_anim); // 0 -> -100
+		//mainScreen.flip.setOutAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_right));
+		
+		switch (page) {
+		case MAIN:
+			if (NUM_SCREENS == 3) {
+				flip.showNext();
+				page = Pages.NUMBERS;
+				// set pager to right
+				pager.setImageDrawable(blumote.getResources().getDrawable(R.drawable.right_circle));
+			}
+			return;
+
+		case ACTIVITIES:
+			flip.showNext();
+			page = Pages.MAIN;
+			// set pager to middle
+			if (NUM_SCREENS == 3) {			
+				pager.setImageDrawable(blumote.getResources().getDrawable(R.drawable.middle_circle));
+			} else if (NUM_SCREENS == 2) {
+				pager.setImageDrawable(blumote.getResources().getDrawable(R.drawable.right_circle_two));
+			}
+			return;
+
+		case NUMBERS:
+			return;
+		}
+	}
+	
+	
+	/**
 	 * called first time program initializes, just determines what the last used
 	 * device was and then sets the drop-down to that item
 	 */
@@ -617,23 +747,40 @@ public class MainInterface {
 				setSpinnerErrorState();
 			}
 			if (spinnerItem != null) {
-				// replace spaces with underscores and then set cur_table to
-				// that				
+				// replace spaces with underscores and then set cur_table to that				
 				String spinner_selected = spinnerItem.toString().replace(" ", "_");
 				blumote.cur_device = spinner_selected;
 				
+				String buttonConfig;
 				if (spinner_selected.startsWith(ACTIVITY_PREFIX)) {
+					// update interface if needed
+					buttonConfig = activities.getButtonConfig(spinner_selected);
+					initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY);
+					
 					// show the "power off" button, hide the power on button
-					power_off_btn.setVisibility(View.VISIBLE);
-					power_on_btn.setVisibility(View.INVISIBLE);
-					blumote.activityPowerOffData = activities.getPowerOffButtonData(spinner_selected);
+					try {
+						power_off_btn.setVisibility(View.VISIBLE);
+						power_on_btn.setVisibility(View.INVISIBLE);
+					} catch (Exception e) { 
+						// do nothing
+					}
+					blumote.activityPowerOffData = activities.getPowerOffButtonData(spinner_selected);										
 				}
 				else {
+					// update interface if needed
+					buttonConfig = blumote.device_data.getButtonConfig(spinner_selected);
+					initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE);
+					
 					// hide the power off button, show the power on button
-					power_on_btn.setVisibility(View.VISIBLE);
-					power_off_btn.setVisibility(View.INVISIBLE);
+					try {
+						power_on_btn.setVisibility(View.VISIBLE);
+						power_off_btn.setVisibility(View.INVISIBLE);
+					} catch (Exception e) {
+						// do nothing
+					}
 				}
 				
+				// Fetch actual button codes, do this for "activity" or "main" interface states
 				// if we are in ACTIVITY or MAIN modes then toggle between them when
 				// changing devices in the drop-down
 				if (blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY ||
@@ -649,11 +796,7 @@ public class MainInterface {
 						blumote.buttons = blumote.device_data.getButtons(blumote.cur_device);					
 					}
 				}
-				// store in NV memory so next program invocation has this
-				// set as default
-				Editor mEditor = blumote.prefs.edit();
-				mEditor.putString("lastDevice", blumote.cur_device);
-				mEditor.commit();
+				
 			} else {
 				setSpinnerErrorState();								
 			}

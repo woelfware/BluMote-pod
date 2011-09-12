@@ -251,7 +251,6 @@ public class DeviceDB {
 	 * @param rename the new name
 	 */
 	public void renameDevice(String table, String rename) {
-		// TODO - add rename ot devices_table
 		try {
 			ContentValues args = new ContentValues();
 	        args.put(Constants.DB_FIELDS.DEVICE_ID.getValue(), rename);

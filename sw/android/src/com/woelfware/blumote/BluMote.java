@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -38,15 +39,10 @@ import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.View.OnClickListener;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -107,13 +103,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// Layout Views
 	private TextView mTitle;
-	// private ImageButton led_btn;
-	
-	// helps change interface pages
-	private ViewFlipper flip;
-	
-	// pager is for keeping track of what page we are on
-	ImageView pager;
 
 	// Name of the connected device
 	private String mConnectedDeviceName = null;
@@ -163,7 +152,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static final byte REPEAT_IR_LONG = (byte) 150;
 	
 	// Flag that tells us if we are holding our finger on a button and should loop
-	private static boolean BUTTON_LOOPING = false;
+	boolean BUTTON_LOOPING = false;
 	
 	// arraylist position of activity that we want to rename
 	private static int activity_rename;
@@ -188,27 +177,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// These are used for activities display window
 	private static final int ID_DELETE = 0;
 	private static final int ID_RENAME = 1;
-	private static final int ID_MANAGE = 2;
-	ListView activitiesListView;
+	private static final int ID_MANAGE = 2;	
 	
 	// Menu object - initalized in onCreateOptionsMenu()
-	Menu myMenu;
-	
-	// keep track of what the active page of buttons is
-	enum Pages {
-		MAIN, NUMBERS, ACTIVITIES
-	}
-
-	private Pages page = Pages.MAIN;
+	Menu myMenu;		
 
 	private MainInterface mainScreen = null;
-	private Activities activities = null;
-	
-	// viewflipper animations
-	private Animation slide_right_anim;
-	private Animation slide_left_anim;
-	private Animation slide_right_out_anim;
-	private Animation slide_left_out_anim;
+	private Activities activities = null;		
 	
 	GestureDetector gestureDetector;
 	View.OnTouchListener gestureListener;
@@ -283,7 +258,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// determine last device, set layout to that device's preferred layout
 		String prefs_table = prefs.getString("lastDevice", null);
 		if (prefs_table != null) {
-			// TODO determine if it is a device or an activity
+			// determine if it is a device or an activity
 			// note: lastDevice uses underscores in place of spaces
 			//prefs_table = prefs_table.replace("_", " ");
 			String buttonConfig;
@@ -303,12 +278,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		
 		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
 				R.layout.custom_title);
-		flip=(ViewFlipper)findViewById(R.id.flipper); // flips between our screens
-		
-		slide_right_anim = AnimationUtils.loadAnimation(this, R.anim.slide_right);
-		slide_left_anim = AnimationUtils.loadAnimation(this, R.anim.slide_left);
-		slide_left_out_anim = AnimationUtils.loadAnimation(this, R.anim.slide_left_out);
-		slide_right_out_anim = AnimationUtils.loadAnimation(this, R.anim.slide_right_out);
+						
 		
 		// the gesture class is used to handle fling events
 		gestureDetector = new GestureDetector(new MyGestureDetector());
@@ -366,11 +336,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 } // END else
                 return false; // allows XML to consume
             } // END onTouch(View v, MotionEvent e)
-		}; // END gestureListener
-
-		flip.setOnTouchListener(gestureListener);
-
-		pager = (ImageView)findViewById(R.id.pager);
+		}; // END gestureListener				
 
 		// Set up the custom title
 		mTitle = (TextView) findViewById(R.id.title_left_text);
@@ -379,7 +345,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		
 		// refresh the haptic feedback pref
 		SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
-		hapticFeedback = myprefs.getBoolean("hapticPREF", true);
+		hapticFeedback = myprefs.getBoolean("hapticPREF", false);
 		
 		// Load the last pod that we connected to, onResume() will try to connect to this
 		connectingMAC = prefs.getString("lastPod", null);
@@ -433,10 +399,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			mChatService = new BluetoothChatService(this, mHandler);						
 						
 			// setup interface
-			mainScreen.initialize(activities);		
+			mainScreen.initialize(activities); // TODO		
 			button_map = mainScreen.getButtonMap();
 			
-			flip.showNext(); // start out one screen to the right (main)
+			mainScreen.flip.showNext(); // start out one screen to the right (main)
 			// context menu on array list
 			registerForContextMenu(findViewById(R.id.activities_list));
 		}
@@ -516,69 +482,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		return gestureDetector.onTouchEvent(event);
-	}
-
-	/**
-	 * move screen to the left	
-	 */
-	private void moveLeft() {
-		BUTTON_LOOPING = false;
-		
-		// setup flipper animations
-		flip.setInAnimation(slide_right_anim); // -100 -> 0
-		flip.setOutAnimation(slide_left_out_anim); // 0 -> 100
-		
-		switch (page) {
-		case MAIN:
-			flip.showPrevious();
-			page = Pages.ACTIVITIES;
-			// set pager to left
-			pager.setImageDrawable(getResources().getDrawable(R.drawable.left_circle));
-			return;
-
-		case ACTIVITIES:
-			return;
-
-		case NUMBERS:
-			flip.showPrevious();
-			page = Pages.MAIN;
-			// set pager to center
-			pager.setImageDrawable(getResources().getDrawable(R.drawable.middle_circle));
-			return;
-		}
-	}
-	
-	/**
-	 * move screen to the right
-	 */
-	private void moveRight() {
-		BUTTON_LOOPING = false;
-		
-		// setup flipper animations
-		flip.setInAnimation(slide_left_anim); // 100 -> 0
-		flip.setOutAnimation(slide_right_out_anim); // 0 -> -100
-		//flip.setOutAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_right));
-		
-		switch (page) {
-		case MAIN:
-			flip.showNext();
-			page = Pages.NUMBERS;
-			// set pager to right
-			pager.setImageDrawable(getResources().getDrawable(R.drawable.right_circle));
-			return;
-
-		case ACTIVITIES:
-			flip.showNext();
-			page = Pages.MAIN;
-			// set pager to middle
-			pager.setImageDrawable(getResources().getDrawable(R.drawable.middle_circle));
-			return;
-
-		case NUMBERS:
-			return;
-		}
-	}
-	
+	}		
 	
 	/**
 	 * Execute the movement of a navigational button
@@ -591,13 +495,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			try {
 				// see if we have a navigation page move command....
 				if (buttonName == "move_left_btn") {
-					moveLeft();
+					mainScreen.moveLeft();
 					return;
 				}
 				// check if the navigation move_right was pushed
-				// this only works when we are in main screen
 				if (buttonName == "move_right_btn") {
-					moveRight();
+					mainScreen.moveRight();
 					return;
 				}
 			} catch (Exception e) {
@@ -1077,7 +980,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 
 		case R.id.learn_mode:
-			// TODO need to make sure that user has a device selected in the drop down before
+			// need to make sure that user has a device selected in the drop down before
 			// entering learn mode
 			if (mainScreen.getCurrentDropDown() != null) {
 				Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
@@ -1212,6 +1115,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 */
 	public void onItemSelected(AdapterView<?> parent, View view, int pos,
 			long id) {		
+		// TODO - update button config if needed
 		// setup interface buttons appropriately		
 		mainScreen.fetchButtons();
 	}	
@@ -1763,9 +1667,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                     return false;
                 // right to left swipe
                 if(e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-                    moveRight();
+                    mainScreen.moveRight();
                 }  else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
-                	moveLeft();
+                	mainScreen.moveLeft();
                 }
             } catch (Exception e) {
                 // nothing
