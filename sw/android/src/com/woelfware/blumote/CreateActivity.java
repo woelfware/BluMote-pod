@@ -23,6 +23,23 @@ import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class CreateActivity extends Activity {
+	
+	private static Integer[] mImageIds = {
+	            R.drawable.tv,
+	            R.drawable.oldgamecontroller,
+	            R.drawable.dvd,
+	            R.drawable.cinema,
+	            R.drawable.headphones,
+	            R.drawable.movie,
+	            R.drawable.musicnote,
+	            R.drawable.nintendo,
+	            R.drawable.playstation,
+	            R.drawable.popcorn,
+	            R.drawable.vintage,
+	            R.drawable.wii,
+	            R.drawable.xbox360
+	    	};
+	 
 	private EditText entered_activity;
 	CharSequence activity_string;
 	private Button closeActivityButton;
@@ -31,7 +48,7 @@ public class CreateActivity extends Activity {
 	static final String IMAGE_ID = "image_id";
 	static final String BUTTON_CONFIG = "BUTTON_CONFIG";
 	
-	int imageId = R.drawable.tv; // set to default picture
+	int imageIndex = R.drawable.tv; // set to default picture
 	
 	ImageAdapter imageAdapter;
 	
@@ -66,7 +83,7 @@ public class CreateActivity extends Activity {
 				activity_string = entered_activity.getText();
 				String buttonLayout = (String)layoutSpinner.getSelectedItem();
 				i.putExtra("returnStr", activity_string.toString());
-				i.putExtra(IMAGE_ID, imageId);
+				i.putExtra(IMAGE_ID, imageIndex); // return image array index
 				i.putExtra(BUTTON_CONFIG, buttonLayout);
 				setResult(RESULT_OK,i);
 				finish();	
@@ -81,8 +98,8 @@ public class CreateActivity extends Activity {
 	        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
 	            Toast.makeText(CreateActivity.this, 
 	            		"Image Selected", Toast.LENGTH_SHORT).show();
-	            // save the image that was selected
-	            imageId = (Integer)imageAdapter.getItem(position);
+	            // save the image index that was selected
+	            imageIndex = position;
 	        }
 	    });
 
@@ -100,25 +117,13 @@ public class CreateActivity extends Activity {
 		setResult(RESULT_CANCELED,i);
 	} // end of oncreate
 	
+	public static int getImageId(int index) {
+		return mImageIds[index];
+	}
+	
 	public class ImageAdapter extends BaseAdapter {
 	    int mGalleryItemBackground;
-	    private Context mContext;
-
-	    private Integer[] mImageIds = {
-	            R.drawable.tv,
-	            R.drawable.oldgamecontroller,
-	            R.drawable.dvd,
-	            R.drawable.cinema,
-	            R.drawable.headphones,
-	            R.drawable.movie,
-	            R.drawable.musicnote,
-	            R.drawable.nintendo,
-	            R.drawable.playstation,
-	            R.drawable.popcorn,
-	            R.drawable.vintage,
-	            R.drawable.wii,
-	            R.drawable.xbox360
-	    };
+	    private Context mContext;	   
 
 	    public ImageAdapter(Context c) {
 	        mContext = c;
@@ -134,7 +139,7 @@ public class CreateActivity extends Activity {
 
 	    public Object getItem(int position) {
 	        return mImageIds[position];
-	    }
+	    }	  
 
 	    public long getItemId(int position) {
 	        return position;

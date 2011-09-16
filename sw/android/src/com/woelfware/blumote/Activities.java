@@ -98,7 +98,7 @@ public class Activities {
 				// if we got here we have a valid item
 				
 				// see if there is an image associated with it
-				int imageId = prefs.getInt(formatActivityImageIdSuffix(item), R.drawable.tv);
+				int imageIndex = prefs.getInt(formatActivityImageIdSuffix(item), 0);
 				
 				if (suppressPrefix == true) {					
 					// remove the prefix
@@ -106,7 +106,7 @@ public class Activities {
 				}			
 				
 				// add it to arraylist
-				items.add(new ImageActivityItem(imageId, item));
+				items.add(new ImageActivityItem(CreateActivity.getImageId(imageIndex), item)); 
 			}
 		}
 		return items;
@@ -290,7 +290,7 @@ public class Activities {
 	 */
 	public void addActivity(String activityName, int image, String buttonConfig) {
 		// create object to hold string and image
-		ImageActivityItem item = new ImageActivityItem(image, activityName);
+		ImageActivityItem item = new ImageActivityItem(CreateActivity.getImageId(image), activityName);
 		
 		// add to arraylist
 		mActivitiesArrayAdapter.add(item);

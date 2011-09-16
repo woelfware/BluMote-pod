@@ -252,36 +252,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// Otherwise, setup the session
 		}
 
-		// Set up the window layout
-		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
-		
-		// determine last device, set layout to that device's preferred layout
-		String prefs_table = prefs.getString("lastDevice", null);
-		if (prefs_table != null) {
-			// determine if it is a device or an activity
-			// note: lastDevice uses underscores in place of spaces
-			String buttonConfig;
-			if (prefs_table.startsWith(Activities.ACTIVITY_PREFIX)) { 
-				buttonConfig = activities.getButtonConfig(prefs_table);
-				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY);
-			} else {
-				//look into database for type of button layout
-				buttonConfig = device_data.getButtonConfig(prefs_table);
-				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE);
-			}			
-		} else {
-			// if something strange happens and we get here, just initialize the default layout
-			mainScreen.initializeInterface(MainInterface.DEVICE_LAYOUTS.MAIN.getValue(),
-					MainInterface.TYPE.DEVICE);
-		}
-		
-		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
-				R.layout.custom_title);
-						
-		
 		// the gesture class is used to handle fling events
 		gestureDetector = new GestureDetector(new MyGestureDetector());
 		// the gesture listener will listen for any touch event
+		// NOTE: gestureListener needs to be initialized before calling initializeInterface()
 		gestureListener = new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent e) {            	
                 if (gestureDetector.onTouchEvent(e)) { // check if it is a fling event
@@ -335,7 +309,33 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 } // END else
                 return false; // allows XML to consume
             } // END onTouch(View v, MotionEvent e)
-		}; // END gestureListener				
+		}; // END gestureListener		
+		
+		// Set up the window layout
+		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
+		
+		// determine last device, set layout to that device's preferred layout
+		String prefs_table = prefs.getString("lastDevice", null);
+		if (prefs_table != null) {
+			// determine if it is a device or an activity
+			// note: lastDevice uses underscores in place of spaces
+			String buttonConfig;
+			if (prefs_table.startsWith(Activities.ACTIVITY_PREFIX)) { 
+				buttonConfig = activities.getButtonConfig(prefs_table);
+				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY, activities);
+			} else {
+				//look into database for type of button layout
+				buttonConfig = device_data.getButtonConfig(prefs_table);
+				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE, activities);
+			}			
+		} else {
+			// if something strange happens and we get here, just initialize the default layout
+			mainScreen.initializeInterface(MainInterface.DEVICE_LAYOUTS.MAIN.getValue(),
+					MainInterface.TYPE.DEVICE, activities);
+		}
+		
+		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
+				R.layout.custom_title);			
 
 		// Set up the custom title
 		mTitle = (TextView) findViewById(R.id.title_left_text);
@@ -398,10 +398,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			mChatService = new BluetoothChatService(this, mHandler);						
 						
 			// setup interface
-			mainScreen.initialize(activities); // TODO		
+			//mainScreen.initialize(); 		
 			button_map = mainScreen.getButtonMap();
 			
-			mainScreen.flip.showNext(); // start out one screen to the right (main)
+			// TODO - tried moving showNext to the initialize function of MainInterface.java
+//			mainScreen.flip.showNext(); // start out one screen to the right (main)
 			// context menu on array list
 			registerForContextMenu(findViewById(R.id.activities_list));
 		}
@@ -669,7 +670,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					// first need to pull current known devices list so we can
 					// append to it
 					if (connectingDevice != null) {
-//						prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
 						String prefs_table = prefs.getString("knownDevices",null);
 
 						// then pull name of device off and append
@@ -788,9 +788,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				if (return_bundle != null) {
 					String return_string = return_bundle.getString("returnStr");
 					String button_config = return_bundle.getString(CreateActivity.BUTTON_CONFIG);
-					int image_id = return_bundle.getInt(CreateActivity.IMAGE_ID);
+					int imageIndex = return_bundle.getInt(CreateActivity.IMAGE_ID);					
 					// Add item to list
-					activities.addActivity(return_string, image_id, button_config);							
+					activities.addActivity(return_string, imageIndex, button_config);		
+					// TODO refresh the list?
 				}				
 			}
 			break;

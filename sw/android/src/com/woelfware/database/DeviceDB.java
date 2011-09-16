@@ -279,6 +279,7 @@ public class DeviceDB {
 				Constants.DB_FIELDS.DEVICE_ID.getValue(), Constants.DB_FIELDS.BUTTON_CONFIG.getValue()
 				}, Constants.DB_FIELDS.DEVICE_ID.getValue()+"='"+name+"'", null, null,null, null);
 		if (c != null && c.getCount() > 0) {
+			c.moveToFirst();			
 			return c.getString(1); // return the button config name stored in DB
 		} else {
 			return MainInterface.DEVICE_LAYOUTS.MAIN.getValue(); // else return default interface
