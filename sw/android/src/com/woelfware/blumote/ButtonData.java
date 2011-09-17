@@ -12,14 +12,12 @@ public class ButtonData {
 	private int buttonId;
 	private byte[] buttonData;
 	private String buttonName;
-	private int buttonRepeat;
 	
 	// takes an activity and activity button and converts to a device and button
-	public ButtonData(int buttonId, String buttonName, byte[] buttonData, int buttonRepeat) {
+	public ButtonData(int buttonId, String buttonName, byte[] buttonData) {
 		this.buttonId = buttonId;
 		this.buttonName = buttonName;
 		this.buttonData = buttonData;
-		this.buttonRepeat = buttonRepeat;
 	}
 	
 	int getButtonId() {
@@ -33,10 +31,6 @@ public class ButtonData {
 	byte[] getButtonData() {
 		return buttonData;
 	}		
-	
-	int getButtonRepeat() {
-		return buttonRepeat;
-	}
 	
 	void setButtonData(byte[] buttonData) {
 		this.buttonData = buttonData;

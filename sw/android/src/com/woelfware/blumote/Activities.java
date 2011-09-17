@@ -37,6 +37,8 @@ public class Activities {
 	// prefix to put before a new activity to prefs file to find it easier
 	// when searching through keys
 	static final String ACTIVITY_PREFIX = "(A)_";
+	static final String ACTIVITY_PREFIX_SPACE = "(A) ";
+	
 	// SUFFIX for initialization items
 	private static final String INIT = "INIT";
 	// SUFFIX for power off codes to store
@@ -122,7 +124,7 @@ public class Activities {
 	static void populateActivities(ArrayAdapter<String> adapter, SharedPreferences prefs) {
 		ArrayList<ImageActivityItem> items = getImageActivities(false, prefs);
 		for (int i=0; i < items.size(); i++) {
-			adapter.add(items.get(i).title); // just add title to adapter
+			adapter.add(items.get(i).title.replace("(A)_","(A) ")); // just add title to adapter
 		}
 	}
 	
@@ -170,6 +172,8 @@ public class Activities {
 		// prepend prefix if it doesn't already exist
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			return key;
+		} else if (key.startsWith(ACTIVITY_PREFIX_SPACE)) {
+			return key = key.replace(ACTIVITY_PREFIX_SPACE, ACTIVITY_PREFIX);
 		}
 		else {
 			return ACTIVITY_PREFIX + key;
@@ -189,6 +193,8 @@ public class Activities {
 		// remove prefix if it doesn't already exist
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			return key.replace(ACTIVITY_PREFIX, "");
+		} else if (key.startsWith(ACTIVITY_PREFIX_SPACE)) {
+			return key = key.replace(ACTIVITY_PREFIX_SPACE, "");
 		}
 		else {
 			return key;
@@ -205,6 +211,8 @@ public class Activities {
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
+		} else if (key.startsWith(ACTIVITY_PREFIX_SPACE)) {
+			key = key.replace(ACTIVITY_PREFIX_SPACE, ACTIVITY_PREFIX);
 		}
 		if (key.endsWith(INIT)) {
 			return key;
@@ -223,6 +231,8 @@ public class Activities {
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
+		} else if (key.startsWith(ACTIVITY_PREFIX_SPACE)) {
+			key = key.replace(ACTIVITY_PREFIX_SPACE, ACTIVITY_PREFIX);
 		}
 		if (key.endsWith(OFF)) {
 			return key;
@@ -235,6 +245,8 @@ public class Activities {
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
+		} else if (key.startsWith(ACTIVITY_PREFIX_SPACE)) {
+			key = key.replace(ACTIVITY_PREFIX_SPACE, ACTIVITY_PREFIX);
 		}
 		if (key.endsWith(IMAGEID)) {
 			return key;
@@ -247,12 +259,15 @@ public class Activities {
 		if (key.startsWith(ACTIVITY_PREFIX)) {
 			// remove the prefix
 			key = key.replace(ACTIVITY_PREFIX, "");
+		} else if (key.startsWith(ACTIVITY_PREFIX_SPACE)) {
+			key = key.replace(ACTIVITY_PREFIX_SPACE, "");
 		}
 		if (key.endsWith(BTNCONFIG)) {
 			return key;
 		} else {
 			return key + BTNCONFIG;
 		}
+		
 	}
 	
 	/**
@@ -265,16 +280,16 @@ public class Activities {
 		ImageActivityItem name = mActivitiesArrayAdapter.getItem(position);
 		mActivitiesArrayAdapter.remove(name);
 				
-		name.title = addActivityPrefix(name.title);
+		String toDelete = addActivityPrefix(name.title);
 		
 		// remove the ID associated with the device
-		blumote.lookup.deleteLookupId(name.title);
+		blumote.lookup.deleteLookupId(toDelete);
 		
 		Editor mEditor = blumote.prefs.edit();
 		// delete the activity record as well as it's associated INIT routine
-		mEditor.remove(name.title); 	
-		name.title = formatActivityInitSuffix(name.title);
-		mEditor.remove(name.title);
+		mEditor.remove(toDelete); 	
+		toDelete = formatActivityInitSuffix(toDelete);
+		mEditor.remove(toDelete);
 		
 		mEditor.commit();
 		
@@ -769,10 +784,10 @@ public class Activities {
 					deviceButtons[index] = new ButtonData(
 							0, activityButton.getActivityButton(), 
 							blumote.device_data.getButton(activityButton.getDeviceName(), 
-							activityButton.getDeviceButton()), 0 );
+							activityButton.getDeviceButton()));
 				} catch (Exception e) {
 					// if the call the getButtion() failed then lets just create a button with null for data
-					deviceButtons[index] = new ButtonData(0, activityButton.getActivityButton(),null, 0 );
+					deviceButtons[index] = new ButtonData(0, activityButton.getActivityButton(),null);
 				}
 				
 			}
@@ -876,13 +891,11 @@ public class Activities {
 						
 						// try to insert data from database if it exists
 						buttonData = blumote.device_data.getButton(devices[i], blumote.button_map.get(R.id.power_on_btn));
-						returnData[i] = new ButtonData( R.id.power_on_btn, blumote.button_map.get(R.id.power_on_btn),
-								buttonData,	0 );
+						returnData[i] = new ButtonData( R.id.power_on_btn, 
+								blumote.button_map.get(R.id.power_on_btn),buttonData);
 					} catch (Exception e) {
 						// if the call the getButtion() failed then lets just create a button with null for data
-						returnData[i] = new ButtonData(
-								0, blumote.button_map.get(R.id.power_on_btn), 
-								null, 0 );
+						returnData[i] = new ButtonData(0, blumote.button_map.get(R.id.power_on_btn),null);
 					}
 				}
 				

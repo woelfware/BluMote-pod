@@ -37,7 +37,8 @@ public class MainInterface {
 	
 	public int NUM_SCREENS = 3; // number of screens in the active layout
 	private String ACTIVE_BTN_CNFG = null;
-		
+	private TYPE ACTIVE_BTN_TYPE = null;
+	
 	// all the device button layouts
 	public enum DEVICE_LAYOUTS {
 		// "name of interface", layout id, number of screens in layout, button class
@@ -184,23 +185,30 @@ public class MainInterface {
 	 * deviceLayouts[] or activityLayouts[]
 	 * @param type the type of interface which is a member of the local enum TYPE
 	 * @param a handle to activities object
+	 * @param restore true if this is the first time program launched and wants to restore the last
+	 * device in the drop-down
 	 */
-	public void initializeInterface(String buttonConfig, TYPE type, Activities a) {
+	public void initializeInterface(String buttonConfig, TYPE type, Activities a, boolean restore) {
 			
 		// only execute the body of this function if the interface type
 		// has changed from before.  This is a performance improvement over always reloading.
-		if (ACTIVE_BTN_CNFG == null || !(ACTIVE_BTN_CNFG.matches(buttonConfig))) { 
+		if (ACTIVE_BTN_CNFG == null || ACTIVE_BTN_TYPE == null ||  
+				!(ACTIVE_BTN_CNFG.matches(buttonConfig)) ||	ACTIVE_BTN_TYPE != type) { 
 			ACTIVE_BTN_CNFG = buttonConfig.toString(); // create copy and save
+			ACTIVE_BTN_TYPE = type; // record last type used
+			
 			// create a handle to the Activities class for working with the activities framework
 			activities = a;
 			button_map = new HashMap<Integer,String>();	
+			
+			ButtonCreator instance = null;
 			
 			if (type == TYPE.ACTIVITY) {
 				for (ACTIVITY_LAYOUTS i : ACTIVITY_LAYOUTS.values()) {
 					if (buttonConfig.matches(i.getValue())) {
 						blumote.setContentView(i.getLayout());
 						NUM_SCREENS = i.getScreens();
-						initialize(i.getInstance());
+						instance = i.getInstance();
 						break;
 					}			
 				}
@@ -209,7 +217,7 @@ public class MainInterface {
 					if (buttonConfig.matches(i.getValue())) {
 						blumote.setContentView(i.getLayout());
 						NUM_SCREENS = i.getScreens();
-						initialize(i.getInstance());
+						instance = i.getInstance();
 						break;
 					}			
 				}
@@ -259,7 +267,11 @@ public class MainInterface {
 			spinnerAdapter.setDropDownViewResource(R.layout.spinner_entry);
 			device_spinner.setAdapter(spinnerAdapter);
 			device_spinner.setOnItemSelectedListener(blumote);		
-			restoreSpinner(); // restore selection from last program invocation		
+			if (restore) {
+				restoreSpinner(); // restore selection from last program invocation
+			}
+			
+			initializeButtons(instance); // initialize all buttons on interface
 			
 			flip.showNext(); // start out one screen to the right (main)
 		}
@@ -268,7 +280,7 @@ public class MainInterface {
 	/**
 	 * This method will initialize the button elements of the interface
 	 */
-	public void initialize(ButtonCreator type) {
+	public void initializeButtons(ButtonCreator type) {
 		ButtonParameters[] buttons = type.getButtons(blumote);
 		button_map.clear(); // start out clear
 		
@@ -370,8 +382,10 @@ public class MainInterface {
 		if (prefs_table != null) {
 			prefs_table = prefs_table.replaceAll("_", " ");		
 			for (int i = 0; i < device_spinner.getCount(); i++) {
-				if (prefs_table.equals(device_spinner.getItemAtPosition(i))) {
+				String test = (String)device_spinner.getItemAtPosition(i); //TODO - not matching (A) item for some reason
+				if (prefs_table.matches((String)device_spinner.getItemAtPosition(i))) {
 					device_spinner.setSelection(i);
+					break;
 				}
 			}
 		}
@@ -427,7 +441,7 @@ public class MainInterface {
 			Activities.populateActivities(spinnerAdapter, blumote.prefs);
 
 			// always fetch buttons after we populate the drop down
-			fetchButtons();
+//			fetchButtons();
 		}
 	}
 	
@@ -449,7 +463,12 @@ public class MainInterface {
 	 * sets dropdown to the item indicated by string parameter
 	 * @param s the item that we want to set the drop-down to
 	 */
-	void setDropDown(String s) {		
+	void setDropDown(String s) {
+		// save 'lastdevice' for next time						
+		Editor mEditor = blumote.prefs.edit();
+		mEditor.putString("lastDevice", s);
+		mEditor.commit();
+		
 		for (int i = 0; i < device_spinner.getCount(); i++) {
 			if (s.equals((String)device_spinner.getItemAtPosition(i))) {
 				device_spinner.setSelection(i);
@@ -494,7 +513,7 @@ public class MainInterface {
 		if (device_spinner.getCount() > 0) {
 			Object spinnerItem;
 			try {
-				spinnerItem = device_spinner.getSelectedItem();
+				spinnerItem = getCurrentDropDown();
 			} catch (Exception e) {
 				spinnerItem = null;				
 				setSpinnerErrorState();
@@ -503,16 +522,16 @@ public class MainInterface {
 				// set cur_table				
 				String spinner_selected = spinnerItem.toString();
 				blumote.cur_device = spinner_selected;
-				// save 'lastdevice' for next time						
-				Editor mEditor = blumote.prefs.edit();
-				mEditor.putString("lastDevice", spinner_selected);
-				mEditor.commit();
+//				// save 'lastdevice' for next time						
+//				Editor mEditor = blumote.prefs.edit();
+//				mEditor.putString("lastDevice", spinner_selected);
+//				mEditor.commit();
 				
 				String buttonConfig;
-				if (spinner_selected.startsWith(ACTIVITY_PREFIX)) {
+				if (spinner_selected.startsWith(ACTIVITY_PREFIX_SPACE)) {
 					// update interface if needed
 					buttonConfig = activities.getButtonConfig(spinner_selected);
-					initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY, activities);
+					initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY, activities, false);
 					
 					// show the "power off" button, hide the power on button					
 					if (power_off_btn != null) {
@@ -527,7 +546,7 @@ public class MainInterface {
 				else {
 					// update interface if needed
 					buttonConfig = blumote.device_data.getButtonConfig(spinner_selected);
-					initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE, activities);
+					initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE, activities, false);
 					
 					// hide the power off button, show the power on button
 					if (power_on_btn != null) {
@@ -544,7 +563,7 @@ public class MainInterface {
 				if (blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY ||
 						blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
 					// check if activity or a device
-					if (spinner_selected.startsWith(ACTIVITY_PREFIX)) {
+					if (spinner_selected.startsWith(ACTIVITY_PREFIX_SPACE)) {
 						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
 						activities.setWorkingActivity(getCurrentDropDown());
 						blumote.buttons = activities.getActivityButtons(spinner_selected);								

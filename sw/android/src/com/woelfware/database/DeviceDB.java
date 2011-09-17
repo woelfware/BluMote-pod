@@ -117,7 +117,11 @@ public class DeviceDB {
 			buttons = new ButtonData[c.getCount()];
 			// iterate through cursor to load up buttons array
 			for (int i= 0; i < buttons.length; i++) {
-				buttons[i] = new ButtonData(0, c.getString(1), c.getBlob(2), c.getInt(3));
+				try {
+					buttons[i] = new ButtonData(0, c.getString(1), c.getBlob(2));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				c.moveToNext();
 			}
 		}
@@ -188,8 +192,6 @@ public class DeviceDB {
 				ContentValues newTaskValue = new ContentValues();
 				newTaskValue.put(Constants.DB_FIELDS.DEVICE_ID.getValue(), table);
 				newTaskValue.put(Constants.DB_FIELDS.BUTTON_CONFIG.getValue(), buttonConfig);
-				// TODO - add the rest of the parameters, will also then need
-				// to adjust addDevice() to add more paramters
 				db.insertOrThrow(Constants.DEVICES_TABLE, null, newTaskValue);
 			} catch(SQLiteException ex) {
 				Log.v("Insert into "+Constants.DEVICES_TABLE+" exception caught", ex.getMessage());				
@@ -210,7 +212,7 @@ public class DeviceDB {
 		} catch(SQLiteException ex) {
 			Log.v("Create table exception", ex.getMessage());
 			return 0;
-			// TODO - add check for duplicate table
+			// TODO - add check for duplicate table?
 		}
 	}
 	

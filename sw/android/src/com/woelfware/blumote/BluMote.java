@@ -309,38 +309,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 } // END else
                 return false; // allows XML to consume
             } // END onTouch(View v, MotionEvent e)
-		}; // END gestureListener		
-		
-		// Set up the window layout
-		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
-		
-		// determine last device, set layout to that device's preferred layout
-		String prefs_table = prefs.getString("lastDevice", null);
-		if (prefs_table != null) {
-			// determine if it is a device or an activity
-			// note: lastDevice uses underscores in place of spaces
-			String buttonConfig;
-			if (prefs_table.startsWith(Activities.ACTIVITY_PREFIX)) { 
-				buttonConfig = activities.getButtonConfig(prefs_table);
-				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY, activities);
-			} else {
-				//look into database for type of button layout
-				buttonConfig = device_data.getButtonConfig(prefs_table);
-				mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE, activities);
-			}			
-		} else {
-			// if something strange happens and we get here, just initialize the default layout
-			mainScreen.initializeInterface(MainInterface.DEVICE_LAYOUTS.MAIN.getValue(),
-					MainInterface.TYPE.DEVICE, activities);
-		}
-		
-		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
-				R.layout.custom_title);			
-
-		// Set up the custom title
-		mTitle = (TextView) findViewById(R.id.title_left_text);
-		mTitle.setText(R.string.app_name);
-		mTitle = (TextView) findViewById(R.id.title_right_text);		
+		}; // END gestureListener								
 		
 		// refresh the haptic feedback pref
 		SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -396,9 +365,40 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// Initialize the BluetoothChatService to perform bluetooth
 			// connections
 			mChatService = new BluetoothChatService(this, mHandler);						
-						
+					
+			// Set up the window layout
+			requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);			
+			
+			getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
+					R.layout.custom_title);	
+			
 			// setup interface
-			//mainScreen.initialize(); 		
+			// determine last device, set layout to that device's preferred layout
+			String prefs_table = prefs.getString("lastDevice", null);
+			if (prefs_table != null) {
+				// determine if it is a device or an activity
+				// note: lastDevice uses underscores in place of spaces
+				String buttonConfig;
+				if (prefs_table.startsWith(Activities.ACTIVITY_PREFIX_SPACE)) { 
+					buttonConfig = activities.getButtonConfig(prefs_table);
+					mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY, activities, true);
+				} else {
+					// look into database for type of button layout
+					buttonConfig = device_data.getButtonConfig(prefs_table);
+					mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE, activities, true);
+				}			
+			} else {
+				// if something strange happens and we get here, just initialize the default layout
+				mainScreen.initializeInterface(MainInterface.DEVICE_LAYOUTS.MAIN.getValue(),
+						MainInterface.TYPE.DEVICE, activities, true);
+			}								
+
+			// Set up the custom title
+			mTitle = (TextView) findViewById(R.id.title_left_text);
+			mTitle.setText(R.string.app_name);
+			mTitle = (TextView) findViewById(R.id.title_right_text);
+			
+			//mainScreen.fetchButtons(); // because dropdown gets funky first time, reset it to last device TODO 		
 			button_map = mainScreen.getButtonMap();
 			
 			// TODO - tried moving showNext to the initialize function of MainInterface.java
@@ -430,7 +430,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		// setup spinner (need this in case we removed the spinner item from a
 		// call to managedevices)
-		mainScreen.fetchButtons(); // update buttons from DB
+//		mainScreen.fetchButtons(); // update buttons from DB
 
 		if (ENABLE_BT) {
 			// See if the bluetooth device is connected, if not try to connect
@@ -1115,8 +1115,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 */
 	public void onItemSelected(AdapterView<?> parent, View view, int pos,
 			long id) {		
-		// TODO - update button config if needed
-		// setup interface buttons appropriately		
+		
+		// refresh buttons on interface
 		mainScreen.fetchButtons();
 	}	
 
