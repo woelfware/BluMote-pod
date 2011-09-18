@@ -8,6 +8,17 @@
 #include "buffer.h"
 #include <msp430.h>
 
+#define ENABLE_IR_LEARN() \
+	do {	\
+		P1IES |= BIT3;	\
+		P1IFG &= ~BIT3;	\
+		P1IE |= BIT3;	\
+	} while (0)
+#define DISABLE_IR_LEARN() \
+	do {	\
+		P1IE &= ~BIT3;	\
+	} while (0)
+
 /*
  * mutex on the general purpose buffer so
  * it doesn't get clobbered.

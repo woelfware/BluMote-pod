@@ -17,7 +17,8 @@ static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
 	buf_gp[GP_BUF_SIZE];
 
-static volatile int_fast32_t sys_tick = 0;
+static volatile int_fast32_t sys_tick = 0,
+	ir_sys_tick = 0;
 volatile bool got_pulse = false;
 
 static volatile uint16_t duration = 0;
@@ -47,7 +48,11 @@ void init_hw()
 	/* IR configs */
 	P1SEL = BIT5;  /* Set as alternate function */
 	P1DIR = BIT4 | BIT5;    /* P1.4,5 = IR_OUT1, IR_OUT2 */
-	P1OUT &= ~(BIT4 | BIT5);	/* Turn off IR LED */
+	P1OUT = BIT3;	/* P1.3 set, else reset */
+	P1REN |= BIT3;	/* P1.3 pullup */
+	//P1IE |= BIT3;	/* P1.3 interrupt enabled */
+	P1IES |= BIT3;	/* P1.3 falling edge */
+	P1IFG &= ~BIT3;	/* P1.3 IFG cleared */
 	CCTL1 = CCIE;	/* CCR1 interrupt enabled */
  	CCR1 = (SYS_CLK * US_PER_SYS_TICK) - 1;
 	CCTL0 = OUTMOD_4;  /* CCR0 interrupt disabled and Toggle */
@@ -65,6 +70,16 @@ int_fast32_t get_us()
 	__disable_interrupt();
 	elapsed_time = sys_tick * US_PER_SYS_TICK;
 	sys_tick = 0;
+	__enable_interrupt();
+	return elapsed_time;
+}
+
+static int_fast32_t get_ir_us()
+{
+	int_fast32_t elapsed_time;
+	__disable_interrupt();
+	elapsed_time = ir_sys_tick * US_PER_SYS_TICK;
+	ir_sys_tick = 0;
 	__enable_interrupt();
 	return elapsed_time;
 }
@@ -111,8 +126,40 @@ __interrupt void TIMERA1_ISR(void)
  	switch (TAIV) {
  	case 2:
 		CCR1 += ((SYS_CLK * US_PER_SYS_TICK) - 1);	/* Add Offset to CCR1 */
- 		sys_tick++;	
+ 		sys_tick++;
+ 		ir_sys_tick++;
 		break;
 	}
 }
 
+/* IR receive variables */
+int_fast32_t pulse_accumulator = 0;
+
+/* Port 1 interrupt service routine
+ * 
+ * P1.3 - Modulated IR code
+ */
+#pragma vector = PORT1_VECTOR
+__interrupt void Port_1(void)
+{
+	if (P1IFG & BIT3) {
+		int_fast32_t elapsed_time = get_ir_us();
+
+		if (elapsed_time <= MAX_FILTERED_SPACE_TIME) {
+			pulse_accumulator += elapsed_time;
+		} else {
+			/* store the pulse duration */
+			(void)buf_enque(&gp_rx_tx, (pulse_accumulator >> 8) & 0xFF);
+			(void)buf_enque(&gp_rx_tx, pulse_accumulator & 0xFF);
+			/* store the space duration */
+			(void)buf_enque(&gp_rx_tx, (elapsed_time >> 8) & 0xFF);
+			(void)buf_enque(&gp_rx_tx, elapsed_time & 0xFF);
+			/* reset accumulator */
+			pulse_accumulator = 0;
+		}
+	
+		/* setup for the next pulse/space */
+		P1IES ^= BIT3;	/* P1.3 toggle edge detection */
+		P1IFG &= ~BIT3;	/* P1.3 IFG cleared */
+	}
+}

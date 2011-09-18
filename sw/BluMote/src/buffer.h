@@ -51,6 +51,13 @@ bool buf_deque(struct circular_buffer *que, uint8_t *pK);
 bool buf_undeque(struct circular_buffer *que, uint8_t k);
 
 /*
+ * \return bool
+ * \retval true		buffer was full
+ * \retval false	buffer was not full
+ */
+bool buf_unenque(struct circular_buffer *que, uint8_t *pk);
+
+/*
  * clear out the buffer
  */
 void buf_clear(struct circular_buffer *que);

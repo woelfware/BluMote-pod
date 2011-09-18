@@ -10,11 +10,6 @@ static int repeat_cnt = NBR_IR_BURSTS;
 static bool txing_ir_code = false,
 	abort_tx = false;
 
-static inline bool is_space()
-{
-	return (P1IN & BIT3) ? true : false;
-}
-
 static void carrier_freq(bool on)
 {
 	if (on) {
@@ -30,15 +25,14 @@ bool ir_learn(int_fast32_t us)
 {
 	enum state {
 		default_state = 0,
-		rx_start_of_pkt1 = 0,
+		enable_ir_learn = 0,
+		rx_start_of_pkt1,
 		rx_start_of_pkt2,
-		rx_pulses,
-		rx_spaces,
+		rx_pulses_spaces,
 		handle_cleanup
 	};
 	static enum state current_state = default_state;
 	static int_fast32_t ttl = IR_LEARN_CODE_TIMEOUT;
-	static uint_fast32_t duration = 0;
 	bool run_again = true;
 
 	ttl -= us;
@@ -47,59 +41,106 @@ bool ir_learn(int_fast32_t us)
 	}
 
 	switch (current_state) {
+	case enable_ir_learn:
+		ENABLE_IR_LEARN();
+		current_state = rx_start_of_pkt1;
+		break;
+		
 	case rx_start_of_pkt1:
-	case rx_start_of_pkt2:
+	case rx_start_of_pkt2: {
 		/* filter out the first packet to help ensure we don't store
 		 * a partial packet
 		 */
-		if (is_space()) {
-			duration += us;
-			if (duration > MAX_SPACE_WAIT_TIME) {
-				duration = MAX_SPACE_WAIT_TIME;
+		int i;
+		uint8_t ir_signal[4];
+		bool got_pulse_space;
+
+find_max_filtered_space_time:
+		got_pulse_space = true;
+
+		for (i = 0 ; i < 4; i++) {
+			if (buf_deque(&gp_rx_tx, &ir_signal[i])) {
+				for ( ; i >= 0; i--) {
+					buf_undeque(&gp_rx_tx, ir_signal[i]);
+				}
+				got_pulse_space = false;
+				break;
 			}
-		} else {
-			if (duration >= MAX_SPACE_WAIT_TIME) {
+		}
+
+		if (got_pulse_space) {
+			uint16_t space = (ir_signal[2] << 8) + ir_signal[3];
+				
+			if (space > MAX_FILTERED_SPACE_TIME) {
 				current_state = (current_state == rx_start_of_pkt1)
-					? rx_start_of_pkt2 : rx_pulses;
-			}
-			duration = 0;
-		}
-		break;
-
-	case rx_pulses:
-		if (!is_space()) {
-			duration += us;
-		} else {
-			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
-			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
-			current_state = rx_spaces;
-			duration = 0;
-		}
-		break;
-
-	case rx_spaces:
-		if (is_space()) {
-			duration += us;
-		} else {
-			(void)buf_enque(&gp_rx_tx, (duration >> 8) & 0xFF);
-			(void)buf_enque(&gp_rx_tx, duration & 0xFF);
-			if (duration < MAX_SPACE_WAIT_TIME) {
-				current_state = rx_pulses;
-				duration = 0;
+						? rx_start_of_pkt2 : rx_pulses_spaces;
 			} else {
+				/* keep popping off the numbers until we find what we're looking for
+				 * or the buffer is empty.
+				 */
+				goto find_max_filtered_space_time;
+			}
+		}
+		}
+		break;
+
+	case rx_pulses_spaces: {
+		int i;
+		struct circular_buffer ir_buf;
+		uint16_t space;
+		bool look_for_end = true,
+			found_end = false;
+		uint8_t ir_signal[4];
+
+		if (buf_full(&gp_rx_tx)) {
+			DISABLE_IR_LEARN();
+		} else {
+			break;
+		}
+
+		ir_buf = gp_rx_tx;
+		
+		/* the buffer is full
+		 * remove extra packets from the response
+		 */
+		while (look_for_end) {
+			for (i = 0 ; i < 4; i++) {
+				if (buf_deque(&ir_buf, &ir_signal[i])) {
+					look_for_end = false;
+				}
+			}
+
+			if (!look_for_end) {
+				break;
+			}
+
+			space = (ir_signal[2] << 8) + ir_signal[3];
+				
+			if (space > MAX_SPACE_WAIT_TIME) {
+				/* sync gp_rx_tx to the detected full packet */
+				while (gp_rx_tx.wr_ptr != ir_buf.rd_ptr) {
+					(void)buf_unenque(&gp_rx_tx, NULL);
+				}
+				
 				/* done */
+				found_end = true;
 				current_state = default_state;
-				duration = 0;
 				ttl = IR_LEARN_CODE_TIMEOUT;
 				run_again = false;
+				look_for_end = false;
 			}
+		}
+		
+		if (!found_end) {
+			current_state = handle_cleanup;
+		}
 		}
 		break;
 
 	case handle_cleanup:
 	default:
 		current_state = default_state;
-		duration = 0;
+		DISABLE_IR_LEARN();
 		ttl = IR_LEARN_CODE_TIMEOUT;
 		run_again = false;
 		buf_clear(&gp_rx_tx);

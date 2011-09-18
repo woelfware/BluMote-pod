@@ -12,17 +12,6 @@ void buf_init(struct circular_buffer *que, volatile uint8_t *buf, size_t size)
 	buf_clear(que);
 }
 
-bool buf_enque(struct circular_buffer *que, uint8_t k)
-{
-	bool isFull = buf_full(que);
-	if (!isFull) {
-		que->buf[que->wr_ptr++] = k;
-		que->wr_ptr &= (que->size - 1);
-		que->cnt++;
-	}
-	return isFull;
-}
-
 bool buf_deque(struct circular_buffer *que, uint8_t *pK)
 {
 	bool isEmpty = buf_empty(que);
@@ -36,6 +25,17 @@ bool buf_deque(struct circular_buffer *que, uint8_t *pK)
 	return isEmpty;
 }
 
+bool buf_enque(struct circular_buffer *que, uint8_t k)
+{
+	bool isFull = buf_full(que);
+	if (!isFull) {
+		que->buf[que->wr_ptr++] = k;
+		que->wr_ptr &= (que->size - 1);
+		que->cnt++;
+	}
+	return isFull;
+}
+
 bool buf_undeque(struct circular_buffer *que, uint8_t k)
 {
 	bool isFull = buf_full(que);
@@ -45,6 +45,19 @@ bool buf_undeque(struct circular_buffer *que, uint8_t k)
 		que->cnt++;
 	}
 	return isFull;
+}
+
+bool buf_unenque(struct circular_buffer *que, uint8_t *pK)
+{
+	bool isEmpty = buf_empty(que);
+	if (!isEmpty) {
+		if (pK) {
+			*pK = que->buf[que->wr_ptr];
+		}
+		que->wr_ptr = (que->wr_ptr - 1) & (que->size - 1);
+		que->cnt--;
+	}
+	return isEmpty;
 }
 
 void buf_clear(struct circular_buffer *que)
