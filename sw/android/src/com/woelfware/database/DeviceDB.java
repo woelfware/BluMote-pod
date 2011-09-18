@@ -284,7 +284,7 @@ public class DeviceDB {
 			c.moveToFirst();			
 			return c.getString(1); // return the button config name stored in DB
 		} else {
-			return MainInterface.DEVICE_LAYOUTS.MAIN.getValue(); // else return default interface
+			return MainInterface.DEVICE_LAYOUTS.BLANK.getValue(); // else return default interface
 		}
 	}
 	

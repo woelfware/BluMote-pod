@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 /**
  * This class handles activities which are created to 
  * allow combining devices on the interface - like "watch a DVD"
@@ -136,6 +137,7 @@ public class Activities {
 	 * 
 	 */
 	static void populateImageActivities(ArrayAdapter<ImageActivityItem> adapter, SharedPreferences prefs) {
+		adapter.clear(); // clear before re-populating
 		ArrayList<ImageActivityItem> items = getImageActivities(true, prefs);
 		for (int i=0; i < items.size(); i++) {
 			adapter.add(items.get(i)); 
@@ -330,7 +332,10 @@ public class Activities {
 		// set program state
 		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
 				
-		//TODO - launch help window if first time creating activity			
+		//TODO - launch help window if first time creating activity		
+		
+		// Tell user that they are in this mode
+		Toast.makeText(blumote, "Now in activity startup setup process mode", Toast.LENGTH_SHORT).show();
 	}
 	
 	/**
@@ -664,13 +669,18 @@ public class Activities {
 				if (record != null) {
 					// supress leading comma if null record (empty)
 					record = record + ",";
+					
+					// TODO check if association already exists, if so edit it
+					if (record.startsWith(btnID) || record.contains(","+btnID)) {
+						removeActivityKeyBinding(btnID);
+						record = blumote.prefs.getString(activityName, null);
+					}
 				} else {
 					record = "";
 				}
 
 				// append the new data to the existing record
 				record = record + btnID + " " + device + " " + deviceBtn;
-
 				// save new record into NV memory
 				Editor mEditor = blumote.prefs.edit();
 				mEditor.putString(activityName, record);
@@ -742,10 +752,7 @@ public class Activities {
 			// save new record into NV memory
 			Editor mEditor = blumote.prefs.edit();
 			mEditor.putString(activityName, newRecord.toString());
-			mEditor.commit();
-			
-			// refresh interface buttons
-			mainint.fetchButtons();
+			mEditor.commit();			
 		} // end if						
 	}			
 	
@@ -786,7 +793,7 @@ public class Activities {
 							blumote.device_data.getButton(activityButton.getDeviceName(), 
 							activityButton.getDeviceButton()));
 				} catch (Exception e) {
-					// if the call the getButtion() failed then lets just create a button with null for data
+					// if the call the getButton() failed then lets just create a button with null for data
 					deviceButtons[index] = new ButtonData(0, activityButton.getActivityButton(),null);
 				}
 				
@@ -926,10 +933,10 @@ public class Activities {
 	 * @author keusej
 	 */
 	private class ActivityButton {
-		private String deviceName;
-		private String activityName;
-		private String activityButton;
-		private String deviceButton;
+		private String deviceName = null;
+		private String activityName = null;
+		private String activityButton = null;
+		private String deviceButton = null;
 		
 		/**
 		 * Constructor for the class
@@ -937,15 +944,19 @@ public class Activities {
 		 * @param record The data that is extracted from the SharedPreferences for a particular activity
 		 */
 		ActivityButton(String activityName, String record) {
-			String[] items = record.split(" ");
-			this.activityName = activityName;
-			this.activityButton = items[0];
-			
-			// device name is going to be converted from the ID which is stored
-			// in the prefs file to the actual name
-			this.deviceName = blumote.lookup.getName(items[1]);
-			
-			this.deviceButton = items[2];
+			try {
+				String[] items = record.split(" ");
+				this.activityName = activityName;
+				this.activityButton = items[0];
+				
+				// device name is going to be converted from the ID which is stored
+				// in the prefs file to the actual name
+				this.deviceName = blumote.lookup.getName(items[1]);
+				
+				this.deviceButton = items[2];
+			} catch(Exception e) {
+				// .split() failed, so leave values as null
+			}
 		}
 		
 		String getActivityButton() {

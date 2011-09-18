@@ -56,4 +56,5 @@
 	
 	<string name="delete_devices">Clear known pods</string>
 	<string name="layout_spinner">Choose a button configuration</string>
+	<string name="blank_screen">You have no devices or activities.  Please create a new device by selecting the menu button of your phone and selecting \&quot;Manage Devices\&quot;</string>
 </resources>

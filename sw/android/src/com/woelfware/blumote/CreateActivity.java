@@ -118,7 +118,12 @@ public class CreateActivity extends Activity {
 	} // end of oncreate
 	
 	public static int getImageId(int index) {
-		return mImageIds[index];
+		try {
+			return mImageIds[index];
+		} catch (Exception e) {
+			return mImageIds[0]; // return default if index is corrupted
+		}
+			
 	}
 	
 	public class ImageAdapter extends BaseAdapter {

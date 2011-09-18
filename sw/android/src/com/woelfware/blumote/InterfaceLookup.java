@@ -173,8 +173,6 @@ class InterfaceLookup {
 	}
 	
 	private String formatNameForLookup(String name) {
-		name = name.replace(" ", "_");
-		
 		if (name.startsWith(ID_PREFIX)) {			
 			return name.replaceFirst(ID_PREFIX, "");
 		} else {

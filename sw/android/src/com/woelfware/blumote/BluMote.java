@@ -62,7 +62,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Debugging
 	@SuppressWarnings("unused")
 	private static final String TAG = "BlueMote";
-	static final boolean DEBUG = false;
+	static final boolean DEBUG = false; // set true to enable extra debugging messages
 	
 	// set false for using the emulator for testing UI
 	static final boolean ENABLE_BT = true;
@@ -136,6 +136,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// Currently selected button resource id (for training mode operations)
 	private int BUTTON_ID = 0;
+	
+	// used to prevent the drop-down from changing the last device, unless we specifically
+	// selected a new device after the program is all set up, seems like when the interface
+	// loads we get spurious onItemSelected() events firing.
+	boolean LOCK_LAST_DEVICE = false;  
 
 	// current State of the pod bluetooth communication
 	Codes.BT_STATE BT_STATE = Codes.BT_STATE.IDLE;
@@ -213,6 +218,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	protected void onCreate(Bundle savedInstanceState) {	
 		
 		super.onCreate(savedInstanceState);
+		
+		LOCK_LAST_DEVICE = true;
 
 		// get preferences file
 		prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
@@ -317,46 +324,18 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		
 		// Load the last pod that we connected to, onResume() will try to connect to this
 		connectingMAC = prefs.getString("lastPod", null);
-	}	
-	
-	/**
-	 * Execute a button long press event.  This is called after a timer expires.
-	 * The button will repeat for as long as the user keeps their finger on the button.
-	 */
-	protected void executeButtonLongDown() {		
 		
-		// This method entered if the long key press is triggered from countdown timer,
-		// also if we re-launch the method after a short delay time which is done if 
-		// the user is still holding the button down.
-		if (isButtonPushed) { // check if user moved finger off button before firing button press
-			// indicate to onClick() that we are in repeat key mode, prevents double click of final release
-			BUTTON_LOOPING = true;
-			// check if it is a navigational button
-			// checkNavigation returns true if it is a navigation button
-			if (mainScreen.isNavigationButton(lastView.getId())) {
-				// execute navigation
-				executeNavigationButton(lastView.getId());
-			} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY || 
-					INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {				
-				sendButton(lastView.getId());
-				// start a new shorter timer that will call this method
-				buttonPushID++; // increment global button push id
-				new ButtonCountDown(DELAY_TIME, buttonPushID) {
-					public void onFinish() {
-						// called when timer expired
-						if (getButtonID() == buttonPushID) {
-							// if same push ID then execute this function again
-							executeButtonLongDown();
-						}
-					}
-				}.start();
-			}		
-		} else {
-			BUTTON_LOOPING = false;
-			// send abort IR transmit command if button not being held any longer
-			sendCode(Pod.ABORT_TRANSMIT);
-		}
-	}
+		// Set up the window layout
+		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
+		setContentView(R.layout.blank_interface); // need this for title setup to work
+		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
+				R.layout.custom_title);
+		// Set up the custom title
+		mTitle = (TextView) findViewById(R.id.title_left_text);
+		mTitle.setText(R.string.app_name);
+		mTitle = (TextView) findViewById(R.id.title_right_text);
+
+	}		
 	
 	@Override
 	protected void onStart() {
@@ -365,44 +344,35 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// Initialize the BluetoothChatService to perform bluetooth
 			// connections
 			mChatService = new BluetoothChatService(this, mHandler);						
-					
-			// Set up the window layout
-			requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);			
 			
-			getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
-					R.layout.custom_title);	
+			// initialize activities framework to mainScreen
+			mainScreen.setActivities(activities);			
 			
-			// setup interface
 			// determine last device, set layout to that device's preferred layout
 			String prefs_table = prefs.getString("lastDevice", null);
+			
 			if (prefs_table != null) {
 				// determine if it is a device or an activity
 				// note: lastDevice uses underscores in place of spaces
 				String buttonConfig;
 				if (prefs_table.startsWith(Activities.ACTIVITY_PREFIX_SPACE)) { 
 					buttonConfig = activities.getButtonConfig(prefs_table);
-					mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY, activities, true);
+					mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.ACTIVITY);
 				} else {
 					// look into database for type of button layout
 					buttonConfig = device_data.getButtonConfig(prefs_table);
-					mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE, activities, true);
+					mainScreen.initializeInterface(buttonConfig, MainInterface.TYPE.DEVICE);
 				}			
 			} else {
-				// if something strange happens and we get here, just initialize the default layout
-				mainScreen.initializeInterface(MainInterface.DEVICE_LAYOUTS.MAIN.getValue(),
-						MainInterface.TYPE.DEVICE, activities, true);
-			}								
-
-			// Set up the custom title
-			mTitle = (TextView) findViewById(R.id.title_left_text);
-			mTitle.setText(R.string.app_name);
-			mTitle = (TextView) findViewById(R.id.title_right_text);
+				// if no "lastDevice" set then just initialize the blank layout
+				mainScreen.initializeInterface(MainInterface.DEVICE_LAYOUTS.BLANK.getValue(),
+						MainInterface.TYPE.DEVICE);
+			}			
 			
-			//mainScreen.fetchButtons(); // because dropdown gets funky first time, reset it to last device TODO 		
+			mainScreen.fetchButtons();
+
 			button_map = mainScreen.getButtonMap();
 			
-			// TODO - tried moving showNext to the initialize function of MainInterface.java
-//			mainScreen.flip.showNext(); // start out one screen to the right (main)
 			// context menu on array list
 			registerForContextMenu(findViewById(R.id.activities_list));
 		}
@@ -427,10 +397,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				}
 			}
 		}
-
-		// setup spinner (need this in case we removed the spinner item from a
-		// call to managedevices)
-//		mainScreen.fetchButtons(); // update buttons from DB
 
 		if (ENABLE_BT) {
 			// See if the bluetooth device is connected, if not try to connect
@@ -482,7 +448,46 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		return gestureDetector.onTouchEvent(event);
-	}		
+	}	
+	
+	/**
+	 * Execute a button long press event.  This is called after a timer expires.
+	 * The button will repeat for as long as the user keeps their finger on the button.
+	 */
+	protected void executeButtonLongDown() {		
+		
+		// This method entered if the long key press is triggered from countdown timer,
+		// also if we re-launch the method after a short delay time which is done if 
+		// the user is still holding the button down.
+		if (isButtonPushed) { // check if user moved finger off button before firing button press
+			// indicate to onClick() that we are in repeat key mode, prevents double click of final release
+			BUTTON_LOOPING = true;
+			// check if it is a navigational button
+			// checkNavigation returns true if it is a navigation button
+			if (mainScreen.isNavigationButton(lastView.getId())) {
+				// execute navigation
+				executeNavigationButton(lastView.getId());
+			} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY || 
+					INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {				
+				sendButton(lastView.getId());
+				// start a new shorter timer that will call this method
+				buttonPushID++; // increment global button push id
+				new ButtonCountDown(DELAY_TIME, buttonPushID) {
+					public void onFinish() {
+						// called when timer expired
+						if (getButtonID() == buttonPushID) {
+							// if same push ID then execute this function again
+							executeButtonLongDown();
+						}
+					}
+				}.start();
+			}		
+		} else {
+			BUTTON_LOOPING = false;
+			// send abort IR transmit command if button not being held any longer
+			sendCode(Pod.ABORT_TRANSMIT);
+		}
+	}
 	
 	/**
 	 * Execute the movement of a navigational button
@@ -526,7 +531,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				// if compare works then we can go ahead and implement the rename
 				misc_button = buttonName;
 				// launch window to get new name to use
-				Intent i = new Intent(BluMote.this, EnterDevice.class);
+				Intent i = new Intent(BluMote.this, EnterName.class);
 				startActivityForResult(i, MISC_RENAME);
 			}
 			else {
@@ -546,8 +551,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					activities.addActivityKeyBinding(activityButton, cur_device, button_map.get(BUTTON_ID));
 					captureButton = false; 
 					// make sure to jump back to original activity and then re-show the drop-down				
-					mainScreen.setDropDown(activities.getWorkingActivity());				
-					mainScreen.toggleDropDownVis();	
+					mainScreen.setDropDown(activities.getWorkingActivity());					
 					Toast.makeText(this, "Button associated with device",
 							Toast.LENGTH_SHORT).show();
 				}
@@ -570,14 +574,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; // setting drop-down only works in ACTIVITY/MAIN modes
 							mainScreen.setDropDown(items[item].toString());
 							INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_EDIT;
-							mainScreen.toggleDropDownVis();
+							mainScreen.fetchButtons();
+							mainScreen.setDropDownVis(false);
 						}
 					});
 					AlertDialog alert = builder.create();
 					alert.show();
 				}
 			} else {
-				Toast.makeText(this, "Sorry you can't use that button",
+				Toast.makeText(this, "The power off activity button has no devices to turn off",
 						Toast.LENGTH_SHORT).show();
 			}
 		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_INIT) {
@@ -776,6 +781,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (resultCode == Activity.RESULT_OK) {
 				// refresh drop-down items				
 				mainScreen.populateDropDown();
+				mainScreen.fetchButtons();
 				// refresh InterfaceLookup
 				lookup.refreshLookup();
 			}
@@ -791,7 +797,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					int imageIndex = return_bundle.getInt(CreateActivity.IMAGE_ID);					
 					// Add item to list
 					activities.addActivity(return_string, imageIndex, button_config);		
-					// TODO refresh the list?
 				}				
 			}
 			break;
@@ -959,6 +964,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "Import failed!", Toast.LENGTH_SHORT).show();
 			}
 			mainScreen.populateDropDown();
+			mainScreen.fetchButtons();
 			return true;
 			
 		/*	This function removed except for debug cases
@@ -986,6 +992,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
 				BT_STATE = Codes.BT_STATE.LEARN;
 				INTERFACE_STATE = Codes.INTERFACE_STATE.LEARN;
+				// disable drop-down
+				mainScreen.setDropDownVis(false);
 			} else {
 				Toast.makeText(this, "You must have a device selected in the drop-down menu!", Toast.LENGTH_SHORT).show();
 			}
@@ -996,6 +1004,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			sendCode(Codes.Pod.ABORT_LEARN);
 			BT_STATE = Codes.BT_STATE.ABORT_LEARN;
 			INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
+			mainScreen.setDropDownVis(true);
+			// refresh buttons after done learning
+			mainScreen.fetchButtons();
 			return true;
 			
 		case R.id.rename_misc:
@@ -1013,6 +1024,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case R.id.activity_associate_btn:
 			INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_EDIT;
 			Toast.makeText(this, "Press a button to associate with a device...", Toast.LENGTH_SHORT).show();
+			mainScreen.setDropDownVis(false);
 			return true;
 			
 		case R.id.insert_delay:
@@ -1028,9 +1040,11 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			activities.addActivityInitSequence(activityInit);
 			// after we add it then we need to clear out the activityInit
 			activityInit.clear();
-			Toast.makeText(this, "Press a button to associate with a device...", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Now in activity button association mode", Toast.LENGTH_SHORT).show();
 			// now put us back into the original activity for the drop-down
 			mainScreen.setDropDown(activities.getWorkingActivity());
+			// disable changing devices/activities while in this button association mode
+			mainScreen.setDropDownVis(false);
 			return true;
 			
 		case R.id.end_activity_edit:
@@ -1038,6 +1052,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			Toast.makeText(this, "Done editing activity", Toast.LENGTH_SHORT).show();
 			// now put us back into the original activity for the drop-down
 			mainScreen.setDropDown(activities.getWorkingActivity());
+			mainScreen.setDropDownVis(true);
+			// refresh data behind buttons
+			mainScreen.fetchButtons();
 		}
 
 		return false;
@@ -1115,9 +1132,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 */
 	public void onItemSelected(AdapterView<?> parent, View view, int pos,
 			long id) {		
-		
-		// refresh buttons on interface
-		mainScreen.fetchButtons();
+		mainScreen.setDropDown(mainScreen.getCurrentDropDown());
+		LOCK_LAST_DEVICE = false; // release lock after initial spurious trigger
 	}	
 
 	/**
@@ -1134,6 +1150,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case ID_DELETE:
 			activities.deleteActivity((int)info.id);
 			mainScreen.populateDropDown();
+			mainScreen.fetchButtons();
 			return true;
 			
 		case ID_RENAME:
@@ -1327,9 +1344,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					buttonName,
 					Codes.pod_data);
 		}
-		// should we not drop out of learn mode?  Would reduce menu activity
-		BT_STATE = Codes.BT_STATE.IDLE; // reset state, drop out of learn mode
-		INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
 		Codes.learn_state = Codes.LEARN_STATE.IDLE; // ready to start a new
 													// learn command now
 		dismissDialog(DIALOG_LEARN_WAIT);
@@ -1545,8 +1559,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			
 		case ABORT_TRANSMIT:
 			BT_STATE = Codes.BT_STATE.IDLE; // reset state
-			if (response[index] == Codes.Pod.ACK) {
-				Toast.makeText(this, "ACK received for abort transmit", Toast.LENGTH_SHORT).show();
+			if (DEBUG) {
+				if (response[index] == Codes.Pod.ACK) {
+					Toast.makeText(this, "ACK received for abort transmit", Toast.LENGTH_SHORT).show();
+				}
 			}
 			break;
 		}
