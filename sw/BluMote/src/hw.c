@@ -48,9 +48,7 @@ void init_hw()
 	/* IR configs */
 	P1SEL = BIT5;  /* Set as alternate function */
 	P1DIR = BIT4 | BIT5;    /* P1.4,5 = IR_OUT1, IR_OUT2 */
-	P1OUT = BIT3;	/* P1.3 set, else reset */
-	P1REN |= BIT3;	/* P1.3 pullup */
-	//P1IE |= BIT3;	/* P1.3 interrupt enabled */
+	P1OUT &= ~(BIT4 | BIT5);	/* Turn off IR LED */
 	P1IES |= BIT3;	/* P1.3 falling edge */
 	P1IFG &= ~BIT3;	/* P1.3 IFG cleared */
 	CCTL1 = CCIE;	/* CCR1 interrupt enabled */

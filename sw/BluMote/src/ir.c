@@ -71,7 +71,7 @@ find_max_filtered_space_time:
 		if (got_pulse_space) {
 			uint16_t space = (ir_signal[2] << 8) + ir_signal[3];
 				
-			if (space > MAX_FILTERED_SPACE_TIME) {
+			if (space > MAX_SPACE_WAIT_TIME) {
 				current_state = (current_state == rx_start_of_pkt1)
 						? rx_start_of_pkt2 : rx_pulses_spaces;
 			} else {
