@@ -17,8 +17,7 @@ static volatile uint8_t buf_uart_rx[UART_RX_BUF_SIZE],
 	buf_uart_tx[UART_TX_BUF_SIZE],
 	buf_gp[GP_BUF_SIZE];
 
-static volatile int_fast32_t sys_tick = 0,
-	ir_sys_tick = 0;
+static volatile int_fast32_t sys_tick = 0;
 volatile bool got_pulse = false;
 
 static volatile uint16_t duration = 0;
@@ -72,16 +71,6 @@ int_fast32_t get_us()
 	return elapsed_time;
 }
 
-static int_fast32_t get_ir_us()
-{
-	int_fast32_t elapsed_time;
-	__disable_interrupt();
-	elapsed_time = ir_sys_tick * US_PER_SYS_TICK;
-	ir_sys_tick = 0;
-	__enable_interrupt();
-	return elapsed_time;
-}
-
 bool own_gp_buf(enum gp_buf_owner owner)
 {
 	if (gp_buf_owner == owner
@@ -125,7 +114,6 @@ __interrupt void TIMERA1_ISR(void)
  	case 2:
 		CCR1 += ((SYS_CLK * US_PER_SYS_TICK) - 1);	/* Add Offset to CCR1 */
  		sys_tick++;
- 		ir_sys_tick++;
 		break;
 	}
 }
@@ -140,11 +128,32 @@ int_fast32_t pulse_accumulator = 0;
 #pragma vector = PORT1_VECTOR
 __interrupt void Port_1(void)
 {
-	if (P1IFG & BIT3) {
-		int_fast32_t elapsed_time = get_ir_us();
+	enum state {
+		default_state = 0,
+		rx_start_of_pkt1 = 0,
+		rx_end_of_pkt1,
+		rx_pkt2};
+	static enum state current_state = default_state;
+	int_fast32_t elapsed_time;
 
+	P1IFG &= ~BIT3;	/* P1.3 IFG cleared */
+	P1IE &= ~BIT3;	/* P1.3 disable interrupt */
+	elapsed_time = get_us();
+
+	switch (current_state) {
+	case rx_start_of_pkt1:
+	case rx_end_of_pkt1:
+		if (elapsed_time > MAX_SPACE_WAIT_TIME) {
+			current_state = rx_start_of_pkt1
+				? rx_end_of_pkt1 : rx_pkt2;
+		}
+		P1IE |= BIT3;	/* P1.3 enable interrupt */
+		break;
+
+	case rx_pkt2:
 		if (elapsed_time <= MAX_FILTERED_SPACE_TIME) {
 			pulse_accumulator += elapsed_time;
+			P1IE |= BIT3;	/* P1.3 enable interrupt */
 		} else {
 			/* store the pulse duration */
 			(void)buf_enque(&gp_rx_tx, (pulse_accumulator >> 8) & 0xFF);
@@ -154,10 +163,19 @@ __interrupt void Port_1(void)
 			(void)buf_enque(&gp_rx_tx, elapsed_time & 0xFF);
 			/* reset accumulator */
 			pulse_accumulator = 0;
+
+			if (elapsed_time <= MAX_SPACE_WAIT_TIME) {
+				P1IE |= BIT3;	/* P1.3 enable interrupt */
+			} else {
+				/* done */
+				DISABLE_IR_LEARN();
+				learn_ir_code = false;
+				current_state = default_state;
+			}
 		}
-	
-		/* setup for the next pulse/space */
-		P1IES ^= BIT3;	/* P1.3 toggle edge detection */
-		P1IFG &= ~BIT3;	/* P1.3 IFG cleared */
+		break;
 	}
+
+	/* setup for the next pulse/space */
+	P1IES ^= BIT3;	/* P1.3 toggle edge detection */
 }

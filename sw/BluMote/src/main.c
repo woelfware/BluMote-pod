@@ -11,15 +11,13 @@
 
 typedef bool (*task)(int_fast32_t us);
 
-static task const tasks[] = {
-	bluetooth_main,
-	blumote_main
-};
-
 void main()
 {
 	int_fast32_t us;
 	int i;
+	task const tasks[] = {
+		bluetooth_main,
+		blumote_main};
 	bool run_again;
 
 	init_hw();
@@ -48,11 +46,11 @@ void main()
 			(void)get_us();
 			run_again = true;
 		} else if (learn_ir_code) {
-			gp_buf_owner = gp_buf_owner_none;
+			gp_buf_owner = gp_buf_owner_ir;
 			buf_clear(&gp_rx_tx);
 			(void)get_us();
-			while (ir_learn(get_us()));
-			learn_ir_code = false;
+			ENABLE_IR_LEARN();
+			while (learn_ir_code);
 			(void)get_us();
 			while (tx_learned_code()) {
 				(void)bluetooth_main(get_us());
