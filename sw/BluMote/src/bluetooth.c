@@ -1,98 +1,40 @@
-#include "bluetooth.h"
-#include "hw.h"
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
+#include <msp430.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include "bluetooth.h"
 
-int bluetooth_getchar()
+static struct buf *bluetooth_rx_buf = NULL;
+
+void bluetooth_tx(struct buf *tx_buf)
 {
-	int c;
-
-	if (buf_deque(&uart_rx, (uint8_t *)&c)) {
-		c = EOF;
+	while (tx_buf->rd_ptr < tx_buf->wr_ptr) {
+		while (!(IFG2 & UCA0TXIFG));	/* tx buf ready? */
+		UCA0TXBUF = tx_buf->buf[tx_buf->rd_ptr];
+		tx_buf->rd_ptr++;
 	}
 
-	return c;
+	tx_buf->rd_ptr = tx_buf->wr_ptr = 0;
 }
 
-int bluetooth_putchar(int character)
+void set_bluetooth_rx_buf(struct buf *rx_buf)
 {
-	int rc = character;
-
-	if (buf_enque(&uart_tx, (uint8_t)character)) {
-		rc = EOF;
-	}
-
-	return rc;
+	_disable_interrupts();
+	bluetooth_rx_buf = rx_buf;
+	_enable_interrupts();
 }
 
-int bluetooth_puts(char const *str, int nbr_chars)
+#pragma vector = USCIAB0RX_VECTOR
+__interrupt void USCI0RX_ISR(void)
 {
-	while (nbr_chars-- > 0) {
-		if (bluetooth_putchar(*str++) == EOF) {
-			return EOF;
+	if (bluetooth_rx_buf) {
+		if (bluetooth_rx_buf->wr_ptr < bluetooth_rx_buf->buf_size - 1) {
+			bluetooth_rx_buf->buf[bluetooth_rx_buf->wr_ptr++] = UCA0RXBUF;
 		}
 	}
 
-	return 1;
+	_BIC_SR(LPM4_EXIT);
 }
-
-bool issue_bluetooth_reset(int_fast32_t us)
-{
-	enum state {
-		default_state = 0,
-		issue_reset = 0,
-		remove_reset,
-		wait_for_power_up
-	};
-	static enum state current_state = default_state;
-	static int_fast32_t ttl;
-	bool run_again = true;
-
-	switch (current_state) {
-	case issue_reset:
-		P3OUT &= ~BIT0;
-		ttl = BLUETOOTH_RESET_HOLD_TIME;
-		current_state = remove_reset;
-		break;
-
-	case remove_reset:
-		ttl -= us;
-		if (ttl < 0) {
-			P3OUT |= BIT0;
-			ttl = BLUETOOTH_STARTUP_TIME;
-			current_state = wait_for_power_up;
-		}
-		break;
-
-	case wait_for_power_up:
-		ttl -= us;
-		if (ttl < 0) {
-			current_state = default_state;
-			run_again = false;
-		}
-		break;
-
-	default:
-		current_state = default_state;
-		run_again = false;
-		break;
-	}
-
-	return run_again;
-}
-
-bool bluetooth_main(int_fast32_t us)
-{
-	bool run_again = true;
-
-	if (IFG2 & UCA0TXIFG) {
-		uint8_t c;
-		if (buf_deque(&uart_tx, &c)) {
-			run_again = false;
-		} else {
-			UCA0TXBUF = c;
-		}
-	}
-
-	return run_again;
-}
-

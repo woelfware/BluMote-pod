@@ -1,14 +1,15 @@
-#include "bluetooth.h"
-#include "blumote.h"
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
+#include <stdbool.h>
+#include <msp430.h>
+#include "buffer.h"
 #include "config.h"
 #include "hw.h"
 #include "ir.h"
-#include <stdint.h>
-#include <string.h>
 
-static int repeat_cnt = NBR_IR_BURSTS;
-static bool txing_ir_code = false,
-	abort_tx = false;
+static inline bool is_space();
 
 static void carrier_freq(bool on)
 {
@@ -21,153 +22,147 @@ static void carrier_freq(bool on)
 	}
 }
 
-bool ir_main(int_fast32_t us)
+static void find_pkt_end(int starting_addr)
 {
-	enum state {
-		default_state = 0,
-		wait_for_code = 0,
-		tx_pulses,
-		tx_spaces,
-		handle_cleanup
-	};
-	static enum state current_state = default_state;
-	static struct circular_buffer m_ir_buf;
-	static int_fast32_t ttl;
-	bool run_again = true;
-	uint8_t c;
+	uint16_t *ptr = (uint16_t *)&uber_buf.buf[starting_addr];
+	uint16_t const * const end_addr =
+		(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(uint16_t))];
 
-	if (!own_gp_buf(gp_buf_owner_ir)) {
-		return run_again;
-	}	
+	while (ptr < end_addr) {
+		if (*ptr++ > MAX_SPACE_WAIT_TIME) {
+			uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
+			break;
+		}
+	} 
+}
 
-	switch (current_state) {
-	case wait_for_code:
-		if (buf_deque(&gp_rx_tx, &c)) {
-			gp_buf_owner = gp_buf_owner_none;
-			run_again = false;
+static void fix_endianness(int i)
+{
+	uint8_t tmp;
+
+	while (i < uber_buf.buf_size) {
+		tmp = uber_buf.buf[i];
+		uber_buf.buf[i] = uber_buf.buf[i + 1];
+		uber_buf.buf[i + 1] = tmp;
+		i += 2;
+	}
+}
+
+static void get_pkt()
+{
+	int_fast32_t pulse_duration = 0,
+		space_duration = 0;
+	uint16_t const * const MAX_UBER_BUF_ADDR = (uint16_t *)&uber_buf.buf[uber_buf.buf_size - 4];
+	uint16_t *uber_buf_wr_ptr = (uint16_t *)&uber_buf.buf[uber_buf.wr_ptr];
+
+	while (is_space());	/* wait for incoming packet */
+	(void)get_sys_tick();
+
+	while (1) {
+		while (!is_space());
+		pulse_duration += get_sys_tick();
+
+		while (is_space());
+		space_duration += get_sys_tick();
+
+		if (space_duration <= MAX_FILTERED_SPACE_TIME / US_PER_SYS_TICK) {
+			pulse_duration += space_duration;
+			space_duration = 0;
 		} else {
-			/* have a code to tx */
-			ttl = (int_fast32_t)c << 8;
-			buf_undeque(&gp_rx_tx, c);
-			memcpy(&m_ir_buf, &gp_rx_tx, sizeof(gp_rx_tx));
-			buf_deque(&gp_rx_tx, NULL);
-			if (!buf_deque(&gp_rx_tx, &c)) {
-				ttl += c;
-				current_state = tx_pulses;
-				txing_ir_code = true;
-				carrier_freq(true);
+			if (uber_buf_wr_ptr <= MAX_UBER_BUF_ADDR) {
+				*uber_buf_wr_ptr++ = pulse_duration;
+				pulse_duration = 0;
+				*uber_buf_wr_ptr++ = space_duration;
+				space_duration = 0;
 			} else {
-				/* incomplete ir code */
-				(void)bluetooth_putchar(BLUMOTE_NAK);
-				current_state = handle_cleanup;
+				/* buffer filled up */
+				uber_buf.wr_ptr = (uint8_t *)uber_buf_wr_ptr - uber_buf.buf;  
+				return;
 			}
 		}
-		break;
+	}
+}
 
-	case tx_pulses:
-		ttl -= us;
-		
-		if (abort_tx) {
-			ttl = 0;
-			repeat_cnt = 0;
-			buf_clear(&gp_rx_tx);
-		}
-		
-		if (ttl <= 0) {
-			carrier_freq(false);
-			if (!buf_deque(&gp_rx_tx, &c)) {
-				ttl = (int_fast32_t)c << 8;
-				if (!buf_deque(&gp_rx_tx, &c)) {
-					ttl += c;
-					current_state = tx_spaces;
-				} else {
-					/* incomplete ir code */
-					(void)bluetooth_putchar(BLUMOTE_NAK);
-					current_state = handle_cleanup;
-				}
-			} else {
-				/* done */
-				repeat_cnt--;
-				if (repeat_cnt > 0) {
-					memcpy(&gp_rx_tx, &m_ir_buf, sizeof(gp_rx_tx));
-					current_state = wait_for_code;
-				} else {
-					(void)bluetooth_putchar(BLUMOTE_ACK);
-					current_state = handle_cleanup;
-				}
+static void get_rdy_for_pkt()
+{
+	int_fast32_t duration = 0;
+
+	while (is_space());	/* wait for a pulse */
+	(void)get_sys_tick();
+
+	/* wait for space long enough to be between packets */
+	while (1) {
+		if (is_space()) {
+			duration += get_us();
+			if (duration > MAX_SPACE_WAIT_TIME) {
+				return;
 			}
+		} else {
+			duration = 0;
 		}
-		break;
+	}	
+}
 
-	case tx_spaces:
-		ttl -= us;
-		
-		if (abort_tx) {
-			ttl = 0;
-			repeat_cnt = 0;
-			buf_clear(&gp_rx_tx);
-		}
-		
-		if (ttl <= 0) {
-			if (!buf_deque(&gp_rx_tx, &c)) {
-				ttl = (int_fast32_t)c << 8;
-				if (!buf_deque(&gp_rx_tx, &c)) {
-					ttl += c;
-					carrier_freq(true);
-					current_state = tx_pulses;
-				} else {
-					/* incomplete ir code */
-					(void)bluetooth_putchar(BLUMOTE_NAK);
-					current_state = handle_cleanup;
-				}
-			} else {
-				/* done */
-				repeat_cnt--;
-				if (repeat_cnt > 0) {
-					memcpy(&gp_rx_tx, &m_ir_buf, sizeof(gp_rx_tx));
-					current_state = wait_for_code;
-				} else {
-					(void)bluetooth_putchar(BLUMOTE_ACK);
-					current_state = handle_cleanup;
-				}
-			}
-		}
-		break;
+static uint16_t get_ttl()
+{
+	uint16_t ttl = ((uint16_t)uber_buf.buf[uber_buf.rd_ptr] * 0x100)
+			+ uber_buf.buf[uber_buf.rd_ptr + 1];
+	uber_buf.rd_ptr += 2;
+	return ttl;
+}
 
-	case handle_cleanup:
-	default:
-		/* shouldn't get here */
+static inline bool is_space()
+{
+	return !!(P1IN & BIT3);
+}
+
+static void mult_sys_tick(int starting_addr)
+{
+	int_fast32_t sys_time;
+	uint16_t *ptr = (uint16_t *)&uber_buf.buf[starting_addr];
+	uint16_t const * const end_addr =
+		(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(uint16_t))];
+
+	while (ptr < end_addr) {
+		sys_time = *ptr * US_PER_SYS_TICK;
+
+		*ptr++ = (sys_time <= UINT16_MAX) ? sys_time : UINT16_MAX;
+	} 
+}
+
+void ir_learn()
+{
+	int const starting_addr = uber_buf.wr_ptr;
+
+	get_rdy_for_pkt();
+	get_pkt();
+	mult_sys_tick(starting_addr);
+	find_pkt_end(starting_addr);
+	fix_endianness(starting_addr);
+}
+
+void ir_tx()
+{
+	int_fast32_t ttl;
+	bool done = false;
+
+	(void)get_sys_tick();
+	while (!done) {
+		/* send the pulse */
+		carrier_freq(true);
+		ttl = get_ttl();
+		while (ttl > 0) {
+			ttl -= get_us();
+		}
+
+		/* send the space */
 		carrier_freq(false);
-		gp_buf_owner = gp_buf_owner_none;
-		current_state = default_state;
-		run_again = false;
-		repeat_cnt = NBR_IR_BURSTS;
-		txing_ir_code = false;
-		abort_tx = false;
-		break;
-	}
-
-	return run_again;
-}
-
-bool ir_tx_abort()
-{
-	bool aborted = false;
-
-	if (txing_ir_code) {
-		abort_tx = true;
-		aborted = true;
-	}
-
-	return aborted;
-}
-
-void set_ir_repeat_cnt(int cnt)
-{
-	if (cnt) {
-		repeat_cnt = cnt;
-	} else {
-		repeat_cnt = NBR_IR_BURSTS;
+		ttl = get_ttl();
+		if (uber_buf.rd_ptr >= uber_buf.wr_ptr) {
+			done = true;
+		}
+		while (ttl > 0) {
+			ttl -= get_us();
+		}
 	}
 }
-

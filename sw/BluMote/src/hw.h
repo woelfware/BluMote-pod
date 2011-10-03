@@ -2,59 +2,23 @@
  * Copyright (c) 2011 Woelfware
  */
 
-#ifndef HW_H_
-#define HW_H_
+#ifndef HW_H
+#define HW_H
 
-#include "buffer.h"
-#include <msp430.h>
+#include <stdint.h>
 
-#define ENABLE_IR_LEARN() \
-	do {	\
-		P1IES |= BIT3;	\
-		P1IFG &= ~BIT3;	\
-		P1IE |= BIT3;	\
-	} while (0)
-#define DISABLE_IR_LEARN() \
-	do {	\
-		P1IE &= ~BIT3;	\
-	} while (0)
-
-/*
- * mutex on the general purpose buffer so
- * it doesn't get clobbered.
+/* enable/disable USCI_A0 RX interrupt
+ * which is the bluetooth interface
  */
-enum gp_buf_owner {
-	gp_buf_owner_none,
-	gp_buf_owner_bt,
-	gp_buf_owner_ir
-};
-extern enum gp_buf_owner gp_buf_owner;
+#define ENABLE_BT_RX_INT()	do {IE2 |= UCA0RXIE;} while (0)
+#define DISABLE_BT_RX_INT()	do {IE2 &= ~UCA0RXIE;} while (0)
 
-extern struct circular_buffer uart_rx,
-	uart_tx,
-	gp_rx_tx;	/* general purpose buffer. used by blumote, ir */
-
-extern volatile bool got_pulse;
-
-/**
- * return bool
- * retval true if successful
- * retval false if failed
- */
-void init_hw();
-
-/*
- * The number of microseconds elapsed since the last call to get_us.
- * Don't use while in rx mode.
- */
 int_fast32_t get_us();
 
-/*
- * return true if the requesting owner already owns or
- * is granted ownership of gp_buf
- * return false if gp_buf is aleady owned by another task
- */
-bool own_gp_buf(enum gp_buf_owner owner);
+int_fast32_t get_sys_tick();
 
-#endif /*HW_H_*/
+void init_hw();
 
+void reset_rn42();
+
+#endif /*HW_H*/

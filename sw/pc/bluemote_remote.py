@@ -3,7 +3,9 @@
 
 from bluetooth import *
 import bluemote
+import cPickle
 import os
+import sys
 import time
 
 class Bluemote_Client(bluemote.Services):
@@ -33,47 +35,28 @@ class Bluemote_Client(bluemote.Services):
 		pass
 
 	def _learn_unpack_msg(self, msg):
-		return_msg = msg
+		return_msg = [msg]
 		pkt_nbr = 0
-		i = 0
+
 		print 'pkt %i len %i' % (pkt_nbr, len(msg))
-		print 'ack/nak:', hex(ord(msg[i]))
-		i += 1
-		if len(msg) <= i:
+		print 'ack/nak:', hex(ord(msg[0]))
+
+		if len(msg) == 1:
 			msg = self.client_sock.recv(256)
-			return_msg += msg
-			i = 0
+			return_msg.append(msg)
 			pkt_nbr += 1
 			print 'pkt %i len %i' % (pkt_nbr, len(msg))
-		print 'reserved:', hex(ord(msg[i]))
-		i += 1
-		if len(msg) <= i:
-			msg = self.client_sock.recv(256)
-			return_msg += msg
-			i = 0
-			pkt_nbr += 1
-			print 'pkt %i len %i' % (pkt_nbr, len(msg))
-		code_len = int(ord(msg[i]))
-		print 'length:', code_len
-		i += 1
-		while code_len > 0:
-			while i + 1 < len(msg):
-				print int(ord(msg[i]) * 256 + ord(msg[i + 1]))
-				i += 2
-				code_len -= 2
-			if i < len(msg):
-				code_len -= 1
-			if code_len:
-				if code_len & 1 == 1:
-					tmp = msg[i]
-				msg = self.client_sock.recv(256)
-				return_msg += msg
-				pkt_nbr += 1
-				print 'pkt %i len %i' % (pkt_nbr, len(msg))
-				if code_len & 1 == 1:
-					msg = tmp + msg
-				i = 0
-				code_len += 1
+
+		code_len = int(ord(msg[1]))
+		print 'code length:', code_len
+
+		while (sum([len(str) for str in return_msg]) < code_len + 2):
+			return_msg.append(self.client_sock.recv(256))
+
+		return_msg = ''.join(return_msg)
+
+		for i in xrange(2, len(return_msg), 2):
+			print i, ':', int(ord(return_msg[i]) * 256 + ord(return_msg[i + 1]))
 
 		return return_msg[1:]	# strip the ack
 
@@ -137,18 +120,41 @@ if __name__ == "__main__":
 					found = True
 					break
 
+		'''
 		print 'getting version info'
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
+		'''
 
-		print "Please push a button on your remote."
-		key_code = bm_remote.learn()
+		if (os.path.exists('orion_1.pkl')):
+			orion_1 = open('orion_1.pkl', 'rb')
+			key_code = cPickle.load(orion_1)
+		else:
+			print "Please push a button on your remote."
+			key_code = bm_remote.learn()
+			orion_1 = open('orion_1.pkl', 'wb')
+			cPickle.dump(key_code, orion_1, cPickle.HIGHEST_PROTOCOL)
+		orion_1.close()
 
-		for i in range(15):
-			print 'transmitting the button code.'
-			bm_remote.ir_transmit(key_code)
+		'''
+		print 'Transmitting 5 times.'
+		for i in xrange(5):
+			print '.'
+			msg = bm_remote.ir_transmit(''.join(['\x03', key_code]))
+			for i in msg:
+				print 'ack/nak: %s.' % hex(ord(i))
 			time.sleep(2)
+		'''
+
+		nbr_of_xmits = int(raw_input('How many times to transmit (0 to quit): '))
+		while (nbr_of_xmits):
+			print 'Transmitting %i times.' % (nbr_of_xmits)
+			for i in xrange(nbr_of_xmits):
+				sys.stdout.write('.')
+				bm_remote.ir_transmit(''.join(['\x03', key_code]))
+				time.sleep(2)
+			nbr_of_xmits = int(raw_input('\nHow many times to transmit (0 to quit): '))
 
 		bm_remote.client_sock.close()
 	except IOError:
