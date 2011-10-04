@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "bluetooth.h"
 
-static struct buf *bluetooth_rx_buf = NULL;
+static volatile struct buf *bluetooth_rx_buf = NULL;
 
 void bluetooth_tx(struct buf *tx_buf)
 {
@@ -20,7 +20,7 @@ void bluetooth_tx(struct buf *tx_buf)
 	tx_buf->rd_ptr = tx_buf->wr_ptr = 0;
 }
 
-void set_bluetooth_rx_buf(struct buf *rx_buf)
+void set_bluetooth_rx_buf(volatile struct buf *rx_buf)
 {
 	_disable_interrupts();
 	bluetooth_rx_buf = rx_buf;

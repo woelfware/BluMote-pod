@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <msp430.h>
+#include "blumote.h"
 #include "buffer.h"
 #include "config.h"
 #include "hw.h"
@@ -141,7 +142,7 @@ void ir_learn()
 	fix_endianness(starting_addr);
 }
 
-void ir_tx()
+bool ir_tx(volatile struct buf *abort)
 {
 	int_fast32_t ttl;
 	bool done = false;
@@ -157,6 +158,16 @@ void ir_tx()
 
 		/* send the space */
 		carrier_freq(false);
+		
+		/* handle an abort command, ignore anything else */
+		if (abort->wr_ptr) {
+			if (abort->buf[0] == BLUMOTE_IR_TRANSMIT_ABORT) {
+				return true;
+			} else {
+				abort->wr_ptr = 0;
+			}
+		}
+
 		ttl = get_ttl();
 		if (uber_buf.rd_ptr >= uber_buf.wr_ptr) {
 			done = true;
@@ -165,4 +176,6 @@ void ir_tx()
 			ttl -= get_us();
 		}
 	}
+
+	return false;
 }

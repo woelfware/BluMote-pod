@@ -12,7 +12,7 @@
 #include "hw.h"
 #include "ir.h"
 
-static void get_rn42_data(struct buf * const bluetooth_rx_buf, int_fast32_t ttl);
+static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast32_t ttl);
 static void get_name(struct buf * const bluetooth_rx_buf);
 static void ir_xmit();
 static void send_ACK();
@@ -36,7 +36,7 @@ static void get_name(struct buf * const bluetooth_rx_buf)
 		strlen(str_get_name));
 }
 
-static void get_rn42_data(struct buf * const bluetooth_rx_buf, int_fast32_t ttl)
+static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast32_t ttl)
 {
 	int my_wr_ptr = bluetooth_rx_buf->wr_ptr;
  
@@ -53,9 +53,16 @@ static void get_rn42_data(struct buf * const bluetooth_rx_buf, int_fast32_t ttl)
 
 static void ir_xmit()
 {
+	volatile struct buf my_buf = {0, 0, 2};	/* The buf size is known by ir_xmit, so don't change it! */
 	uint8_t const MIN_IR_XMIT_BYTES = 2;
 	uint8_t repeat_cnt,
-		data_len;
+		data_len,
+		buf[2];
+
+	my_buf.buf = buf;
+
+	set_bluetooth_rx_buf(&my_buf);
+	ENABLE_BT_RX_INT();
 
 	/* verify that we got a good packet */
 	if (uber_buf.wr_ptr - uber_buf.rd_ptr < MIN_IR_XMIT_BYTES) {
@@ -78,8 +85,13 @@ static void ir_xmit()
 
 	/* blast the ir code */
 	for ( ; repeat_cnt; --repeat_cnt) {
-		ir_tx(&uber_buf);
+		if (ir_tx(&my_buf)) {
+			break;
+		}
 	}
+
+	uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+	set_bluetooth_rx_buf(&uber_buf);
 
 	send_ACK();
 }
@@ -133,7 +145,7 @@ static bool set_cmd_mode(struct buf * const bluetooth_rx_buf)
 		strlen(str_set_cmd_mode));
 
 	/* analyze the result */
-	if (memcmp(bluetooth_rx_buf->buf,
+	if (memcmp((const void *)bluetooth_rx_buf->buf,
 			str_rx_cmd_mode,
 			strlen(str_rx_cmd_mode))) {
 		rc = false;
@@ -187,12 +199,14 @@ void blumote_main()
 	c = uber_buf.buf[uber_buf.rd_ptr++];
 	switch (c) {
 	case BLUMOTE_GET_VERSION: {
-		char const response[] = {BLUMOTE_ACK,
-			BLUMOTE_FW, VERSION_MAJOR, VERSION_MINOR, VERSION_REV};
+		uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
 
-		memcpy(uber_buf.buf, response, sizeof(response));
-		uber_buf.rd_ptr = 0;
-		uber_buf.wr_ptr = sizeof(response);
+		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;
+		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_FW;
+		uber_buf.buf[uber_buf.wr_ptr++] = VERSION_MAJOR;
+		uber_buf.buf[uber_buf.wr_ptr++] = VERSION_MINOR;
+		uber_buf.buf[uber_buf.wr_ptr++] = VERSION_REV;
+
 		bluetooth_tx(&uber_buf);
 		}
 		break;
@@ -239,7 +253,7 @@ void init_rn42()
 		}
 	}
 	get_name(&bluetooth_rx_buf);
-	if (memcmp(bluetooth_rx_buf.buf,
+	if (memcmp((const void *)bluetooth_rx_buf.buf,
 			BLUMOTE_NAME,
 			strlen(BLUMOTE_NAME))) {
 		set_name(&bluetooth_rx_buf);

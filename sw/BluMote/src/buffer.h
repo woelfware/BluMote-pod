@@ -12,10 +12,10 @@ struct buf {
 	int rd_ptr,
 		wr_ptr,
 		buf_size;
-	uint8_t *buf;
+	volatile uint8_t *buf;
 };
 
 /* a buffer of size UBER_BUF_SIZE is allocated */
-extern struct buf uber_buf;
+extern volatile struct buf uber_buf;
 
 #endif /*BUFFER_H*/

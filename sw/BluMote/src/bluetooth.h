@@ -12,6 +12,6 @@
 
 void bluetooth_tx();
 
-void set_bluetooth_rx_buf(struct buf *rx_buf);
+void set_bluetooth_rx_buf(volatile struct buf *rx_buf);
 
 #endif /*BLUETOOTH_H*/
