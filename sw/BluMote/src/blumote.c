@@ -216,9 +216,14 @@ void blumote_main()
 		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;	/* return code */
 		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* length */
 
-		ir_learn();
+		if (!ir_learn()) {
+			uber_buf.buf[1] = uber_buf.wr_ptr - 2;
+		} else {
+			/* timed out */
+			uber_buf.wr_ptr = 0;
+			uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_NAK;
+		}
 
-		uber_buf.buf[1] = uber_buf.wr_ptr - 2;
 		bluetooth_tx(&uber_buf);
 		break;
 

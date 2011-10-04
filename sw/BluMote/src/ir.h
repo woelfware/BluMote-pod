@@ -7,7 +7,10 @@
 
 #include <stdbool.h>
 
-void ir_learn();
+/* true - timeout
+ * false - exited normally
+ */
+bool ir_learn();
 
 /* true - received an abort cmd
  * false - exited normally

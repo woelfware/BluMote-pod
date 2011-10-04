@@ -84,11 +84,20 @@ static void get_pkt()
 	}
 }
 
-static void get_rdy_for_pkt()
+/* true - timeout
+ * false - exited normally
+ */
+static bool get_rdy_for_pkt()
 {
 	int_fast32_t duration = 0;
 
-	while (is_space());	/* wait for a pulse */
+	while (is_space()) {	/* wait for a pulse */
+		duration += get_us();
+		if (duration > IR_LEARN_CODE_TIMEOUT) {
+			return true;
+		}
+	}
+	duration = 0;
 	(void)get_sys_tick();
 
 	/* wait for space long enough to be between packets */
@@ -96,12 +105,12 @@ static void get_rdy_for_pkt()
 		if (is_space()) {
 			duration += get_us();
 			if (duration > MAX_SPACE_WAIT_TIME) {
-				return;
+				return false;
 			}
 		} else {
 			duration = 0;
 		}
-	}	
+	}
 }
 
 static uint16_t get_ttl()
@@ -131,15 +140,19 @@ static void mult_sys_tick(int starting_addr)
 	} 
 }
 
-void ir_learn()
+bool ir_learn()
 {
 	int const starting_addr = uber_buf.wr_ptr;
 
-	get_rdy_for_pkt();
+	if (get_rdy_for_pkt()) {
+		return true;
+	}
 	get_pkt();
 	mult_sys_tick(starting_addr);
 	find_pkt_end(starting_addr);
 	fix_endianness(starting_addr);
+
+	return false;
 }
 
 bool ir_tx(volatile struct buf *abort)
