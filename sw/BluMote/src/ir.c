@@ -49,15 +49,23 @@ static void fix_endianness(int i)
 	}
 }
 
-static void get_pkt()
+/* true - timeout
+ * false - exited normally
+ */
+static int_fast32_t get_pkt(int_fast32_t ttl)
 {
 	int_fast32_t pulse_duration = 0,
 		space_duration = 0;
 	uint16_t const * const MAX_UBER_BUF_ADDR = (uint16_t *)&uber_buf.buf[uber_buf.buf_size - 4];
 	uint16_t *uber_buf_wr_ptr = (uint16_t *)&uber_buf.buf[uber_buf.wr_ptr];
 
-	while (is_space());	/* wait for incoming packet */
-	(void)get_sys_tick();
+	while (is_space()) {	/* wait for incoming packet */
+		ttl += get_us();
+		if (ttl >= IR_LEARN_CODE_TIMEOUT) {
+			return ttl;
+		}
+	}
+	ttl += get_us();
 
 	while (1) {
 		while (!is_space());
@@ -78,7 +86,7 @@ static void get_pkt()
 			} else {
 				/* buffer filled up */
 				uber_buf.wr_ptr = (uint8_t *)uber_buf_wr_ptr - uber_buf.buf;  
-				return;
+				return ttl;
 			}
 		}
 	}
@@ -87,25 +95,31 @@ static void get_pkt()
 /* true - timeout
  * false - exited normally
  */
-static bool get_rdy_for_pkt()
+static int_fast32_t get_rdy_for_pkt()
 {
-	int_fast32_t duration = 0;
+	int_fast32_t duration = 0,
+		elapsed_time,
+		ttl = 0;
 
 	while (is_space()) {	/* wait for a pulse */
-		duration += get_us();
-		if (duration > IR_LEARN_CODE_TIMEOUT) {
-			return true;
+		ttl += get_us();
+
+		if (ttl >= IR_LEARN_CODE_TIMEOUT) {
+			return ttl;
 		}
 	}
-	duration = 0;
-	(void)get_sys_tick();
+
+	ttl += get_sys_tick();
 
 	/* wait for space long enough to be between packets */
 	while (1) {
 		if (is_space()) {
-			duration += get_us();
-			if (duration > MAX_SPACE_WAIT_TIME) {
-				return false;
+			elapsed_time += get_us();
+			duration += elapsed_time;
+			ttl += elapsed_time;
+			if ((duration > MAX_SPACE_WAIT_TIME)
+					|| (ttl >= IR_LEARN_CODE_TIMEOUT)) {
+				return ttl;
 			}
 		} else {
 			duration = 0;
@@ -142,12 +156,17 @@ static void mult_sys_tick(int starting_addr)
 
 bool ir_learn()
 {
+	int_fast32_t ttl = 0;
 	int const starting_addr = uber_buf.wr_ptr;
 
-	if (get_rdy_for_pkt()) {
+	ttl += get_rdy_for_pkt();
+	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
 		return true;
 	}
-	get_pkt();
+	ttl += get_pkt(ttl);
+	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
+		return true;
+	}
 	mult_sys_tick(starting_addr);
 	find_pkt_end(starting_addr);
 	fix_endianness(starting_addr);
