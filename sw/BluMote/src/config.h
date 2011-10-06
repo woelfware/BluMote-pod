@@ -14,14 +14,8 @@
 #define US_PER_SYS_TICK		(4)
 
 #define IR_CARRIER_FREQ		(38)	/* kHz */
-#define IR_LEARN_CODE_TIMEOUT	(10000000)	/* us */
-#if 1	/* orion */
-#	define MAX_SPACE_WAIT_TIME	(10000)	/* us */
-#	define MAX_FILTERED_SPACE_TIME	(60)	/* us */
-#else	/* xbox */
-#	define MAX_SPACE_WAIT_TIME	(7500)	/* us */
-#	define MAX_FILTERED_SPACE_TIME	(400)	/* us */
-#endif
+#define IR_LEARN_CODE_TIMEOUT	(20000000)	/* us */
+#define MAX_FILTERED_SPACE_TIME	(200)	/* us */
 #define NBR_IR_BURSTS	(3)
 
 #define MAX_UART_WAIT_TIME	(50000)	/* us - time to wait for the first char to arrive */
