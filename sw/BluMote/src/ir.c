@@ -10,14 +10,15 @@
 #include "hw.h"
 #include "ir.h"
 
-static int_fast32_t gap;	/* time between packets */
+static int_fast32_t gap = 0;	/* time between packets */
+static uint16_t ir_carrier_frequency = 0;	/* pulse tx frequency */
 
 static inline bool is_space();
 
 static void carrier_freq(bool on)
 {
 	if (on) {
-		CCR0 = TAR + ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);  /* Reset timing */
+		CCR0 = TAR + ((SYS_CLK * 1000) / (ir_carrier_frequency * 2) - 1);  /* Reset timing */
 		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
@@ -36,7 +37,7 @@ static void find_pkt_end(int starting_addr)
 			uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
 			break;
 		}
-	} 
+	}
 }
 
 static void fix_endianness(int i)
@@ -118,7 +119,46 @@ static void get_pkt(int_fast32_t *ttl)
 	}
 }
 
-static void get_pkt_specs(int_fast32_t *ttl)
+static void get_carrier_frequency(int_fast32_t *ttl)
+{
+	int_fast32_t space = 0,
+		elapsed_time = 0,
+		tmp_ir_carrier_frequency;
+	uint16_t pulses = 0;
+
+	/* wait until the start of the packet */
+	(void)get_sys_tick();
+	while (space < gap) {
+		while (is_space());
+		space = get_us();
+		*ttl += space;
+		if (*ttl >= IR_LEARN_CODE_TIMEOUT) {
+			*ttl = IR_LEARN_CODE_TIMEOUT;
+			return;
+		}
+	}
+
+	space = 0;
+	while (is_space());
+	*ttl += get_us();
+
+	while (space < MAX_FILTERED_SPACE_TIME) {
+		elapsed_time += space;
+		while (!is_space());
+		pulses++;
+		elapsed_time += get_us();
+		while (is_space());
+		space = get_us();
+	}
+
+	tmp_ir_carrier_frequency = (pulses * 1000000) / elapsed_time;
+	ir_carrier_frequency = (tmp_ir_carrier_frequency < UINT16_MAX)
+		? (uint16_t)tmp_ir_carrier_frequency : UINT16_MAX;
+
+	return;
+}
+
+static void get_pkt_gap(int_fast32_t *ttl)
 {
 	int_fast32_t space = 0,
 		my_gap[2] = {0, 0};
@@ -180,7 +220,7 @@ static void get_rdy_for_pkt(int_fast32_t *ttl)
 	/* wait for space long enough to be between packets */
 	while (1) {
 		if (is_space()) {
-			elapsed_time += get_us();
+			elapsed_time = get_us();
 			duration += elapsed_time;
 			*ttl += elapsed_time;
 			if (duration > gap) {
@@ -222,6 +262,11 @@ static void mult_sys_tick(int starting_addr)
 	} 
 }
 
+uint16_t get_ir_carrier_frequency()
+{
+	return ir_carrier_frequency;
+}
+
 bool ir_learn()
 {
 	int_fast32_t ttl = 0;
@@ -231,7 +276,11 @@ bool ir_learn()
 	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
 		return true;
 	}
-	get_pkt_specs(&ttl);
+	get_pkt_gap(&ttl);
+	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
+		return true;
+	}
+	get_carrier_frequency(&ttl);
 	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
 		return true;
 	}
@@ -282,4 +331,9 @@ bool ir_tx(volatile struct buf *abort)
 	}
 
 	return false;
+}
+
+void set_ir_carrier_frequency(uint16_t frequency)
+{
+	ir_carrier_frequency = frequency;
 }

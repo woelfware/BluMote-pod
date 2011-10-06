@@ -7,6 +7,8 @@
 
 #include <stdbool.h>
 
+uint16_t get_ir_carrier_frequency();
+
 /* true - timeout
  * false - exited normally
  */
@@ -16,5 +18,7 @@ bool ir_learn();
  * false - exited normally
  */
 bool ir_tx(volatile struct buf *abort);
+
+void set_ir_carrier_frequency(uint16_t frequency);
 
 #endif /*IR_H*/

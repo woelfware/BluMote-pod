@@ -54,7 +54,8 @@ static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast
 static void ir_xmit()
 {
 	volatile struct buf my_buf = {0, 0, 2};	/* The buf size is known by ir_xmit, so don't change it! */
-	uint8_t const MIN_IR_XMIT_BYTES = 2;
+	uint16_t frequency;
+	uint8_t const MIN_IR_XMIT_BYTES = 4;
 	uint8_t repeat_cnt,
 		data_len,
 		buf[2];
@@ -76,12 +77,16 @@ static void ir_xmit()
 		repeat_cnt = NBR_IR_BURSTS;
 	}
 	data_len = uber_buf.buf[uber_buf.rd_ptr++];
+	frequency = uber_buf.buf[uber_buf.rd_ptr++] << 8;
+	frequency += uber_buf.buf[uber_buf.rd_ptr++];
 
 	/* more packet verification */
 	if (uber_buf.wr_ptr - uber_buf.rd_ptr != data_len) {
 		send_NAK();
 		return;
 	}
+
+	set_ir_carrier_frequency(frequency);
 
 	/* blast the ir code */
 	for ( ; repeat_cnt; --repeat_cnt) {
@@ -215,6 +220,8 @@ void blumote_main()
 		uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
 		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;	/* return code */
 		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* length */
+		uber_buf.buf[uber_buf.wr_ptr++] = get_ir_carrier_frequency() >> 8;
+		uber_buf.buf[uber_buf.wr_ptr++] = (uint8_t)get_ir_carrier_frequency();
 
 		if (!ir_learn()) {
 			uber_buf.buf[1] = uber_buf.wr_ptr - 2;
