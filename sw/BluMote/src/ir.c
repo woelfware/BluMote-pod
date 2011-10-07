@@ -11,14 +11,15 @@
 #include "ir.h"
 
 static int_fast32_t gap = 0;	/* time between packets */
-static uint16_t ir_carrier_frequency = 0;	/* pulse tx frequency */
+static uint16_t ccr0_timing = 0;	/* used for the CCR0 timer */
+static uint8_t ir_carrier_frequency = 0;	/* pulse tx frequency in kHz */
 
 static inline bool is_space();
 
 static void carrier_freq(bool on)
 {
 	if (on) {
-		CCR0 = TAR + ((SYS_CLK * 1000) / (ir_carrier_frequency * 2) - 1);  /* Reset timing */
+		CCR0 = TAR + ccr0_timing;  /* Reset timing */
 		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
@@ -28,23 +29,26 @@ static void carrier_freq(bool on)
 
 static void find_pkt_end(int starting_addr)
 {
-	uint16_t *ptr = (uint16_t *)&uber_buf.buf[starting_addr];
+	uint16_t *ptr = (uint16_t *)&uber_buf.buf[starting_addr + 2];	/* +2 to get to the first space */
 	uint16_t const * const end_addr =
 		(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(uint16_t))];
 
-	while (ptr < end_addr) {
-		if (*ptr++ > gap) {
+	while (ptr <= end_addr) {
+		if (*ptr > gap) {
+			ptr++;
 			uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
 			break;
 		}
+		ptr += 2;	/* just need to check spaces, skip over pulses */
 	}
 }
 
 static void fix_endianness(int i)
 {
+	int const stop_index = uber_buf.buf_size - 1;
 	uint8_t tmp;
 
-	while (i < uber_buf.buf_size) {
+	while (i < stop_index) {
 		tmp = uber_buf.buf[i];
 		uber_buf.buf[i] = uber_buf.buf[i + 1];
 		uber_buf.buf[i + 1] = tmp;
@@ -151,9 +155,15 @@ static void get_carrier_frequency(int_fast32_t *ttl)
 		space = get_us();
 	}
 
-	tmp_ir_carrier_frequency = (pulses * 1000000) / elapsed_time;
-	ir_carrier_frequency = (tmp_ir_carrier_frequency < UINT16_MAX)
-		? (uint16_t)tmp_ir_carrier_frequency : UINT16_MAX;
+	tmp_ir_carrier_frequency = ((pulses * 1000000) / elapsed_time) + 500/*for rounding*/;	/* Hz */
+	tmp_ir_carrier_frequency /= 1000;	/* convert to kHz */
+	ir_carrier_frequency = (tmp_ir_carrier_frequency < UINT8_MAX)
+		? (uint8_t)tmp_ir_carrier_frequency : UINT8_MAX;
+
+	/* adjust for limitations of the TACC0 register */
+	if (ir_carrier_frequency < 38) {
+		ir_carrier_frequency = 38;
+	}
 
 	return;
 }
@@ -253,16 +263,16 @@ static void mult_sys_tick(int starting_addr)
 	int_fast32_t sys_time;
 	uint16_t *ptr = (uint16_t *)&uber_buf.buf[starting_addr];
 	uint16_t const * const end_addr =
-		(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(uint16_t))];
+		(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(*ptr))];
 
-	while (ptr < end_addr) {
+	while (ptr <= end_addr) {
 		sys_time = *ptr * US_PER_SYS_TICK;
 
 		*ptr++ = (sys_time <= UINT16_MAX) ? sys_time : UINT16_MAX;
 	} 
 }
 
-uint16_t get_ir_carrier_frequency()
+uint8_t get_ir_carrier_frequency()
 {
 	return ir_carrier_frequency;
 }
@@ -333,7 +343,14 @@ bool ir_tx(volatile struct buf *abort)
 	return false;
 }
 
-void set_ir_carrier_frequency(uint16_t frequency)
+void update_ccr0_timing()
 {
-	ir_carrier_frequency = frequency;
+	ccr0_timing = (SYS_CLK * 1000) / (ir_carrier_frequency * 2) - 1;
+}
+
+void set_ir_carrier_frequency(uint8_t frequency)
+{
+	uint8_t const MIN_FREQ = 38;
+
+	ir_carrier_frequency = (frequency >= MIN_FREQ) ? frequency : MIN_FREQ;
 }

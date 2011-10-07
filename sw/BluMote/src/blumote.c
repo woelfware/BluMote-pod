@@ -51,10 +51,15 @@ static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast
 	}
 }
 
+static void restore_bt_rx_buf()
+{
+	uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+	set_bluetooth_rx_buf(&uber_buf);
+}
+
 static void ir_xmit()
 {
 	volatile struct buf my_buf = {0, 0, 2};	/* The buf size is known by ir_xmit, so don't change it! */
-	uint16_t frequency;
 	uint8_t const MIN_IR_XMIT_BYTES = 4;
 	uint8_t repeat_cnt,
 		data_len,
@@ -67,6 +72,7 @@ static void ir_xmit()
 
 	/* verify that we got a good packet */
 	if (uber_buf.wr_ptr - uber_buf.rd_ptr < MIN_IR_XMIT_BYTES) {
+		restore_bt_rx_buf();
 		send_NAK();
 		return;
 	}
@@ -77,16 +83,17 @@ static void ir_xmit()
 		repeat_cnt = NBR_IR_BURSTS;
 	}
 	data_len = uber_buf.buf[uber_buf.rd_ptr++];
-	frequency = uber_buf.buf[uber_buf.rd_ptr++] << 8;
-	frequency += uber_buf.buf[uber_buf.rd_ptr++];
+	set_ir_carrier_frequency(uber_buf.buf[uber_buf.rd_ptr++]);
+	uber_buf.rd_ptr++;	/* reserved */
 
 	/* more packet verification */
 	if (uber_buf.wr_ptr - uber_buf.rd_ptr != data_len) {
+		restore_bt_rx_buf();
 		send_NAK();
 		return;
 	}
 
-	set_ir_carrier_frequency(frequency);
+	update_ccr0_timing();
 
 	/* blast the ir code */
 	for ( ; repeat_cnt; --repeat_cnt) {
@@ -95,8 +102,7 @@ static void ir_xmit()
 		}
 	}
 
-	uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
-	set_bluetooth_rx_buf(&uber_buf);
+	restore_bt_rx_buf();
 
 	send_ACK();
 }
@@ -220,11 +226,12 @@ void blumote_main()
 		uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
 		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;	/* return code */
 		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* length */
-		uber_buf.buf[uber_buf.wr_ptr++] = get_ir_carrier_frequency() >> 8;
-		uber_buf.buf[uber_buf.wr_ptr++] = (uint8_t)get_ir_carrier_frequency();
+		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* ir carrier frequency */
+		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* reserved */
 
 		if (!ir_learn()) {
-			uber_buf.buf[1] = uber_buf.wr_ptr - 2;
+			uber_buf.buf[1] = uber_buf.wr_ptr - 4;
+			uber_buf.buf[2] = get_ir_carrier_frequency();
 		} else {
 			/* timed out */
 			uber_buf.wr_ptr = 0;

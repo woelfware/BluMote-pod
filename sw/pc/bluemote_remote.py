@@ -42,20 +42,24 @@ class Bluemote_Client(bluemote.Services):
 		print 'ack/nak:', hex(ord(msg[0]))
 
 		if len(msg) == 1:
+			if ord(msg[0]) == 0x15:
+				return
 			msg = self.client_sock.recv(256)
 			return_msg.append(msg)
 			pkt_nbr += 1
 			print 'pkt %i len %i' % (pkt_nbr, len(msg))
 
-		code_len = int(ord(msg[1]))
+		code_len = ord(msg[1])
 		print 'code length:', code_len
+		frequency = ord(msg[2])
+		print 'carrier frequency:', frequency, 'kHz'
 
 		while (sum([len(str) for str in return_msg]) < code_len + 2):
 			return_msg.append(self.client_sock.recv(256))
 
 		return_msg = ''.join(return_msg)
 
-		for i in xrange(2, len(return_msg), 2):
+		for i in xrange(4, len(return_msg), 2):
 			print i, ':', int(ord(return_msg[i]) * 256 + ord(return_msg[i + 1]))
 
 		return return_msg[1:]	# strip the ack
@@ -127,7 +131,7 @@ if __name__ == "__main__":
 			print "%s version: %s" % component
 		'''
 
-		if (os.path.exists('orion_1.pkl')):
+		if (False and os.path.exists('orion_1.pkl')):
 			orion_1 = open('orion_1.pkl', 'rb')
 			key_code = cPickle.load(orion_1)
 		else:
@@ -152,7 +156,7 @@ if __name__ == "__main__":
 			print 'Transmitting %i times.' % (nbr_of_xmits)
 			for i in xrange(nbr_of_xmits):
 				sys.stdout.write('.')
-				bm_remote.ir_transmit(''.join(['\x03', key_code]))
+				print ord(bm_remote.ir_transmit(''.join(['\x03', key_code]))[0])
 				time.sleep(2)
 			nbr_of_xmits = int(raw_input('\nHow many times to transmit (0 to quit): '))
 
