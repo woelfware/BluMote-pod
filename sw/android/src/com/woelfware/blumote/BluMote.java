@@ -1402,7 +1402,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					switch (Codes.learn_state) {
 					case IDLE:
 						if (response[index] == Codes.Pod.ACK) {
-							Codes.learn_state = Codes.LEARN_STATE.BYTE1;
+							Codes.learn_state = Codes.LEARN_STATE.PKT_LENGTH;
 							index = (index + 1)
 									% (BluetoothChatService.buffer_size - 1);
 							bytes--;
@@ -1413,10 +1413,29 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						}
 						break;
 
-					case BYTE1:
-						// first byte after ACK should be a zero
-						if (response[index] == 0) {
-							Codes.learn_state = Codes.LEARN_STATE.INITIALIZED;
+					case PKT_LENGTH:
+						// if we got here then we are on the second byte of data
+						if (Utilities.isGreaterThanUnsignedByte(
+								response[index], 0)) {
+							Codes.pod_data = new byte[(0x00FF & response[index]) + 3];  
+							// first three bytes are 'pkt_length carrier_freq reserved' 
+							Codes.pod_data[Codes.data_index++] = response[index];
+							bytes--;
+							index = (index + 1)
+									% (BluetoothChatService.buffer_size - 1);
+							
+							Codes.learn_state = Codes.LEARN_STATE.CARRIER_FREQ;
+						} else {
+							signalError(1);
+							return;
+						}
+						break;
+						
+					case CARRIER_FREQ:
+						// third byte should be carrier frequency
+						if (checkPodDataBounds(bytes)) {
+							Codes.learn_state = Codes.LEARN_STATE.RESERVED;
+							Codes.pod_data[Codes.data_index++] = response[index];
 							bytes--;
 							index = (index + 1)
 									% (BluetoothChatService.buffer_size - 1);
@@ -1426,19 +1445,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						}
 						break;
 
-					case INITIALIZED:
-						// if we got here then we are on the third byte of data
-						if (Utilities.isGreaterThanUnsignedByte(
-								response[index], 0)) {
-							Codes.pod_data = new byte[(0x00FF & response[index]) + 2]; 
-							// store length of data as first two bytes (used in
-							// transmitting back)
+					case RESERVED:
+						// fourth byte should be reserved
+						if (checkPodDataBounds(bytes)) {
+							Codes.learn_state = Codes.LEARN_STATE.COLLECTING;
 							Codes.pod_data[Codes.data_index++] = 0; // default to 0
-							Codes.pod_data[Codes.data_index++] = response[index];
 							bytes--;
 							index = (index + 1)
 									% (BluetoothChatService.buffer_size - 1);
-							Codes.learn_state = Codes.LEARN_STATE.COLLECTING;
 						} else {
 							signalError(1);
 							return;
