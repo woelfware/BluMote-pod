@@ -361,10 +361,10 @@ public class Activities {
 		
 		// store the data from old name
 		String activity = blumote.prefs.getString(oldName, null);				
-		if (activity != null) {
-			mEditor.remove(oldName); // remove old one
-			mEditor.putString(newName, activity); // add new name with old data
-		}
+		
+		mEditor.remove(oldName); // remove old one
+		mEditor.putString(newName, activity); // add new name with old data
+
 		// rename image ID tag
 		String oldImageTag = formatActivityImageIdSuffix(oldName);
 		String newImageTag = formatActivityImageIdSuffix(newName);

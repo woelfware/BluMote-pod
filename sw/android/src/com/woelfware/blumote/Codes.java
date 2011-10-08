@@ -12,7 +12,7 @@ class Codes {
     static int data_index = 0;
     
     enum LEARN_STATE {
-    	IDLE, STARTED, BYTE1, INITIALIZED, COLLECTING
+    	IDLE, CARRIER_FREQ, PKT_LENGTH, RESERVED, COLLECTING
     }
     static LEARN_STATE learn_state = LEARN_STATE.IDLE;
     

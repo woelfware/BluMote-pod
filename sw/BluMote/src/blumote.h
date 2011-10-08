@@ -1,5 +1,9 @@
-#ifndef BLUMOTE_H_
-#define BLUMOTE_H_
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
+#ifndef BLUMOTE_H
+#define BLUMOTE_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,19 +27,14 @@ enum component_codes {
 	BLUMOTE_SW
 };
 
-extern bool learn_ir_code,
-	tx_ir_code;
-
-bool init_blumote(int_fast32_t us);
-
-bool blumote_main(int_fast32_t us);
-
 /*
- * \return bool
- * \retval true		run again
- * \retval false	done
  */
-bool tx_learned_code();
+void blumote_main();
 
-#endif /*BLUMOTE_H_*/
+/* Initialize the RN-42 hardware with the BluMote configuration.
+ * Return Code: true - initialization was successful
+ *              false - initialization failed
+ */
+void init_rn42();
 
+#endif /*BLUMOTE_H*/

@@ -1,30 +1,26 @@
-#ifndef IR_H_
-#define IR_H_
+/*
+ * Copyright (c) 2011 Woelfware
+ */
+
+#ifndef IR_H
+#define IR_H
 
 #include <stdbool.h>
-#include <stdint.h>
 
-/*
- * \return bool
- * \retval true		running learn mode
- * \retval false	done running learn mode
+uint8_t get_ir_carrier_frequency();
+
+/* true - timeout
+ * false - exited normally
  */
-bool ir_learn(int_fast32_t us);
+bool ir_learn();
 
-/*
+/* true - received an abort cmd
+ * false - exited normally
  */
-bool ir_main(int_fast32_t us);
+bool ir_tx(volatile struct buf *abort);
 
-/*
- * abort the IR TX command
- */
-bool ir_tx_abort();
+void update_ccr0_timing();
 
-/*
- * set the number of times to repeat an ir code
- * 0: Use the default value NBR_IR_BURSTS
- */
-void set_ir_repeat_cnt(int cnt);
+void set_ir_carrier_frequency(uint8_t frequency);
 
-#endif /*IR_H_*/
-
+#endif /*IR_H*/
