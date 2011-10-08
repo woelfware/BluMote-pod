@@ -927,6 +927,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case R.id.disconnect:
 			// disconnect the bluetooth link
 			mChatService.stop();
+			stopLearning();
 			return true;
 			
 		case R.id.about:
@@ -1007,12 +1008,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		case R.id.stop_learn:
 			Toast.makeText(this, "Stopped Learning", Toast.LENGTH_SHORT).show();
-			sendCode(Codes.Pod.ABORT_LEARN);
-			BT_STATE = Codes.BT_STATE.ABORT_LEARN;
-			INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
-			mainScreen.setDropDownVis(true);
-			// refresh buttons after done learning
-			mainScreen.fetchButtons();
+			stopLearning();
 			return true;
 			
 		case R.id.rename_misc:
@@ -1072,6 +1068,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return false;
 	}
 
+	private void stopLearning() {		
+		sendCode(Codes.Pod.ABORT_LEARN);
+		BT_STATE = Codes.BT_STATE.ABORT_LEARN;
+		INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
+		mainScreen.setDropDownVis(true);
+		Codes.learn_state = Codes.LEARN_STATE.IDLE;
+		// refresh buttons after done learning
+		mainScreen.fetchButtons();
+	}
+	
 	private String getDataDir() { 
 		try { 
 			PackageInfo packageInfo = 
@@ -1284,20 +1290,18 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			}.start();	
 			
 			byte command = (byte) (Codes.Pod.IR_TRANSMIT);
-			byte[] toSend = new byte[code.length + 1]; // 1 extra byte for command byte
+			byte[] toSend = new byte[code.length + 2]; // 1 extra byte for command byte, 1 for repeat #
 			toSend[0] = command;
-			for (int j = 1; j < toSend.length; j++) {
-				// insert different repeat flags based on if this
-				// is a long press or a short press of the button
-				if (BUTTON_LOOPING && j == 1) {
-					toSend[j] = REPEAT_IR_LONG; // long press
-				} else if (!BUTTON_LOOPING && j == 1) {
-					toSend[j] = 0; // short press
-				} else {
-					toSend[j] = code[j - 1];
-				}
+			// insert different repeat flags based on if this
+			// is a long press or a short press of the button
+			if (BUTTON_LOOPING) {
+				toSend[1] = REPEAT_IR_LONG; // long press
+			} else {
+				toSend[1] = 0; // short press
 			}
-			// {command, 0x00, code}; // 0x00 is reserved byte
+			for (int j = 2; j < toSend.length; j++) {	
+				toSend[j] = code[j - 2];
+			}
 			BT_STATE = Codes.BT_STATE.IR_TRANSMIT;
 
 			sendMessage(toSend); // send data if matches
@@ -1390,8 +1394,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			} catch (Exception e) {
 				// if dialog had not been shown it throws an error, ignore
 			}
-			BT_STATE = Codes.BT_STATE.IDLE;
-			Codes.learn_state = Codes.LEARN_STATE.IDLE;
+			stopLearning();
+//			BT_STATE = Codes.BT_STATE.IDLE;
+//			Codes.learn_state = Codes.LEARN_STATE.IDLE;
 		} else if (code == 2) {
 			BT_STATE = Codes.BT_STATE.IDLE;
 			Codes.info_state = Codes.INFO_STATE.IDLE;
@@ -1476,12 +1481,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							Codes.pod_data[Codes.data_index++] = response[index];
 							// first check to see if this is the last byte
 							if (Utilities.isGreaterThanUnsignedByte(
-									Codes.data_index, Codes.pod_data[1] + 1)) { 
-								// if we got here then we are done, pod_data[1]
-								// is the expected message length
+									Codes.data_index, Codes.pod_data[0] + 2)) { 
+								// data index at final position is nth or N+1 total items, pod_data[0]
+								// is the # of bytes of IR data, so adding 2 gives (n+2)th index.
+								// After last byte received then data_index points to an index after
+								// the last so we exit the collecting routine and store data.
 								storeButton();
 								return;
-							}
+							}							
 							bytes--;
 							index = (index + 1)
 									% (BluetoothChatService.buffer_size - 1);
