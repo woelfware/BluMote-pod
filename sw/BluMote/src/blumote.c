@@ -2,494 +2,287 @@
  * Copyright (c) 2011 Woelfware
  */
 
+#include <msp430.h>
+#include <string.h>
 #include "bluetooth.h"
 #include "blumote.h"
+#include "btime.h"
+#include "buffer.h"
 #include "config.h"
 #include "hw.h"
 #include "ir.h"
-#include <string.h>
 
-enum m_strcmp_rc {
-	m_strcmp_match,
-	m_strcmp_buf_underrun,
-	m_strcmp_no_match
-};
+static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast32_t ttl);
+static void get_name(struct buf * const bluetooth_rx_buf);
+static void ir_xmit();
+static void send_ACK();
+static void send_cmd(struct buf *const bluetooth_rx_buf,
+	char const * const cmd,
+	int const cmd_len);
+static void send_NAK();
+static bool set_cmd_mode(struct buf * const bluetooth_rx_buf);
+static void set_exit_cmd_mode(struct buf * const bluetooth_rx_buf);
+static void set_latency(struct buf * const bluetooth_rx_buf);
+static void set_low_power(struct buf * const bluetooth_rx_buf);
+static void set_name(struct buf * const bluetooth_rx_buf);
+static void reset_bluetooth();
 
-bool learn_ir_code = false,
-	tx_ir_code = false;
-
-static bool blumote_process_cmd()
+static void get_name(struct buf * const bluetooth_rx_buf)
 {
-	bool change_state = true;
-	uint8_t c;
+	char const * const str_get_name = "GN\r";
 
-	(void)buf_deque(&gp_rx_tx, &c);
-
-	switch (c) {
-	case BLUMOTE_GET_VERSION: {
-		char const response[] = {BLUMOTE_ACK,
-			BLUMOTE_FW, VERSION_MAJOR, VERSION_MINOR, VERSION_REV}; 
-		(void)bluetooth_puts(response, sizeof(response));
-		}
-		break;
-
-	case BLUMOTE_LEARN:
-		learn_ir_code = true;
-		break;
-
-	case BLUMOTE_IR_TRANSMIT: {
-		/* pop the reserved and length fields and let
-		 * the ir handle the code
-		 */
-		uint8_t c;
-		(void)buf_deque(&gp_rx_tx, &c);	/* reserved */
-		set_ir_repeat_cnt(c & IR_REPEAT_MASK);
-		(void)buf_deque(&gp_rx_tx, NULL);	/* length */
-		tx_ir_code = true;
-		gp_buf_owner = gp_buf_owner_none;
-		}
-		break;
-
-	default: {
-		char const response[] = {BLUMOTE_NAK};
-		(void)bluetooth_puts(response, sizeof(response));
-		}
-		break;
-	}
-
-	return change_state;
+	send_cmd(bluetooth_rx_buf,
+		str_get_name,
+		strlen(str_get_name));
 }
 
-static enum m_strcmp_rc m_strcmp(char const *str, struct circular_buffer *que)
+static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast32_t ttl)
 {
-	enum m_strcmp_rc rc = m_strcmp_match;
-	int i = 0;
-	uint8_t m_buf[16];
+	int my_wr_ptr = bluetooth_rx_buf->wr_ptr;
+ 
+	(void)get_sys_tick();
+	while (ttl > 0) {
+		ttl -= get_us();
+		if (my_wr_ptr != bluetooth_rx_buf->wr_ptr) {
+			my_wr_ptr = bluetooth_rx_buf->wr_ptr;
+			ttl = MIN_UART_WAIT_TIME;
+			(void)get_sys_tick();
+		}
+	}
+}
 
-	for ( ; i < strlen(str); i++) {
-		if (!buf_deque(&gp_rx_tx, &m_buf[i])) { 
-			if (m_buf[i] != str[i]) {
-				rc = m_strcmp_no_match;
-				for ( ; i >= 0; i--) {
-					(void)buf_undeque(que, m_buf[i]);
-				}
-				break;
-			}
-		} else {
-			rc = m_strcmp_buf_underrun;
-			--i;
-			for ( ; i >= 0; --i) {
-				(void)buf_undeque(que, m_buf[i]);
-			}
+static void restore_bt_rx_buf()
+{
+	uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+	set_bluetooth_rx_buf(&uber_buf);
+}
+
+static void ir_xmit()
+{
+	volatile struct buf my_buf = {0, 0, 2};	/* The buf size is known by ir_xmit, so don't change it! */
+	uint8_t const MIN_IR_XMIT_BYTES = 4;
+	uint8_t repeat_cnt,
+		data_len,
+		buf[2];
+
+	my_buf.buf = buf;
+
+	set_bluetooth_rx_buf(&my_buf);
+	ENABLE_BT_RX_INT();
+
+	/* verify that we got a good packet */
+	if (uber_buf.wr_ptr - uber_buf.rd_ptr < MIN_IR_XMIT_BYTES) {
+		restore_bt_rx_buf();
+		send_NAK();
+		return;
+	}
+
+	/* extract the fields */
+	repeat_cnt = uber_buf.buf[uber_buf.rd_ptr++];
+	if (!repeat_cnt) {
+		repeat_cnt = NBR_IR_BURSTS;
+	}
+	data_len = uber_buf.buf[uber_buf.rd_ptr++];
+	set_ir_carrier_frequency(uber_buf.buf[uber_buf.rd_ptr++]);
+	uber_buf.rd_ptr++;	/* reserved */
+
+	/* more packet verification */
+	if (uber_buf.wr_ptr - uber_buf.rd_ptr != data_len) {
+		restore_bt_rx_buf();
+		send_NAK();
+		return;
+	}
+
+	update_ccr0_timing();
+
+	/* blast the ir code */
+	for ( ; repeat_cnt; --repeat_cnt) {
+		if (ir_tx(&my_buf)) {
 			break;
 		}
+	}
+
+	restore_bt_rx_buf();
+
+	send_ACK();
+}
+
+static void reset_bluetooth()
+{
+	reset_rn42();
+	wait_us(1000000);
+}
+
+static void send_ACK()
+{
+	uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+	uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;
+	bluetooth_tx(&uber_buf);
+}
+
+static void send_cmd(struct buf *const bluetooth_rx_buf,
+	char const * const cmd,
+	int const cmd_len)
+{
+	/* init buffers */
+	memcpy((char *)uber_buf.buf, cmd, cmd_len);
+	uber_buf.rd_ptr = 0;
+	uber_buf.wr_ptr = cmd_len;
+
+	/* tx cmd mode */
+	bluetooth_tx(&uber_buf);
+
+	bluetooth_rx_buf->rd_ptr = bluetooth_rx_buf->wr_ptr = 0;
+
+	/* rx cmd mode */
+	get_rn42_data(bluetooth_rx_buf, MAX_UART_WAIT_TIME);
+}
+
+static void send_NAK()
+{
+	uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+	uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_NAK;
+	bluetooth_tx(&uber_buf);
+}
+
+static bool set_cmd_mode(struct buf * const bluetooth_rx_buf)
+{
+	char const * const str_set_cmd_mode = "$$$",
+		* const str_rx_cmd_mode = "CMD\r\n";
+	bool rc = true;
+
+	send_cmd(bluetooth_rx_buf,
+		str_set_cmd_mode,
+		strlen(str_set_cmd_mode));
+
+	/* analyze the result */
+	if (memcmp((const void *)bluetooth_rx_buf->buf,
+			str_rx_cmd_mode,
+			strlen(str_rx_cmd_mode))) {
+		rc = false;
 	}
 
 	return rc;
 }
 
-bool init_blumote(int_fast32_t us)
+static void set_exit_cmd_mode(struct buf * const bluetooth_rx_buf)
 {
-	enum state {
-		default_state = 0,
-		wait_one_sec1 = 0,
-		wait_one_sec2,
-		tx_cmd_mode,
-		rx_cmd_mode,
-		tx_get_name,
-		rx_get_name,
-		tx_set_name,
-		rx_set_name,
-		tx_get_low_latency,
-		rx_get_low_latency,
-		tx_set_low_latency,
-		rx_set_low_latency,
-		tx_get_low_power,
-		rx_get_low_power,
-		tx_set_low_power,
-		rx_set_low_power,
-		tx_exit_cmd_mode,
-		rx_exit_cmd_mode,
-		reset_bluetooth
-	};
-	static enum state current_state = reset_bluetooth;
-	static int_fast32_t ttl;	/* time to live */
-	int c;
-	bool run_again = true;
-	static bool reset_bt = false;
-
-	switch (current_state) {
-	case wait_one_sec1:
-		ttl = 1000000;
-		current_state = wait_one_sec2;
-
-		/* clear out the rx buffers */
-		while (bluetooth_getchar() != EOF);
-		buf_clear(&gp_rx_tx);
-		break;
-
-	case wait_one_sec2:
-		ttl -= us;
-		if (ttl < 0) {
-			current_state = tx_cmd_mode;
-		} 
-		break;
-
-	case tx_cmd_mode: {
-		char const *str = "$$$";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_cmd_mode;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case rx_cmd_mode:
-		ttl -= us;
-
-		while ((c = bluetooth_getchar()) != EOF) {
-			(void)buf_enque(&gp_rx_tx, c);
-			ttl = MIN_UART_WAIT_TIME;
-		}
-		
-		if (ttl >= 0) {
-			enum m_strcmp_rc rc = m_strcmp("CMD\r\n", &gp_rx_tx);
-
-			switch (rc) {
-			case m_strcmp_match:
-				current_state = tx_get_name;
-				buf_clear(&gp_rx_tx);
-				break;
-
-			case m_strcmp_no_match:
-				current_state = reset_bluetooth;
-				break;
-			}
-		} else {	/* invalid/no response */
-			current_state = reset_bluetooth;
-		}
-		break;
-
-	case tx_get_name: {
-		char const *str = "GN\r";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_get_name;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case rx_get_name:
-		ttl -= us;
-
-		while ((c = bluetooth_getchar()) != EOF) {
-			(void)buf_enque(&gp_rx_tx, c);
-			ttl = MIN_UART_WAIT_TIME;
-		}
-
-		if (ttl < 0) {
-			if (m_strcmp("BluMote", &gp_rx_tx) == m_strcmp_match) {
-				current_state = tx_get_low_latency;
-				buf_clear(&gp_rx_tx);
-			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
-					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
-				current_state = reset_bluetooth;
-			} else {
-				current_state = tx_set_name;
-			}
-			buf_clear(&gp_rx_tx);
-		}
-		break;
-
-	case tx_set_name: {
-		char const *str = "S-,BluMote\r\n";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_set_name;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case tx_get_low_latency: {
-		char const *str = "GQ\r";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_get_low_latency;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case rx_get_low_latency:
-		ttl -= us;
-
-		while ((c = bluetooth_getchar()) != EOF) {
-			(void)buf_enque(&gp_rx_tx, c);
-			ttl = MIN_UART_WAIT_TIME;
-		}
-
-		if (ttl >= 0) {
-			if (m_strcmp("10\r\n", &gp_rx_tx) == m_strcmp_match) {
-				current_state = tx_get_low_power;
-				buf_clear(&gp_rx_tx);
-			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
-					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
-				current_state = reset_bluetooth;
-			}
-		} else {	/* no response or invalid setting */
-			current_state = tx_set_low_latency;
-			buf_clear(&gp_rx_tx);
-		}
-		break;
-
-	case tx_set_low_latency: {
-		char const *str = "SQ,16\r\n";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_set_low_latency;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case tx_get_low_power: {
-		char const *str = "GW\r";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_get_low_power;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case rx_get_low_power:
-		ttl -= us;
-
-		while ((c = bluetooth_getchar()) != EOF) {
-			(void)buf_enque(&gp_rx_tx, c);
-			ttl = MIN_UART_WAIT_TIME;
-		}
-
-		if (ttl >= 0) {
-			if (m_strcmp("50\r\n", &gp_rx_tx) == m_strcmp_match) {
-				current_state = tx_exit_cmd_mode;
-				buf_clear(&gp_rx_tx);
-			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
-					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
-				current_state = reset_bluetooth;
-			}
-		} else {	/* no response or invalid name */
-			current_state = tx_set_low_power;
-			buf_clear(&gp_rx_tx);
-		}
-		break;
-
-	case tx_set_low_power: {
-		char const *str = "SW,8050\r\n";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_set_low_power;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case rx_set_name:
-	case rx_set_low_latency:
-	case rx_set_low_power:
-		ttl -= us;
-
-		while ((c = bluetooth_getchar()) != EOF) {
-			(void)buf_enque(&gp_rx_tx, c);
-			ttl = MIN_UART_WAIT_TIME;
-		}
-
-		if (ttl >= 0) {
-			if (m_strcmp("AOK\r\n", &gp_rx_tx) == m_strcmp_match) {
-				switch (current_state) {
-				case rx_set_name:
-					current_state = tx_set_low_latency;
-					reset_bt = true;
-					break;
-
-				case rx_set_low_latency:
-					current_state = tx_exit_cmd_mode;
-					reset_bt = true;
-					break;
-
-				case rx_set_low_power:
-					current_state = tx_exit_cmd_mode;
-					break;
-				}
-				buf_clear(&gp_rx_tx);
-			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
-					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
-				current_state = reset_bluetooth;
-			}
-		} else {	/* invalid/no response */
-			current_state = reset_bluetooth;
-		}
-		break;
-
-	case tx_exit_cmd_mode: {
-		char const *str = "---\r\n";
-		if (bluetooth_puts(str, strlen(str)) != EOF) {
-			current_state = rx_exit_cmd_mode;
-			ttl = MAX_UART_WAIT_TIME;
-		}
-		}
-		break;
-
-	case rx_exit_cmd_mode:
-		ttl -= us;
-
-		while ((c = bluetooth_getchar()) != EOF) {
-			(void)buf_enque(&gp_rx_tx, c);
-			ttl = MIN_UART_WAIT_TIME;
-		}
-
-		if (ttl >= 0) {
-			if (m_strcmp("END\r\n", &gp_rx_tx) == m_strcmp_match) {
-				if (!reset_bt) {
-					current_state = tx_set_low_latency;
-				} else {
-					current_state = reset_bluetooth;
-				}
-				run_again = false;
-				buf_clear(&gp_rx_tx);
-			} else if ((m_strcmp("?\r\n", &gp_rx_tx) == m_strcmp_match)
-					|| (m_strcmp("ERR\r\n", &gp_rx_tx) == m_strcmp_match)) {
-				current_state = reset_bluetooth;
-			}
-		} else {	/* invalid/no response */
-			current_state = reset_bluetooth;
-		}
-		break;
-
-	case reset_bluetooth:
-		if (issue_bluetooth_reset(us) == false) {
-			current_state = default_state;
-			reset_bt = false;
-		}
-		buf_clear(&gp_rx_tx);
-		break;
-
-	default:	/* shouldn't get here */
-		current_state = default_state;
-		reset_bt = false;
-		buf_clear(&gp_rx_tx);
-		break;
-	}
-
-	return run_again;
+	char const *str_exit_cmd_mode = "---\r\n";
+	
+	send_cmd(bluetooth_rx_buf,
+		str_exit_cmd_mode,
+		strlen(str_exit_cmd_mode));
 }
 
-bool blumote_main(int_fast32_t us)
+static void set_latency(struct buf * const bluetooth_rx_buf)
 {
-	enum state {
-		default_state = 0,
-		rx_cmd1 = 0,
-		rx_cmd2,
-		process_cmd,
-		handle_buf_overflow
-	};
-	static enum state current_state = default_state;
-	static int_fast32_t ttl;
-	int c;
-	bool run_again = false;
+	char const * const str_set_latency = "SQ,16\r\n";
 
-	switch (current_state) {
-	case rx_cmd1:
-		/* get the first char */
-		if ((c = bluetooth_getchar()) != EOF) {
-			current_state = rx_cmd2;
-			if (!own_gp_buf(gp_buf_owner_bt)) {
-				/* couldn't get the gp_buf lock, put the byte back */
-				(void)buf_undeque(&uart_rx, c);
-			} else {
-				(void)buf_enque(&gp_rx_tx, c);
-			}
-			ttl = MIN_UART_WAIT_TIME;
-			run_again = true;
-		}
-		break;
-
-	case rx_cmd2:
-		ttl -= us;
-		while ((c = bluetooth_getchar()) != EOF) {
-			(void)buf_enque(&gp_rx_tx, c);
-			ttl = MIN_UART_WAIT_TIME;
-		}
-
-		if (ttl < 0) {
-			/* should have the whole message by now */
-			current_state = process_cmd;
-		}
-
-		run_again = true;
-		break;
-
-	case process_cmd:
-		run_again = true;
-		if (!blumote_process_cmd()) {
-			break;
-		}	/* else done, fallthrough */
-	default:
-		current_state = default_state;
-		if (!tx_ir_code) {
-			/* preserve the ir code for ir_main */
-			buf_clear(&gp_rx_tx);
-		}
-		break;
-	}
-
-	return run_again;
+	send_cmd(bluetooth_rx_buf,
+		str_set_latency,
+		strlen(str_set_latency));
 }
 
-bool tx_learned_code()
+static void set_low_power(struct buf * const bluetooth_rx_buf)
 {
-	enum state {
-		default_state = 0,
-		tx_status = 0,
-		tx_code,
-		wait_for_bt_buf
-	};
-	static enum state current_state = default_state;
-	bool run_again = true;
-	static uint8_t c; 
+	char const * const str_set_low_power = "SW,8050\r\n";
 
-	switch (current_state) {
-	case tx_status:
-		if (!buf_deque(&gp_rx_tx, &c)) {
-			char str[4] = {BLUMOTE_ACK, 0};
-			str[2] = gp_rx_tx.cnt + 1;
-			str[3] = c;
-			bluetooth_puts(str, sizeof(str));
-			current_state = tx_code;
+	send_cmd(bluetooth_rx_buf,
+		str_set_low_power,
+		strlen(str_set_low_power));
+}
+
+static void set_name(struct buf * const bluetooth_rx_buf)
+{
+	char const * const str_set_name = "S-," BLUMOTE_NAME "\r\n";
+
+	send_cmd(bluetooth_rx_buf,
+		str_set_name,
+		strlen(str_set_name));
+}
+
+void blumote_main()
+{
+	uint8_t c;
+
+	get_rn42_data(&uber_buf, MIN_UART_WAIT_TIME);
+	DISABLE_BT_RX_INT();
+	c = uber_buf.buf[uber_buf.rd_ptr++];
+	switch (c) {
+	case BLUMOTE_GET_VERSION: {
+		uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+
+		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;
+		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_FW;
+		uber_buf.buf[uber_buf.wr_ptr++] = VERSION_MAJOR;
+		uber_buf.buf[uber_buf.wr_ptr++] = VERSION_MINOR;
+		uber_buf.buf[uber_buf.wr_ptr++] = VERSION_REV;
+
+		bluetooth_tx(&uber_buf);
+		}
+		break;
+
+	case BLUMOTE_LEARN:
+		uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;	/* return code */
+		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* length */
+		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* ir carrier frequency */
+		uber_buf.buf[uber_buf.wr_ptr++] = 0;	/* reserved */
+
+		if (!ir_learn()) {
+			uber_buf.buf[1] = uber_buf.wr_ptr - 4;
+			uber_buf.buf[2] = get_ir_carrier_frequency();
 		} else {
-			bluetooth_putchar(BLUMOTE_NAK);
-			run_again = false;
+			/* timed out */
+			uber_buf.wr_ptr = 0;
+			uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_NAK;
 		}
+
+		bluetooth_tx(&uber_buf);
 		break;
 
-	case tx_code:
-	case wait_for_bt_buf:
-		current_state = tx_code;
-		while (!buf_deque(&gp_rx_tx, &c)) {
-			if (bluetooth_putchar((int)c) == EOF) {
-				(void)buf_undeque(&gp_rx_tx, c);
-				current_state = wait_for_bt_buf;
-				break;
-			}
-		}
-		if (current_state == tx_code) {
-			current_state = default_state;
-			run_again = false;
-		}
+	case BLUMOTE_IR_TRANSMIT:
+		ir_xmit();
 		break;
 
 	default:
-		current_state = default_state;
-		run_again = false;
-		break;
+		send_NAK();
 	}
 
-	return run_again; 
+	ENABLE_BT_RX_INT();
 }
 
+void init_rn42()
+{
+	uint8_t my_buf[16];
+	struct buf bluetooth_rx_buf = {0, 0, sizeof(my_buf)};
+	
+	bluetooth_rx_buf.buf = my_buf;
+
+	reset_bluetooth();
+	set_bluetooth_rx_buf(&bluetooth_rx_buf);
+	if (!set_cmd_mode(&bluetooth_rx_buf)) {
+		reset_bluetooth();
+		if (!set_cmd_mode(&bluetooth_rx_buf)) {
+			set_bluetooth_rx_buf(NULL);
+			
+			/* something isn't working - reboot */
+			WDTCTL = WDT_MRST_32 + ~WDTHOLD;
+			while (1);
+		}
+	}
+	get_name(&bluetooth_rx_buf);
+	if (memcmp((const void *)bluetooth_rx_buf.buf,
+			BLUMOTE_NAME,
+			strlen(BLUMOTE_NAME))) {
+		set_name(&bluetooth_rx_buf);
+		set_latency(&bluetooth_rx_buf);
+		set_low_power(&bluetooth_rx_buf);
+		set_exit_cmd_mode(&bluetooth_rx_buf);
+		reset_bluetooth();
+	} else {
+		set_exit_cmd_mode(&bluetooth_rx_buf);
+	}
+
+	set_bluetooth_rx_buf(NULL);
+}
