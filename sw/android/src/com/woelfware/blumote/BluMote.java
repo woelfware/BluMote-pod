@@ -986,6 +986,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 
 		case R.id.learn_mode:
+			// need to make sure we are connected to a pod.
+			if (mChatService == null || 
+					mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
+				Toast.makeText(this, "You need to be connected to a pod first", Toast.LENGTH_SHORT).show();
+				return true;
+			}			
 			// need to make sure that user has a device selected in the drop down before
 			// entering learn mode
 			if (mainScreen.getCurrentDropDown() != null) {
@@ -1055,6 +1061,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			mainScreen.setDropDownVis(true);
 			// refresh data behind buttons
 			mainScreen.fetchButtons();
+			
+		case R.id.exit:
+			// quit the application
+			finish();
+			return true;
+			
 		}
 
 		return false;

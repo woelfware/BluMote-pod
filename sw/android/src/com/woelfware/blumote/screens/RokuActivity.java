@@ -16,7 +16,6 @@ public class RokuActivity implements ButtonCreator {
 		ButtonParameters[] buttons = {
 			new ButtonParameters(R.id.btn_volume_up, "btn_volume_up", blumote.findViewById(R.id.btn_volume_up)),
 			new ButtonParameters(R.id.btn_volume_down, "btn_volume_down", blumote.findViewById(R.id.btn_volume_down)),
-			new ButtonParameters(R.id.btn_input, "btn_input", blumote.findViewById(R.id.btn_input)),
 			new ButtonParameters(R.id.power_on_btn, "power_on_btn", blumote.findViewById(R.id.power_on_btn)),
 			new ButtonParameters(R.id.power_off_btn, "power_off_btn", blumote.findViewById(R.id.power_off_btn)),
 			new ButtonParameters(R.id.back_btn, "back_btn", blumote.findViewById(R.id.back_btn)),

@@ -94,8 +94,8 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="2.0">
-				<ImageButton style="@style/TopRockerStyle" android:layout_width="fill_parent" android:src="@drawable/plus" android:id="@+id/btn_channel_up" android:scaleType="centerInside"></ImageButton> 		    				    
-				<ImageButton style="@style/BottomRockerStyle" android:layout_width="fill_parent" android:src="@drawable/minus" android:id="@+id/btn_channel_down" android:scaleType="centerInside"></ImageButton>				    					
+				<ImageButton style="@style/TopRockerStyle" android:layout_width="fill_parent" android:src="@drawable/plus" android:id="@+id/btn_volume_up" android:scaleType="centerInside"></ImageButton> 		    				    
+				<ImageButton style="@style/BottomRockerStyle" android:layout_width="fill_parent" android:src="@drawable/minus" android:id="@+id/btn_volume_down" android:scaleType="centerInside"></ImageButton>				    					
 			</LinearLayout>
 	</LinearLayout>
 	
