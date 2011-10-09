@@ -10,11 +10,12 @@
 #include "hw.h"
 #include "ir.h"
 
+#define is_space() (P1IN & BIT3)
+#define is_pulse() !is_space()
+
 static int_fast32_t gap = 0;	/* time between packets */
 static uint16_t ccr0_timing = 0;	/* used for the CCR0 timer */
 static uint8_t ir_carrier_frequency = 0;	/* pulse tx frequency in kHz */
-
-static inline bool is_space();
 
 static void carrier_freq(bool on)
 {
@@ -59,7 +60,7 @@ static void fix_endianness(int i)
 /* true - timeout
  * false - exited normally
  */
-static void get_pkt(int_fast32_t *ttl)
+static void get_pkt()
 {
 	int_fast32_t pulse_duration = 0,
 		space_duration = 0;
@@ -69,37 +70,18 @@ static void get_pkt(int_fast32_t *ttl)
 	/* wait for end of pkt */
 	while (space_duration < gap) {
 		while (is_space()) {
-			int_fast32_t const elapsed_time = get_us();
-			space_duration += elapsed_time;
-			*ttl += elapsed_time;
-			if (*ttl >= IR_LEARN_CODE_TIMEOUT) {
-				*ttl = IR_LEARN_CODE_TIMEOUT;
-				return;
-			}
+			space_duration += get_us();
 		}
 		if (space_duration < gap) {
 			space_duration = 0;
-			while (!is_space()) {
-				*ttl += get_us();
-				if (*ttl >= IR_LEARN_CODE_TIMEOUT) {
-					*ttl = IR_LEARN_CODE_TIMEOUT;
-					return;
-				}
-			}
+			while (is_pulse());
 		}
 	}
 	space_duration = 0;
-	while (is_space()) {
-		*ttl += get_us();
-		if (*ttl >= IR_LEARN_CODE_TIMEOUT) {
-			*ttl = IR_LEARN_CODE_TIMEOUT;
-			return;
-		}
-	}
-	*ttl += get_us();
+	while (is_space());
 
 	while (1) {
-		while (!is_space());
+		while (is_pulse());
 		pulse_duration += get_sys_tick();
 
 		while (is_space());
@@ -123,7 +105,7 @@ static void get_pkt(int_fast32_t *ttl)
 	}
 }
 
-static void get_carrier_frequency(int_fast32_t *ttl)
+static void get_carrier_frequency()
 {
 	int_fast32_t space = 0,
 		elapsed_time = 0,
@@ -135,20 +117,14 @@ static void get_carrier_frequency(int_fast32_t *ttl)
 	while (space < gap) {
 		while (is_space());
 		space = get_us();
-		*ttl += space;
-		if (*ttl >= IR_LEARN_CODE_TIMEOUT) {
-			*ttl = IR_LEARN_CODE_TIMEOUT;
-			return;
-		}
 	}
 
 	space = 0;
 	while (is_space());
-	*ttl += get_us();
 
 	while (space < MAX_FILTERED_SPACE_TIME) {
 		elapsed_time += space;
-		while (!is_space());
+		while (is_pulse());
 		pulses++;
 		elapsed_time += get_us();
 		while (is_space());
@@ -168,24 +144,25 @@ static void get_carrier_frequency(int_fast32_t *ttl)
 	return;
 }
 
-static void get_pkt_gap(int_fast32_t *ttl)
+static void get_pkt_gap()
 {
 	int_fast32_t space = 0,
-		my_gap[2] = {0, 0};
-	int_fast32_t const end_time = *ttl + 2000000;	/* sample the gaps for 2 second */
+		my_gap[2] = {0, 0},
+		ttl = 2000000;	/* sample the gaps for 2 second */
 
 	gap = 0;
 
 	while (is_space());	/* wait until the start of the space */
 
-	while (*ttl <= end_time) {
+	(void)get_sys_tick();
+	while (ttl > 0) {
 		space = 0;
-		while (!is_space());
-		*ttl += get_sys_tick();
+		while (is_pulse());
+		ttl -= get_us();
 
 		while (is_space());
 		space = get_us();
-		*ttl += space;
+		ttl -= space;
 
 		if (space > my_gap[1]) {
 			if (space > my_gap[0]) {
@@ -211,32 +188,19 @@ static void get_pkt_gap(int_fast32_t *ttl)
 /* true - timeout
  * false - exited normally
  */
-static void get_rdy_for_pkt(int_fast32_t *ttl)
+static void get_rdy_for_pkt()
 {
-	int_fast32_t duration = 0,
-		elapsed_time;
+	int_fast32_t duration = 0;
 
-	while (is_space()) {	/* wait for a pulse */
-		*ttl += get_us();
+	while (is_space());	/* wait for a pulse */
 
-		if (*ttl >= IR_LEARN_CODE_TIMEOUT) {
-			*ttl = IR_LEARN_CODE_TIMEOUT;
-			return;
-		}
-	}
-
-	*ttl += get_sys_tick();
+	(void)get_sys_tick();
 
 	/* wait for space long enough to be between packets */
 	while (1) {
 		if (is_space()) {
-			elapsed_time = get_us();
-			duration += elapsed_time;
-			*ttl += elapsed_time;
+			duration += get_us();
 			if (duration > gap) {
-				return;
-			} else if (*ttl >= IR_LEARN_CODE_TIMEOUT) {
-				*ttl = IR_LEARN_CODE_TIMEOUT;
 				return;
 			}
 		} else {
@@ -251,11 +215,6 @@ static uint16_t get_ttl()
 			+ uber_buf.buf[uber_buf.rd_ptr + 1];
 	uber_buf.rd_ptr += 2;
 	return ttl;
-}
-
-static inline bool is_space()
-{
-	return !!(P1IN & BIT3);
 }
 
 static void mult_sys_tick(int starting_addr)
@@ -279,25 +238,13 @@ uint8_t get_ir_carrier_frequency()
 
 bool ir_learn()
 {
-	int_fast32_t ttl = 0;
 	int const starting_addr = uber_buf.wr_ptr;
 
-	get_rdy_for_pkt(&ttl);
-	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
-		return true;
-	}
-	get_pkt_gap(&ttl);
-	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
-		return true;
-	}
-	get_carrier_frequency(&ttl);
-	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
-		return true;
-	}
-	get_pkt(&ttl);
-	if (ttl >= IR_LEARN_CODE_TIMEOUT) {
-		return true;
-	}
+	get_rdy_for_pkt();
+	get_pkt_gap();
+	get_carrier_frequency();
+	get_pkt();
+
 	mult_sys_tick(starting_addr);
 	find_pkt_end(starting_addr);
 	fix_endianness(starting_addr);
