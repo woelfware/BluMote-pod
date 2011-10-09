@@ -180,33 +180,16 @@ static void get_pkt_gap()
 		}
 	}
 
+	/* filter out large gaps */
+	if (gap > (my_gap[0] + my_gap[0] / 10)) {
+		gap = my_gap[0];
+		if (gap > (my_gap[1] + my_gap[1] / 10)) {
+			gap = my_gap[1];
+		}
+	}
 	gap -= gap / 50;	/* reduce by 2% */
 
 	return;
-}
-
-/* true - timeout
- * false - exited normally
- */
-static void get_rdy_for_pkt()
-{
-	int_fast32_t duration = 0;
-
-	while (is_space());	/* wait for a pulse */
-
-	(void)get_sys_tick();
-
-	/* wait for space long enough to be between packets */
-	while (1) {
-		if (is_space()) {
-			duration += get_us();
-			if (duration > gap) {
-				return;
-			}
-		} else {
-			duration = 0;
-		}
-	}
 }
 
 static uint16_t get_ttl()
@@ -240,7 +223,7 @@ bool ir_learn()
 {
 	int const starting_addr = uber_buf.wr_ptr;
 
-	get_rdy_for_pkt();
+	while (is_space());	/* wait for a pulse */
 	get_pkt_gap();
 	get_carrier_frequency();
 	get_pkt();
