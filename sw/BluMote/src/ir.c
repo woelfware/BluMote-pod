@@ -187,7 +187,7 @@ static void get_pkt_gap()
 			gap = my_gap[1];
 		}
 	}
-	gap -= gap / 50;	/* reduce by 2% */
+	gap -= gap / 25;	/* reduce by 4% */
 
 	return;
 }
