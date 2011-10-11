@@ -330,7 +330,7 @@ public class Activities {
 		mainint.setDropDown(activityName); // always set active dropdown item to new activity
 		
 		// set program state
-		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
+		mainint.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY_INIT);
 				
 		//TODO - launch help window if first time creating activity		
 		

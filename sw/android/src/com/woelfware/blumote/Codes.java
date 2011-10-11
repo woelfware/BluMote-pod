@@ -1,5 +1,6 @@
 package com.woelfware.blumote;
 
+// codes and state information for blumote pod operation
 class Codes {
 	// private constructor to make this class non-instantiable
 	private Codes() { }
@@ -32,18 +33,6 @@ class Codes {
         public static final byte ACK = (byte)0x06;
         public static final byte NACK = (byte)0x15;
         public static final byte ABORT_TRANSMIT = (byte)0x03; // stop repeating IR command
-    }
-    
-    // this keeps track of what state the interface is in
-    // this is useful for how to setup the options menus
-    // and what actions buttons should take when pressed
-    enum INTERFACE_STATE {
-    	MAIN, // default program state, when we are in a device mode
-    	ACTIVITY, // when we are in a normal activity mode
-    	ACTIVITY_EDIT, // when editing an activity (associating buttons/etc)
-    	ACTIVITY_INIT, // when setting up the initialization of an activity
-    	LEARN, // when learning a new button code
-        RENAME_STATE // renaming misc button
     }
     
     // this is to keep track of state machines for example

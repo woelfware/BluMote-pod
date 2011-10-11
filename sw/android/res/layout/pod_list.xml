@@ -17,7 +17,7 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@drawable/background"
+    android:background="@drawable/background_bl_scaled"
     >
     <TextView android:id="@+id/title_paired_devices"
         android:layout_width="fill_parent"

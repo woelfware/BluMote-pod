@@ -31,6 +31,22 @@ import com.woelfware.blumote.screens.RokuDevice;
  *
  */
 public class MainInterface {
+	
+	// this keeps track of what state the interface is in
+	// this is useful for how to setup the options menus
+	// and what actions buttons should take when pressed
+	public enum INTERFACE_STATES {
+		MAIN, // default program state, when we are in a device mode
+		ACTIVITY, // when we are in a normal activity mode
+		ACTIVITY_EDIT, // when editing an activity (associating buttons/etc)
+		ACTIVITY_INIT, // when setting up the initialization of an activity
+		LEARN, // when learning a new button code
+	    RENAME_STATE // renaming misc button
+	}
+	
+	// current interface State of program
+	INTERFACE_STATES INTERFACE_STATE = INTERFACE_STATES.MAIN;
+	
 	// define the types of interfaces available
 	public enum TYPE {
 		DEVICE, ACTIVITY
@@ -118,6 +134,7 @@ public class MainInterface {
 	/*********************************
 	 * Common screen elements
 	 *********************************/
+	View toplevel; // the top-level linearlayout/relativelayout for the interface
 	// pager is for keeping track of what page we are on
 	ImageView pager;
 	// helps change interface pages
@@ -231,7 +248,8 @@ public class MainInterface {
 				page = Pages.ACTIVITIES;
 				
 				// initialize interface items that are always present in a layout
-				// namely, pager and flipper and spinner
+				// namely, toplevel, pager and flipper and spinner
+				toplevel = blumote.findViewById(R.id.toplevel);
 				pager = (ImageView)blumote.findViewById(R.id.pager);
 				flip=(ViewFlipper)blumote.findViewById(R.id.flipper); // flips between our screens
 				flip.setOnTouchListener(blumote.gestureListener);
@@ -288,6 +306,36 @@ public class MainInterface {
 		else {
 			// setup to be a blank screen if we got sent a null buttonConfig
 			setSpinnerErrorState();
+		}
+	}
+	
+	void setInterfaceState(INTERFACE_STATES state) {
+		INTERFACE_STATE = state;
+		// set background based on mode of operation
+		switch (state) {
+			case MAIN:				
+				toplevel.setBackgroundResource(R.drawable.background_gry_scaled);
+				break;
+			
+			case ACTIVITY:
+				toplevel.setBackgroundResource(R.drawable.background_gry_scaled);
+				break;
+				
+			case ACTIVITY_EDIT:
+				toplevel.setBackgroundResource(R.drawable.background_bl_scaled);
+				break;
+				
+			case ACTIVITY_INIT:				
+				toplevel.setBackgroundResource(R.drawable.background_bl_scaled);
+				break;
+				
+			case LEARN:
+				toplevel.setBackgroundResource(R.drawable.background_gr_scaled);
+				break;
+				
+			case RENAME_STATE:
+				toplevel.setBackgroundResource(R.drawable.background_gry_scaled);
+				break;
 		}
 	}
 	
@@ -555,16 +603,16 @@ public class MainInterface {
 				// Fetch actual button codes, do this for "activity" or "main" interface states
 				// if we are in ACTIVITY or MAIN modes then toggle between them when
 				// changing devices in the drop-down
-				if (blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY ||
-						blumote.INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {
+				if (INTERFACE_STATE == INTERFACE_STATES.ACTIVITY ||
+						INTERFACE_STATE == INTERFACE_STATES.MAIN) {
 					// check if activity or a device
 					if (spinner_selected.startsWith(ACTIVITY_PREFIX_SPACE)) {
-						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
+						setInterfaceState(INTERFACE_STATES.ACTIVITY);
 						activities.setWorkingActivity(spinner_selected);
 						blumote.buttons = activities.getActivityButtons(spinner_selected);								
 					}
 					else { // must be a device
-						blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;					
+						setInterfaceState(INTERFACE_STATES.MAIN);					
 						blumote.buttons = blumote.device_data.getButtons(blumote.cur_device);					
 					}
 				}
@@ -605,7 +653,7 @@ public class MainInterface {
 	 */
 	void setSpinnerErrorState() {
 		blumote.buttons = null;
-		blumote.INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
+		setInterfaceState(INTERFACE_STATES.MAIN);
 		
 		// setup interface to be 'blank'
 		initializeInterface(DEVICE_LAYOUTS.BLANK.getValue(), MainInterface.TYPE.DEVICE);								
@@ -705,3 +753,4 @@ public class MainInterface {
 		return returnData;
 	}		
 }
+
