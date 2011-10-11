@@ -74,7 +74,7 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="3.0">		
-				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/edit_redo" android:id="@+id/return_btn" android:scaleType="centerInside"></ImageButton>
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/go_return" android:id="@+id/return_btn"></ImageButton>
 				<ImageView android:src="@drawable/spacer" android:layout_width="fill_parent"
 					android:layout_height="fill_parent" android:layout_marginTop="5dp" android:visibility="invisible"/> 
 				<ImageView android:src="@drawable/spacer" android:layout_width="fill_parent"

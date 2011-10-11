@@ -143,10 +143,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	boolean LOCK_LAST_DEVICE = false;  
 
 	// current State of the pod bluetooth communication
-	Codes.BT_STATE BT_STATE = Codes.BT_STATE.IDLE;
-	
-	// current interface State of program
-	Codes.INTERFACE_STATE INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
+	Codes.BT_STATE BT_STATE = Codes.BT_STATE.IDLE;		
 	
 	// these are all in ms (milli-seconds)
 	private static int LOCK_RELEASE_TIME = 5000; // timeout to release IR transmit lock if pod doesn't send us an ACK
@@ -467,8 +464,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (mainScreen.isNavigationButton(lastView.getId())) {
 				// execute navigation
 				executeNavigationButton(lastView.getId());
-			} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY || 
-					INTERFACE_STATE == Codes.INTERFACE_STATE.MAIN) {				
+			} else if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.ACTIVITY || 
+					mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.MAIN) {				
 				sendButton(lastView.getId());
 				// start a new shorter timer that will call this method
 				buttonPushID++; // increment global button push id
@@ -524,7 +521,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		if (mainScreen.isNavigationButton(BUTTON_ID)) {
 			return;  // navigation buttons don't need an onClick handler
 		}
-		if (INTERFACE_STATE == Codes.INTERFACE_STATE.RENAME_STATE) {
+		if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.RENAME_STATE) {
 			// store the button that we want to update if it is a valid misc key
 			// if it isn't then exit and Toast user, change state back to idle
 			if (buttonName.startsWith(MainInterface.BTN_MISC)) {
@@ -539,8 +536,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						Toast.LENGTH_SHORT).show();
 			}
 
-			INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; // reset state in any case
-		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_EDIT) {
+			mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.MAIN); // reset state in any case
+		} else if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.ACTIVITY_EDIT) {
 			if (Activities.isValidActivityButton(BUTTON_ID)) {
 				if (captureButton) {
 					// if we are in this mode then what we want to do is to associate the button that was
@@ -571,9 +568,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							activityButton = button_map.get(BUTTON_ID);		
 							activities.setWorkingActivity(mainScreen.getCurrentDropDown());
 							// switch to the selected device
-							INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN; // setting drop-down only works in ACTIVITY/MAIN modes
+							mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.MAIN); // setting drop-down only works in ACTIVITY/MAIN modes
 							mainScreen.setDropDown(items[item].toString());
-							INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_EDIT;
+							mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY_EDIT);
 							mainScreen.fetchButtons();
 							mainScreen.setDropDownVis(false);
 						}
@@ -585,7 +582,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "The power off activity button has no devices to turn off",
 						Toast.LENGTH_SHORT).show();
 			}
-		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_INIT) {
+		} else if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.ACTIVITY_INIT) {
 			// store init entries by device, button-id
 			if (Activities.isValidActivityButton(BUTTON_ID)) {
 				activityInit.add(cur_device+" "+button_map.get(BUTTON_ID));
@@ -594,7 +591,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			} else {
 				Toast.makeText(this, "Invalid button!",	Toast.LENGTH_SHORT).show();
 			}
-		} else if (INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
+		} else if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.LEARN) {
 			sendCode(Codes.Pod.LEARN);
 			showDialog(DIALOG_LEARN_WAIT);
 			
@@ -829,7 +826,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					if (request.equals(ActivityInitEdit.REDO)) {
 						// check if the "REDO" was requested, if so re-enter ACTIVITY_INIT mode
 						activityInit.clear();
-						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
+						mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY_INIT);
 					}
 					else if (request.equals(ActivityInitEdit.APPEND) ) {
 						// append to end of existing init items
@@ -845,7 +842,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							}
 						}
 						// enter ACTIVITY_INIT mode to begin adding more items
-						INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_INIT;
+						mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY_INIT);
 					}
 					// otherwise just go back into normal activity mode
 				}								
@@ -874,16 +871,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		// called everytime menu is shown
 		menu.clear();
 		
-		if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_EDIT) {
+		if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.ACTIVITY_EDIT) {
 			MenuInflater inflater = getMenuInflater();
 			inflater.inflate(R.menu.activity_edit_menu, menu);
 		}
-		else if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY_INIT) {
+		else if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.ACTIVITY_INIT) {
 			MenuInflater inflater = getMenuInflater();
 			inflater.inflate(R.menu.initialization_menu, menu);
 		}
 		else {	
-			if (INTERFACE_STATE == Codes.INTERFACE_STATE.ACTIVITY) {
+			if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.ACTIVITY) {
 				MenuInflater inflater = getMenuInflater();
 				inflater.inflate(R.menu.activities_menu, menu);
 			} else { // use default menu (MAIN menu)
@@ -987,6 +984,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 
 		case R.id.learn_mode:
+			mainScreen.toplevel.setBackgroundResource(R.drawable.background_gry_scaled);
 			// need to make sure we are connected to a pod.
 			if (mChatService == null || 
 					mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
@@ -998,7 +996,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			if (mainScreen.getCurrentDropDown() != null) {
 				Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
 				BT_STATE = Codes.BT_STATE.LEARN;
-				INTERFACE_STATE = Codes.INTERFACE_STATE.LEARN;
+				mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.LEARN);
 				// disable drop-down
 				mainScreen.setDropDownVis(false);
 			} else {
@@ -1013,7 +1011,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			
 		case R.id.rename_misc:
 			Toast.makeText(this, "Select Misc Button to rename", Toast.LENGTH_SHORT).show();
-			INTERFACE_STATE = Codes.INTERFACE_STATE.RENAME_STATE;
+			mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.RENAME_STATE);
 			return true;
 			
 		case R.id.activity_edit_init:
@@ -1024,7 +1022,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.activity_associate_btn:
-			INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_EDIT;
+			mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY_EDIT);
 			Toast.makeText(this, "Press a button to associate with a device...", Toast.LENGTH_SHORT).show();
 			mainScreen.setDropDownVis(false);
 			return true;
@@ -1037,7 +1035,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.end_init:
-			INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY_EDIT; // next step is associating buttons
+			mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY_EDIT); // next step is associating buttons			
 			// when ending the activity init then we should store the init sequence to the prefs file
 			activities.addActivityInitSequence(activityInit);
 			// after we add it then we need to clear out the activityInit
@@ -1050,7 +1048,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.end_activity_edit:
-			INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY; // go to activity mode (to use new activity)
+			mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY); // go to activity mode (to use new activity)			
 			Toast.makeText(this, "Done editing activity", Toast.LENGTH_SHORT).show();
 			// now put us back into the original activity for the drop-down
 			mainScreen.setDropDown(activities.getWorkingActivity());
@@ -1068,10 +1066,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return false;
 	}
 
-	private void stopLearning() {		
+	private void stopLearning() {
 		sendCode(Codes.Pod.ABORT_LEARN);
 		BT_STATE = Codes.BT_STATE.ABORT_LEARN;
-		INTERFACE_STATE = Codes.INTERFACE_STATE.MAIN;
+		mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.MAIN);
 		mainScreen.setDropDownVis(true);
 		Codes.learn_state = Codes.LEARN_STATE.IDLE;
 		// refresh buttons after done learning
@@ -1214,8 +1212,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	public void onItemClick(AdapterView<?> av, View v, int position, long id) {		
 		
 		// Change to activities state after init is run
-		INTERFACE_STATE = Codes.INTERFACE_STATE.ACTIVITY;
-		
+		mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.ACTIVITY);
+
 		// extract the name of activity that was selected
 		ImageActivityItem item = activities.mActivitiesArrayAdapter.getItem(position);
 		String activity = item.title;
@@ -1354,7 +1352,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		buttonName = button_map.get(BUTTON_ID);
 
 		// make sure payload is not null and make sure we are in learn mode
-		if (buttonName != null && INTERFACE_STATE == Codes.INTERFACE_STATE.LEARN) {
+		if (buttonName != null && mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.LEARN) {
 			device_data.insertButton(
 					cur_device, 
 					buttonName,

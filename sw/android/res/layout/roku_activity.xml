@@ -72,7 +72,7 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="3.0">
-				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/edit_redo" android:id="@+id/return_btn" android:scaleType="centerInside"></ImageButton>		
+				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/go_return" android:id="@+id/return_btn"></ImageButton>		
 				<ImageButton style="@style/CustomImageBtnText" android:layout_width="fill_parent" android:src="@drawable/asterisk_orange_icon" android:id="@+id/fav_btn" android:scaleType="centerInside"></ImageButton>
 				<Button android:layout_width="fill_parent" android:id="@+id/btn_misc1" android:text="Misc 1" style="@style/CustomBtnText"></Button>
 			</LinearLayout>	    
@@ -94,8 +94,8 @@
 				android:layout_gravity="center"
 				android:layout_weight="1"
 				android:weightSum="2.0">
-				<ImageButton style="@style/TopRockerStyle" android:layout_width="fill_parent" android:src="@drawable/plus" android:id="@+id/btn_volume_up" android:scaleType="centerInside"></ImageButton> 		    				    
-				<ImageButton style="@style/BottomRockerStyle" android:layout_width="fill_parent" android:src="@drawable/minus" android:id="@+id/btn_volume_down" android:scaleType="centerInside"></ImageButton>				    					
+				<ImageButton style="@style/TopRockerStyle" android:layout_width="fill_parent" android:src="@drawable/vol_plus" android:id="@+id/btn_volume_up"></ImageButton> 		    				    
+				<ImageButton style="@style/BottomRockerStyle" android:layout_width="fill_parent" android:src="@drawable/vol_minus" android:id="@+id/btn_volume_down"></ImageButton>				    					
 			</LinearLayout>
 	</LinearLayout>
 	

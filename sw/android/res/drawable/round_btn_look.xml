@@ -2,12 +2,12 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true" 
     	  android:state_pressed="false" 
-    	  android:drawable="@drawable/roundbtnpushed" />
+    	  android:drawable="@drawable/round_green_trans_pushed" />
     <item android:state_focused="true" 
     	  android:state_pressed="true"
-    	  android:drawable="@drawable/roundbtnpushed" />
+    	  android:drawable="@drawable/round_green_trans_pushed" />
     <item android:state_focused="false" 
     	  android:state_pressed="true"
-	  	  android:drawable="@drawable/roundbtnpushed" />
-    <item android:drawable="@drawable/roundbtnunpushed" />
+	  	  android:drawable="@drawable/round_green_trans_pushed" />
+    <item android:drawable="@drawable/round_bl" />
 </selector>
