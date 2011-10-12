@@ -33,6 +33,8 @@ __interrupt void USCI0RX_ISR(void)
 	if (bluetooth_rx_buf) {
 		if (bluetooth_rx_buf->wr_ptr < bluetooth_rx_buf->buf_size - 1) {
 			bluetooth_rx_buf->buf[bluetooth_rx_buf->wr_ptr++] = UCA0RXBUF;
+		} else {
+			char dummy = UCA0RXBUF;
 		}
 	}
 
