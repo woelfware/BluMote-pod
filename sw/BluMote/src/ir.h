@@ -6,6 +6,9 @@
 #define IR_H
 
 #include <stdbool.h>
+#include "buffer.h"
+
+extern uint16_t ccr0_timing;	/* used for the CCR0 timer */
 
 uint8_t get_ir_carrier_frequency();
 

@@ -6,6 +6,7 @@
 #include "btime.h"
 #include "config.h"
 #include "hw.h"
+#include "ir.h"
 
 static volatile int_fast32_t sys_tick = 0;
 
@@ -72,7 +73,7 @@ void reset_rn42()
 #pragma vector = TIMERA0_VECTOR
 __interrupt void TIMERA0_ISR(void)
 {
-	CCR0 += ((SYS_CLK * 1000) / (IR_CARRIER_FREQ * 2) - 1);
+	CCR0 += ccr0_timing;
 	P1OUT ^= BIT4 | BIT5;
 }
 

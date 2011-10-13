@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <msp430.h>
 #include "blumote.h"
-#include "buffer.h"
 #include "config.h"
 #include "hw.h"
 #include "ir.h"
@@ -13,8 +12,9 @@
 #define is_space() (P1IN & BIT3)
 #define is_pulse() !is_space()
 
+uint16_t ccr0_timing = 0;
+
 static int_fast32_t gap = 0;	/* time between packets */
-static uint16_t ccr0_timing = 0;	/* used for the CCR0 timer */
 static uint8_t ir_carrier_frequency = 0;	/* pulse tx frequency in kHz */
 
 static void carrier_freq(bool on)
