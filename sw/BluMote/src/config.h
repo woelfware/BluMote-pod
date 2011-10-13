@@ -13,7 +13,6 @@
 #define SYS_CLK	(16)	/* MHz */
 #define US_PER_SYS_TICK		(4)
 
-#define IR_CARRIER_FREQ		(38)	/* kHz */
 #define IR_LEARN_CODE_TIMEOUT	(20000000)	/* us */
 #define MAX_FILTERED_SPACE_TIME	(200)	/* us */
 #define NBR_IR_BURSTS	(3)

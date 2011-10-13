@@ -93,7 +93,7 @@ static void ir_xmit()
 		return;
 	}
 
-	update_ccr0_timing();
+	update_ccr0_timing(get_ir_carrier_frequency());
 
 	/* blast the ir code */
 	for ( ; repeat_cnt; --repeat_cnt) {

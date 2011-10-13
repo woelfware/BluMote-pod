@@ -12,21 +12,8 @@
 #define is_space() (P1IN & BIT3)
 #define is_pulse() !is_space()
 
-uint16_t ccr0_timing = 0;
-
 static int_fast32_t gap = 0;	/* time between packets */
 static uint8_t ir_carrier_frequency = 0;	/* pulse tx frequency in kHz */
-
-static void carrier_freq(bool on)
-{
-	if (on) {
-		CCR0 = TAR + ccr0_timing;  /* Reset timing */
-		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */
-	} else {
-		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
-		P1OUT &= ~(BIT4 | BIT5);	/* Turn off IR LED */
-	}
-}
 
 static void find_pkt_end(int starting_addr)
 {
@@ -109,8 +96,9 @@ static void get_carrier_frequency()
 {
 	int_fast32_t space = 0,
 		elapsed_time = 0,
-		tmp_ir_carrier_frequency;
+		ir_carrier_freq;
 	uint16_t pulses = 0;
+	uint8_t const MIN_IR_CARRIER_FREQ = 38;	/* adjust for limitations of the TACC0 register */
 
 	/* wait until the start of the packet */
 	(void)get_sys_tick();
@@ -131,15 +119,16 @@ static void get_carrier_frequency()
 		space = get_us();
 	}
 
-	tmp_ir_carrier_frequency = ((pulses * 1000000) / elapsed_time) + 500/*for rounding*/;	/* Hz */
-	tmp_ir_carrier_frequency /= 1000;	/* convert to kHz */
-	ir_carrier_frequency = (tmp_ir_carrier_frequency < UINT8_MAX)
-		? (uint8_t)tmp_ir_carrier_frequency : UINT8_MAX;
-
-	/* adjust for limitations of the TACC0 register */
-	if (ir_carrier_frequency < 38) {
-		ir_carrier_frequency = 38;
+	ir_carrier_freq = ((pulses * 1000000) / elapsed_time) + 500/*for rounding*/;	/* Hz */
+	ir_carrier_freq /= 1000;	/* convert to kHz */
+	if (ir_carrier_freq < UINT8_MAX) {
+		if (ir_carrier_freq < MIN_IR_CARRIER_FREQ) {
+			ir_carrier_freq = MIN_IR_CARRIER_FREQ;
+		}
+	} else {
+		ir_carrier_freq = UINT8_MAX;
 	}
+	set_ir_carrier_frequency(ir_carrier_freq);
 
 	return;
 }
@@ -271,11 +260,6 @@ bool ir_tx(volatile struct buf *abort)
 	}
 
 	return false;
-}
-
-void update_ccr0_timing()
-{
-	ccr0_timing = (SYS_CLK * 1000) / (ir_carrier_frequency * 2) - 1;
 }
 
 void set_ir_carrier_frequency(uint8_t frequency)
