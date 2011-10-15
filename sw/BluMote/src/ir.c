@@ -22,7 +22,7 @@ static void find_pkt_end(int starting_addr)
 		(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(uint16_t))];
 
 	while (ptr <= end_addr) {
-		if (*ptr > gap) {
+		if ((*ptr > gap) || (*ptr == UINT16_MAX)) {
 			ptr++;
 			uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
 			break;
@@ -137,7 +137,7 @@ static void get_pkt_gap()
 {
 	int_fast32_t space = 0,
 		my_gap[2] = {0, 0},
-		ttl = 2000000;	/* sample the gaps for 2 second */
+		ttl = 400000;	/* sample the gaps for 400 ms */
 
 	gap = 0;
 
@@ -197,7 +197,7 @@ static void mult_sys_tick(int starting_addr)
 		(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(*ptr))];
 
 	while (ptr <= end_addr) {
-		sys_time = *ptr * US_PER_SYS_TICK;
+		sys_time = *ptr * (int_fast32_t)US_PER_SYS_TICK;
 
 		*ptr++ = (sys_time <= UINT16_MAX) ? sys_time : UINT16_MAX;
 	} 
