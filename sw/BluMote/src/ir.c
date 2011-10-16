@@ -226,6 +226,7 @@ bool ir_learn()
 
 bool ir_tx(volatile struct buf *abort)
 {
+	int const rd_ptr = uber_buf.rd_ptr;
 	int_fast32_t ttl;
 	bool done = false;
 
@@ -258,6 +259,8 @@ bool ir_tx(volatile struct buf *abort)
 			ttl -= get_us();
 		}
 	}
+
+	uber_buf.rd_ptr = rd_ptr;
 
 	return false;
 }
