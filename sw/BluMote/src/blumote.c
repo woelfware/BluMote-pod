@@ -59,15 +59,16 @@ static void restore_bt_rx_buf()
 
 static void ir_xmit()
 {
-	volatile struct buf my_buf = {0, 0, 2};	/* The buf size is known by ir_xmit, so don't change it! */
+	volatile struct buf bt_rx = {0, 0};
 	uint8_t const MIN_IR_XMIT_BYTES = 4;
 	uint8_t repeat_cnt,
 		data_len,
 		buf[2];
 
-	my_buf.buf = buf;
+	bt_rx.buf = buf;
+	bt_rx.buf_size = sizeof(buf);
 
-	set_bluetooth_rx_buf(&my_buf);
+	set_bluetooth_rx_buf(&bt_rx);
 	ENABLE_BT_RX_INT();
 
 	/* verify that we got a good packet */
@@ -97,7 +98,7 @@ static void ir_xmit()
 
 	/* blast the ir code */
 	for ( ; repeat_cnt; --repeat_cnt) {
-		if (ir_tx(&my_buf)) {
+		if (ir_tx(&bt_rx)) {
 			break;
 		}
 	}

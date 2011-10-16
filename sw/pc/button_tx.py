@@ -59,7 +59,7 @@ if __name__ == "__main__":
 	print
 
 	while True:
-		selection = raw_input('Select a button to transmit (-1 to quit):')
+		selection = raw_input('Select a button to transmit (-1 to quit): ')
 		try:
 			selection = int(selection)
 		except ValueError:
