@@ -11,10 +11,10 @@
 #define VERSION_REV	0
 
 #define SYS_CLK	(16)	/* MHz */
-#define US_PER_SYS_TICK		(4)
+#define US_PER_SYS_TICK	(4)
 
-#define IR_LEARN_CODE_TIMEOUT	(20000000)	/* us */
-#define MAX_FILTERED_SPACE_TIME	(200)	/* us */
+#define IR_LEARN_CODE_TIMEOUT	(10000000)	/* us */
+#define MAX_FILTERED_SPACE_TIME	(300)	/* us */
 #define NBR_IR_BURSTS	(3)
 
 #define MAX_UART_WAIT_TIME	(50000)	/* us - time to wait for the first char to arrive */
