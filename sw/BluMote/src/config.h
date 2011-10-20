@@ -15,6 +15,7 @@
 
 #define IR_LEARN_CODE_TIMEOUT	(10000000)	/* us */
 #define MAX_FILTERED_SPACE_TIME	(300)	/* us */
+#define MIN_GAP_TIME	(20000)	/* us */
 #define NBR_IR_BURSTS	(3)
 
 #define MAX_UART_WAIT_TIME	(50000)	/* us - time to wait for the first char to arrive */

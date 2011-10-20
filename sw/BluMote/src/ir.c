@@ -130,6 +130,7 @@ static void find_pkt_end(int starting_addr)
 		header_space_max = header_space + header_space_tolerance,
 		header_space_min = header_space - header_space_tolerance;
 
+	/* find the start of the next packet */
 	while (ptr <= end_addr) {
 		if ((header_pulse_min <= *ptr)
 				&& (*ptr <= header_pulse_max)) {
@@ -139,11 +140,22 @@ static void find_pkt_end(int starting_addr)
 				/* found the start of the next packet */
 				ptr--;
 				uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
-				break;
+				return;
 			}
 			ptr--;
 		}
 		ptr += 2;	/* just need to check pulses, skip over spaces */
+	}
+
+	/* failed to find the end of the packet, try finding the gap */
+	ptr = (uint16_t *)&uber_buf.buf[starting_addr + 6];	/* go to the first space data */
+	while (ptr <= end_addr) {
+		if (*ptr >= MIN_GAP_TIME) {
+			ptr++;
+			uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
+			return;
+		}
+		ptr += 2;	/* just need to check spaces, skip over pulses */
 	}
 }
 
