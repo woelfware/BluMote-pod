@@ -13,7 +13,7 @@ static uint16_t ccr0_timing = 0;
 void carrier_freq(bool on)
 {
 	if (on) {
-		CCR0 = ccr0_timing;  /* Reset timing */
+		CCR0 = TAR + ccr0_timing;  /* Reset timing */
 		CCTL0 |= CCIE;	/* CCR0 interrupt enabled */
 	} else {
 		CCTL0 &= ~CCIE;	/* CCR0 interrupt disabled */
