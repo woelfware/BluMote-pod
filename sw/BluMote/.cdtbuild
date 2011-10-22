@@ -3,7 +3,7 @@
 
 <ManagedProjectBuildInfo>
 <project id="BluMote.com.ti.ccstudio.buildDefinitions.MSP430.ProjectType.1213979968" name="MSP430" projectType="com.ti.ccstudio.buildDefinitions.MSP430.ProjectType">
-<configuration artifactExtension="out" artifactName="BluMote" description="" id="com.ti.ccstudio.buildDefinitions.MSP430.Debug.1680027421" name="Debug" parent="com.ti.ccstudio.buildDefinitions.MSP430.Debug">
+<configuration artifactExtension="out" artifactName="BluMote" description="" id="com.ti.ccstudio.buildDefinitions.MSP430.Debug.1680027421" name="Debug" parent="com.ti.ccstudio.buildDefinitions.MSP430.Debug" postannouncebuildStep="Create flash image: Intel-HEX" postbuildStep="&quot;${CG_TOOL_ROOT}/bin/hex${CG_TOOL_SUFFIX}.exe&quot; -i &quot;${BuildArtifactFileName}&quot; -o &quot;${BuildArtifactFileBaseName}.hex&quot; -order MS -romwidth 16">
 <toolChain id="com.ti.ccstudio.buildDefinitions.MSP430_3.3.exe.DebugToolchain.825939822" name="TI Code Generation Tools" superClass="com.ti.ccstudio.buildDefinitions.MSP430_3.3.exe.DebugToolchain" targetTool="com.ti.ccstudio.buildDefinitions.MSP430_3.3.exe.linkerDebug.921590436">
 <option id="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.1028114409" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS" valueType="stringList">
 <listOptionValue builtIn="false" value="DEVICE_CONFIGURATION_ID=MSP430F2232"/>
@@ -49,7 +49,7 @@
 <macros expandEnvironmentMacros="true"/>
 </toolChain>
 </configuration>
-<configuration artifactExtension="out" artifactName="BluMote" description="" id="com.ti.ccstudio.buildDefinitions.MSP430.Release.2015843461" name="Release" parent="com.ti.ccstudio.buildDefinitions.MSP430.Release">
+<configuration artifactExtension="out" artifactName="BluMote" description="" id="com.ti.ccstudio.buildDefinitions.MSP430.Release.2015843461" name="Release" parent="com.ti.ccstudio.buildDefinitions.MSP430.Release" postannouncebuildStep="Create flash image: Intel-HEX" postbuildStep="&quot;${CG_TOOL_ROOT}/bin/hex${CG_TOOL_SUFFIX}.exe&quot; -i &quot;${BuildArtifactFileName}&quot; -o &quot;${BuildArtifactFileBaseName}.hex&quot; -order MS -romwidth 16">
 <toolChain id="com.ti.ccstudio.buildDefinitions.MSP430_3.3.exe.ReleaseToolchain.2001339398" name="TI Code Generation Tools" superClass="com.ti.ccstudio.buildDefinitions.MSP430_3.3.exe.ReleaseToolchain" targetTool="com.ti.ccstudio.buildDefinitions.MSP430_3.3.exe.linkerRelease.1258854899">
 <option id="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.178450589" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS" valueType="stringList">
 <listOptionValue builtIn="false" value="DEVICE_CONFIGURATION_ID=MSP430F2232"/>
