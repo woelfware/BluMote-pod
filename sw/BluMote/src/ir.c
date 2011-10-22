@@ -116,48 +116,6 @@ static void get_carrier_frequency()
 	return;
 }
 
-static void find_pkt_end(int starting_addr)
-{
-	uint16_t header_pulse = *(uint16_t *)&uber_buf.buf[starting_addr],
-		header_space = *(uint16_t *)&uber_buf.buf[starting_addr + 2],
-		*ptr = (uint16_t *)&uber_buf.buf[starting_addr + 4];	/* go to the first pulse data */
-	uint16_t const * const end_addr =
-			(uint16_t *)&uber_buf.buf[uber_buf.buf_size - (sizeof(uint16_t))],
-		header_pulse_tolerance = header_pulse / 25,	/* +/-4% */
-		header_pulse_max = header_pulse + header_pulse_tolerance,
-		header_pulse_min = header_pulse - header_pulse_tolerance,
-		header_space_tolerance = header_space / 25,	/* +/-4% */
-		header_space_max = header_space + header_space_tolerance,
-		header_space_min = header_space - header_space_tolerance;
-
-	/* find the start of the next packet */
-	while (ptr <= end_addr) {
-		if ((header_pulse_min <= *ptr)
-				&& (*ptr <= header_pulse_max)) {
-			ptr++;
-			if ((header_space_min <= *ptr)
-					&& (*ptr <= header_space_max)) {
-				/* found the start of the next packet */
-				ptr--;
-				uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
-				return;
-			}
-			ptr--;
-		}
-		ptr += 2;	/* just need to check pulses, skip over spaces */
-	}
-
-	/* failed to find the end of the packet, try finding the gap */
-	ptr = (uint16_t *)&uber_buf.buf[starting_addr + 6];	/* go to the first space data */
-	while (ptr <= end_addr) {
-		if (*ptr++ >= (MIN_GAP_TIME / US_PER_SYS_TICK)) {
-			uber_buf.wr_ptr = (uint8_t *)ptr - uber_buf.buf;
-			return;
-		}
-		ptr++;	/* just need to check spaces, skip over pulses */
-	}
-}
-
 static uint16_t get_ttl()
 {
 	uint16_t ttl = ((uint16_t)uber_buf.buf[uber_buf.rd_ptr] * 0x100)
@@ -193,8 +151,6 @@ bool ir_learn()
 		return true;
 	}
 	get_carrier_frequency();
-
-	find_pkt_end(starting_addr);
 
 	mult_sys_tick(starting_addr);
 	fix_endianness(starting_addr);
