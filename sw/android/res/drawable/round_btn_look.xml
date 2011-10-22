@@ -9,5 +9,5 @@
     <item android:state_focused="false" 
     	  android:state_pressed="true"
 	  	  android:drawable="@drawable/round_green_trans_pushed" />
-    <item android:drawable="@drawable/round_bl" />
+    <item android:drawable="@drawable/round_red" />
 </selector>

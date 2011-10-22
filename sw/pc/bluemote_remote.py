@@ -131,16 +131,15 @@ if __name__ == "__main__":
 			print "%s version: %s" % component
 		'''
 
-		while True:
-			if (False and os.path.exists('orion_1.pkl')):
-				orion_1 = open('orion_1.pkl', 'rb')
-				key_code = cPickle.load(orion_1)
-			else:
-				print "Please push a button on your remote."
-				key_code = bm_remote.learn()
-				orion_1 = open('orion_1.pkl', 'wb')
-				cPickle.dump(key_code, orion_1, cPickle.HIGHEST_PROTOCOL)
-			orion_1.close()
+		if (False and os.path.exists('orion_1.pkl')):
+			orion_1 = open('orion_1.pkl', 'rb')
+			key_code = cPickle.load(orion_1)
+		else:
+			print "Please push a button on your remote."
+			key_code = bm_remote.learn()
+			orion_1 = open('orion_1.pkl', 'wb')
+			cPickle.dump(key_code, orion_1, cPickle.HIGHEST_PROTOCOL)
+		orion_1.close()
 
 		'''
 		print 'Transmitting 5 times.'
