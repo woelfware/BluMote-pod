@@ -2,7 +2,6 @@ package com.woelfware.blumote;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -49,8 +48,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 import com.woelfware.blumote.Activities.ImageActivityItem;
-import com.woelfware.blumote.Pod.BT_STATE;
-import com.woelfware.blumote.Pod.Codes;
 import com.woelfware.database.DeviceDB;
 
 /**
@@ -65,9 +62,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	@SuppressWarnings("unused")
 	private static final String TAG = "BlueMote";
 	static final boolean DEBUG = false; // set true to enable extra debugging messages
-	
-	private static final int ERROR = -1;
-	
+		
 	// set false for using the emulator for testing UI
 	static final boolean ENABLE_BT = true;
 
@@ -1403,73 +1398,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		}
 	}
 
-	/**
-	 * 
-	 * @param startingOffset
-	 */
-	protected int findEndOfPkt() {
-		int headerPulseTolerance = 25; // 1/25 = +/-4%
-		int headerSpaceTolerance = 25; // 1/25 = +/-4%
-		int offset = 0;
-		int headerPulse = (Pod.pod_data[offset++]<<8) | Pod.pod_data[offset++];
-		int headerSpace = (Pod.pod_data[offset++]<<8) | Pod.pod_data[offset++];
-		int endOffset = Pod.pod_data.length - 1; // last index -1 to account for integer size extractions
-		int headerPulseMax = headerPulse + headerPulse/headerPulseTolerance;
-		int headerPulseMin = headerPulse - headerSpace/headerPulseTolerance;
-		int headerSpaceMax = headerSpace + headerSpace/headerSpaceTolerance;
-		int headerSpaceMin = headerSpace - headerSpace/headerSpaceTolerance;
-		int workingData;
-		
-		offset = 4; // start of first pulse
-		workingData = (Pod.pod_data[offset++]<<8) | Pod.pod_data[offset++];
-		// find the start of the next pkt
-		while (offset <= endOffset) {						
-			if (headerPulseMin <= workingData && workingData <= headerPulseMax) {
-				workingData = (Pod.pod_data[offset++]<<8) | Pod.pod_data[offset++]; // get space
-				if (headerSpaceMin <= workingData && workingData <= headerSpaceMax) {
-					// found the start of the next packet, return offset right before it
-					return (offset - 2);
-				}
-			}
-			// skip the space, just need to check pulses
-			offset += 4;
-		}
-		
-		// if we get here we failed to find end of pkt with normal algorithm
-		// try finding the gap
-		offset = 6; // go to the first space data : HP HS P S
-        while (offset <= endOffset) {
-        	workingData = (Pod.pod_data[offset++]<<8) | Pod.pod_data[offset++];
-            if (workingData >= (Pod.MIN_GAP_TIME / Pod.US_PER_SYS_TICK)) {
-            	return offset;
-            }
-        }
-        
-        // if we fail at this then return an error
-        return ERROR;
-	}
 	
-	/**
-	 * Pass in the offset in the array that has the first piece of data to analyze. 
-	 * Analyzes the data from the pod to determine the packet to store to the DB.
-	 * @param startingAddr
-	 */
-	protected void processRawData() {
-		Pod.learn_state = Pod.LEARN_STATE.IDLE; 
-		dismissDialog(DIALOG_LEARN_WAIT);
-		
-		int endingOffset = findEndOfPkt();
-		
-		if (endingOffset != ERROR) {
-			// need to set the size field to be the endingOffset....before calling storebutton
-		} else {
-			Toast.makeText(this, "Data was not good, please retry",
-					Toast.LENGTH_SHORT).show();
-		}
-		// after data is processed, store it to the database
-		
-		storeButton();
-	}
 	
 	/**
 	 * This method should be called whenever we receive a byte[] from the pod.
@@ -1554,7 +1483,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 								// is the # of bytes of IR data, so adding 2 gives (n+2)th index.
 								// After last byte received then data_index points to an index after
 								// the last so we exit the collecting routine and store data.
-								processRawData(); // first 3 bytes are not to be analyzed
+								Pod.learn_state = Pod.LEARN_STATE.IDLE; 
+								dismissDialog(DIALOG_LEARN_WAIT);
+								Pod.processRawData(this); // first 3 bytes are not to be analyzed
 								return;
 							}							
 							bytes--;
