@@ -1431,7 +1431,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						// if we got here then we are on the second byte of data
 						if (Utilities.isGreaterThanUnsignedByte(
 								response[index], 0)) {
-							Pod.pod_data = new byte[(0x00FF & response[index]) + 3];  
+							Pod.pod_data = new byte[(0x00FF & response[index]) + Pod.HP_OFFSET];  
 							// first three bytes are 'pkt_length carrier_freq reserved' 
 							Pod.pod_data[Pod.data_index++] = response[index];
 							bytes--;

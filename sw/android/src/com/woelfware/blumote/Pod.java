@@ -21,10 +21,22 @@ class Pod {
 	static final int HDR_PULSE_TOL = 25; // 1/25 = +/-4%
 	static final int HDR_SPACE_TOL = 25; // 1/25 = +/-4%
 	static final int GAP_TOL = 10; // 1/10 = +/- 10%
+	// define offsets to important pieces of data in bytestream
+	static final int LENGTH_OFFSET = 0; // length of data sent from pod 
+										// (minus length/ack/reserved)
+	static final int MODFREQ_OFFSET = 1; // modulation frequency
+	static final int RESERVED = 2; // reserved byte
+	static final int DATA_SIZE = 2; // # bytes of each data element
+	static final int HP_OFFSET = RESERVED + 1; // header space
+	static final int HS_OFFSET = HP_OFFSET + DATA_SIZE; // header pulse
+	static final int FPULSE_OFFSET = HS_OFFSET + DATA_SIZE; // First pulse after header
+	static final int FSPACE_OFFSET = FPULSE_OFFSET + DATA_SIZE; // First space after header
 	
 	// keeps track of bytes accumulated in LEARN_MODE
     //private static byte[] learn_data;
     static int data_index = 0;
+    
+    static int offset = 0; // keeps track of offset in pod_data being retrieved
     
     enum LEARN_STATE {
     	IDLE, CARRIER_FREQ, PKT_LENGTH, RESERVED, COLLECTING
@@ -63,45 +75,89 @@ class Pod {
     }    
     
     static int debug_send = 0;
+       
+    private static int popInt() {
+    	try {
+	    	int upperByte = 0x00FF & (byte)pod_data[offset++];
+	    	int lowerByte = 0x00FF & (byte)pod_data[offset++];
+	    	return (upperByte<<8) | lowerByte;
+    	} catch (ArrayIndexOutOfBoundsException e ) {
+    		return 0;
+    	}
+    }
     
-    /**
-	 * 
-	 * @param startingOffset
-	 */
-	protected static int findEndOfPkt() {	
-		int minGapTime = MIN_GAP_TIME;
-		int offset = 0;
-		int headerPulse = (pod_data[offset++]<<8) | pod_data[offset++];
-		int headerSpace = (pod_data[offset++]<<8) | pod_data[offset++];
-		int endOffset = pod_data.length - 1; // last index -1 to account for integer size extractions
-		int headerPulseMax = headerPulse + headerPulse/HDR_PULSE_TOL;
+    private static int getLastOffset() {
+    	// last offset is length as computed by pod + offset of first real data element
+		int length = 0x00FF & (byte)pod_data[LENGTH_OFFSET];
+		return (length + HP_OFFSET);
+    }
+    
+    private static int matchHeaders() {
+		offset = HP_OFFSET; // start of actual data
+		    	    	
+    	int headerPulse = popInt();
+		int headerSpace = popInt();
+    	int headerPulseMax = headerPulse + headerPulse/HDR_PULSE_TOL;
 		int headerPulseMin = headerPulse - headerSpace/HDR_PULSE_TOL;
 		int headerSpaceMax = headerSpace + headerSpace/HDR_SPACE_TOL;
 		int headerSpaceMin = headerSpace - headerSpace/HDR_SPACE_TOL;
+    	
 		int workingData;
+		int endOffset = getLastOffset();
 		
-		offset = 4; // start of first pulse
-		workingData = (pod_data[offset++]<<8) | pod_data[offset++];
+    	offset = FPULSE_OFFSET; // start of first pulse after header
+		workingData = popInt();
 		// find the start of the next pkt
 		while (offset <= endOffset) {						
 			if (headerPulseMin <= workingData && workingData <= headerPulseMax) {
-				workingData = (pod_data[offset++]<<8) | pod_data[offset++]; // get space
+				workingData = popInt(); // get space
 				if (headerSpaceMin <= workingData && workingData <= headerSpaceMax) {
-					// found the start of the next packet, return offset right before it
-					return (offset - 2);
+					// found the start of the next packet, return offset right before header
+					return (offset - 2*DATA_SIZE);
 				}
 			}
-			// skip over the spaces, start by checking pulses only
-			offset += 4;
+			
+			popInt(); // skip over the spaces, start by checking pulses only
+			workingData = popInt(); // grab the pulse
 		}
 		
-		// if we get here we failed to find end of pkt with normal algorithm
-		
-		// try finding the gap by sorting the 3 largest gaps in the data
-		offset = 6; // go to first space data : HP HS P S
+		// if we failed to find it , return ERROR
+		return ERROR;
+    }
+    
+    private static int searchGapSize(int minGapTime) {
+    	int workingData;
+    	int endOffset = getLastOffset();
+    	
+    	// try finding the gap using fixed size estimate
+		offset = FSPACE_OFFSET; // go to the first space data : HP HS P S
+        while (offset <= endOffset) {
+        	workingData = popInt();
+            if (workingData >= minGapTime) {
+            	return offset;
+            }
+            popInt(); // skip over the pulses
+        }
+        
+        // if we fail at this then return an error
+        return ERROR;
+    }
+    
+    private static int largeSpace() {    	
+    	int minGapTime = MIN_GAP_TIME;    	
+    	return searchGapSize(minGapTime);    	
+    }
+    
+    private static int threeLargestSpaces() {
+    	int workingData;
+    	int endOffset = getLastOffset();
+    	int minGapTime = MIN_GAP_TIME; 
+    		
+    	// try finding the gap by sorting the 3 largest gaps in the data
+		offset = FSPACE_OFFSET; // go to first space data : HP HS P S
 		int[] threeLargest = {0, 0, 0}; // need to save three largest values			
 		while (offset <= endOffset) {
-			workingData = (pod_data[offset++]<<8) | pod_data[offset++];
+			workingData = popInt();
 			if (workingData > threeLargest[0]) {
 				if (workingData > threeLargest[1] ) {
 					if (workingData > threeLargest[2] ) {
@@ -113,7 +169,7 @@ class Pod {
 					threeLargest[0] = workingData;
 				}
 			}
-			offset += 2; // skip over the pulses
+			popInt(); // skip over the pulses
 		}
 		// now compare the 3 largest values and see if they 
 		// are relatively close (if so then this must be the gap)
@@ -142,17 +198,31 @@ class Pod {
 			minGapTime = threeLargest[0] - threeLargest[0]/GAP_TOL;
 		}
 		
-		// try finding the gap
-		offset = 6; // go to the first space data : HP HS P S
-        while (offset <= endOffset) {
-        	workingData = (pod_data[offset++]<<8) | pod_data[offset++];
-            if (workingData >= (minGapTime / US_PER_SYS_TICK)) {
-            	return offset;
-            }
-        }
-        
-        // if we fail at this then return an error
-        return ERROR;
+		return searchGapSize(minGapTime);
+    }
+    
+    /**
+	 * 
+	 * @param startingOffset
+	 */
+	protected static int findEndOfPkt() {			
+
+		int lastIndex; 
+		lastIndex = matchHeaders();
+		if (lastIndex != ERROR) {
+			return lastIndex;
+		} 
+		lastIndex = largeSpace();
+		if (lastIndex != ERROR) {
+			return lastIndex;
+		}
+		lastIndex = threeLargestSpaces();
+		if (lastIndex != ERROR) {
+			return lastIndex;
+		}				
+		
+		// if all methods fail, then return error
+		return ERROR;
 	}
 	
 	/** 
@@ -164,9 +234,13 @@ class Pod {
 		int endingOffset = findEndOfPkt();
 		
 		if (endingOffset != ERROR) {			
-			// need to set the size field to be the endingOffset....before calling storebutton
-			// the size is the 0th element of the array
-			pod_data[0] = (byte)(endingOffset + 1);
+			// need to set the size field to be the endingOffset - informational bytes
+			// endOffset points to the data element after the last....
+			pod_data[0] = (byte)(endingOffset-HP_OFFSET);
+			// now need to trim the pod_data to be the exact size of the data
+			byte[] temp = new byte[endingOffset];
+			System.arraycopy(pod_data, 0, temp, 0, endingOffset);
+			pod_data = temp;
 			// after data is processed, store it to the database		
 			caller.storeButton();
 		} else {
