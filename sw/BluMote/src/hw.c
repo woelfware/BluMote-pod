@@ -10,6 +10,8 @@
 static volatile int_fast32_t sys_tick = 0;
 static uint16_t ccr0_timing = 0;
 
+int_fast32_t baud_rate = 0;
+
 void carrier_freq(bool on)
 {
 	if (on) {
@@ -47,9 +49,7 @@ void init_hw()
 	P3DIR = BIT0 | BIT1 | BIT3;	/* reset, baud_rate, PIO3 */ 
 	P3OUT = BIT0;
 	UCA0CTL1 |= UCSSEL_2;	/* SMCLK */
-	UCA0BR0 = 138;		/* 16MHz 115200 */
-	UCA0BR1 = 0;		/* 16MHz 115200 */
-	UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;	/* Modulation UCBRSx = 7 */
+	set_baud_115200();
 	UCA0CTL1 &= ~UCSWRST;	/* Initialize USCI state machine */
 	IE2 |= UCA0RXIE;	/* Enable USCI_A0 RX interrupt */
 
@@ -78,6 +78,22 @@ void reset_rn42()
 	wait_us(BLUETOOTH_RESET_HOLD_TIME);
 	P3OUT |= BIT0;
 	wait_us(BLUETOOTH_STARTUP_TIME);
+}
+
+void set_baud_115200()
+{
+	UCA0BR0 = 138;		/* 16MHz 115200 */
+	UCA0BR1 = 0;		/* 16MHz 115200 */
+	UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;	/* Modulation UCBRSx = 7 */
+	baud_rate = 115200;
+}
+
+void set_baud_9600()
+{
+	UCA0BR0 = 138;		/* 16MHz 9600 */
+	UCA0BR1 = 0;		/* 16MHz 9600 */
+	UCA0MCTL = UCBRS2 + UCBRS1;	/* Modulation UCBRSx = 6 */
+	baud_rate = 9600;
 }
 
 void update_ccr0_timing(uint8_t ir_carrier_frequency)

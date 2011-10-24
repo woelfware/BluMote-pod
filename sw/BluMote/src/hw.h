@@ -24,6 +24,12 @@ void init_hw();
 
 void reset_rn42();
 
+void set_baud_115200();
+
+void set_baud_9600();
+
 void update_ccr0_timing(uint8_t ir_carrier_frequency);
+
+extern int_fast32_t baud_rate;
 
 #endif /*HW_H*/

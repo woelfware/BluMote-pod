@@ -20,6 +20,7 @@ static void send_cmd(struct buf *const bluetooth_rx_buf,
 	char const * const cmd,
 	int const cmd_len);
 static void send_NAK();
+static bool set_baudrate(struct buf * const bluetooth_rx_buf);
 static bool set_cmd_mode(struct buf * const bluetooth_rx_buf);
 static void set_exit_cmd_mode(struct buf * const bluetooth_rx_buf);
 static void set_latency(struct buf * const bluetooth_rx_buf);
@@ -130,12 +131,12 @@ static void send_cmd(struct buf *const bluetooth_rx_buf,
 	uber_buf.rd_ptr = 0;
 	uber_buf.wr_ptr = cmd_len;
 
-	/* tx cmd mode */
+	/* tx cmd */
 	bluetooth_tx(&uber_buf);
 
 	bluetooth_rx_buf->rd_ptr = bluetooth_rx_buf->wr_ptr = 0;
 
-	/* rx cmd mode */
+	/* rx cmd */
 	get_rn42_data(bluetooth_rx_buf, MAX_UART_WAIT_TIME);
 }
 
@@ -144,6 +145,41 @@ static void send_NAK()
 	uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
 	uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_NAK;
 	bluetooth_tx(&uber_buf);
+}
+
+static bool set_baudrate(struct buf * const bluetooth_rx_buf)
+{
+	char const * const str_set_baudrate = "SU,11\r\n",	/* 115,200 baud */
+		* const str_rx_set_baudrate_aok = "AOK\r\n",
+		* const str_rx_set_baudrate_err = "ERR\r\n";
+	bool rc = true;
+
+	send_cmd(bluetooth_rx_buf,
+		str_set_baudrate,
+		strlen(str_set_baudrate));
+
+	/* analyze the result */
+	if (memcmp((const void *)bluetooth_rx_buf->buf,
+			str_rx_set_baudrate_aok,
+			strlen(str_rx_set_baudrate_aok))) {
+		if (memcmp((const void *)bluetooth_rx_buf->buf,
+				str_rx_set_baudrate_err,
+				strlen(str_rx_set_baudrate_err))) {
+			/* get an err... at least we're talking.
+			 * retry setting the rn-42 to 115,200 baud.
+			 */
+			send_cmd(bluetooth_rx_buf,
+				str_set_baudrate,
+				strlen(str_set_baudrate));
+			if (memcmp((const void *)bluetooth_rx_buf->buf,
+					str_rx_set_baudrate_aok,
+					strlen(str_rx_set_baudrate_aok))) {
+				rc = false;
+			}
+		}
+	}
+
+	return rc;
 }
 
 static bool set_cmd_mode(struct buf * const bluetooth_rx_buf)
@@ -262,16 +298,37 @@ void init_rn42()
 
 	reset_bluetooth();
 	set_bluetooth_rx_buf(&bluetooth_rx_buf);
+try_9600_baud:
 	if (!set_cmd_mode(&bluetooth_rx_buf)) {
 		reset_bluetooth();
 		if (!set_cmd_mode(&bluetooth_rx_buf)) {
+			if (baud_rate == 115200) {
+				set_baud_9600();
+				goto try_9600_baud;
+			} else {
+				set_baud_115200();
+			}
+
 			set_bluetooth_rx_buf(NULL);
-			
+
 			/* something isn't working - reboot */
 			WDTCTL = WDT_MRST_32 + ~WDTHOLD;
 			while (1);
 		}
 	}
+
+	if (baud_rate == 9600) {
+		if (set_baudrate(&bluetooth_rx_buf)) {
+			set_baud_115200();
+		} else {
+			set_bluetooth_rx_buf(NULL);
+
+			/* something isn't working - reboot */
+			WDTCTL = WDT_MRST_32 + ~WDTHOLD;
+			while (1);
+		}
+	}
+
 	get_name(&bluetooth_rx_buf);
 	if (memcmp((const void *)bluetooth_rx_buf.buf,
 			BLUMOTE_NAME,
