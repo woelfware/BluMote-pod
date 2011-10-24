@@ -124,12 +124,10 @@ if __name__ == "__main__":
 					found = True
 					break
 
-		'''
 		print 'getting version info'
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
-		'''
 
 		if (False and os.path.exists('orion_1.pkl')):
 			orion_1 = open('orion_1.pkl', 'rb')
