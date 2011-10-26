@@ -41,7 +41,7 @@ class BluetoothChatService {
     private ConnectedThread mConnectedThread;
     private int mState;
 
-    static final int buffer_size = 256;  // size of BT buffer
+    static final int buffer_size = 512;  // size of BT buffer
     
     // Constants that indicate the current connection state
     static final int STATE_NONE = 0;       // we're doing nothing
@@ -339,7 +339,7 @@ class BluetoothChatService {
                     int local_index = index; // working copy of circ buffer index
                     for (int i= 0; i < bytes; i++) {
                     	circ_buffer[local_index] = buffer[i];
-                    	local_index = (local_index + 1) % 255;
+                    	local_index = (local_index + 1) % (buffer_size);
                     }
                     //System.arraycopy(buffer, 0, circ_buffer, index, bytes);
                     
