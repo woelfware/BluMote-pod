@@ -305,15 +305,10 @@ try_9600_baud:
 			if (baud_rate == 115200) {
 				set_baud_9600();
 				goto try_9600_baud;
-			} else {
-				set_baud_115200();
 			}
 
-			set_bluetooth_rx_buf(NULL);
-
-			/* something isn't working - reboot */
-			WDTCTL = WDT_MRST_32 + ~WDTHOLD;
-			while (1);
+			/* something isn't working - reset */
+			volatile int reset = *(int *)0x0000;
 		}
 	}
 
@@ -321,11 +316,8 @@ try_9600_baud:
 		if (set_baudrate(&bluetooth_rx_buf)) {
 			set_baud_115200();
 		} else {
-			set_bluetooth_rx_buf(NULL);
-
-			/* something isn't working - reboot */
-			WDTCTL = WDT_MRST_32 + ~WDTHOLD;
-			while (1);
+			/* something isn't working - reset */
+			volatile int reset = *(int *)0x0000;
 		}
 	}
 
