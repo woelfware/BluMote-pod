@@ -206,8 +206,8 @@ class BluMote(bluetooth.BluetoothSocket):
 			data = [int(line[i:i + 2], 16) for i in xrange(9, len(line) - 3, 2)]
 			msg.extend(data)
 			msg.extend(self.calc_chksum(msg))
-			self.send(struct.pack('B' * len(msg), *msg)
-			self.receive(128)
+			self.send(struct.pack('B' * len(msg), *msg))
+			self.recv(128)
 
 	def set_baud_9600(self):
 		self.send('U,9600,E\r\n')
