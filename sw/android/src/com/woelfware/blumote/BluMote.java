@@ -1417,8 +1417,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					case IDLE:
 						if (response[index] == Pod.Codes.ACK) {
 							Pod.learn_state = Pod.LEARN_STATE.PKT_LENGTH;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1)	% BluetoothChatService.buffer_size;
 							bytes--;
 							Pod.data_index = 0;
 						} else {
@@ -1435,9 +1434,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							// first three bytes are 'pkt_length carrier_freq reserved' 
 							Pod.pod_data[Pod.data_index++] = response[index];
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
-							
+							index = (index + 1)	% BluetoothChatService.buffer_size;							
 							Pod.learn_state = Pod.LEARN_STATE.CARRIER_FREQ;
 						} else {
 							signalError(1);
@@ -1451,8 +1448,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							Pod.learn_state = Pod.LEARN_STATE.RESERVED;
 							Pod.pod_data[Pod.data_index++] = response[index];
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1)	% BluetoothChatService.buffer_size;
 						} else {
 							signalError(1);
 							return;
@@ -1465,8 +1461,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							Pod.learn_state = Pod.LEARN_STATE.COLLECTING;
 							Pod.pod_data[Pod.data_index++] = 0; // default to 0
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1)	% BluetoothChatService.buffer_size;
 						} else {
 							signalError(1);
 							return;
@@ -1489,8 +1484,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 								return;
 							}							
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1)	% BluetoothChatService.buffer_size;
 						} else {
 							signalError(1);
 							return;
@@ -1507,16 +1501,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			break;
 
 		case GET_VERSION:
-			if (response[index] == Pod.Codes.ACK) {
-				try { // catch any unforseen state machine errors.....
+				try { 
 					while (bytes > 0) {
 						switch (Pod.info_state) {
 						case IDLE:
 							if (response[index] == Pod.Codes.ACK) {
-								Pod.pod_data = new byte[4];
+								Pod.pod_data = new byte[Pod.INFO_STATE.values().length]; 
 								Pod.info_state = Pod.INFO_STATE.BYTE0;
-								index = (index + 1)
-										% (BluetoothChatService.buffer_size - 1);
+								index = (index + 1)	% BluetoothChatService.buffer_size;
 								bytes--;
 								Pod.data_index = 0;
 							} else {
@@ -1529,32 +1521,30 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							Pod.pod_data[0] = response[index];
 							Pod.info_state = Pod.INFO_STATE.BYTE1;
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1)	% BluetoothChatService.buffer_size;
 							break;
 
 						case BYTE1:
 							Pod.pod_data[1] = response[index];
 							Pod.info_state = Pod.INFO_STATE.BYTE2;
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1)	% BluetoothChatService.buffer_size;
 							break;
 
 						case BYTE2:
 							Pod.pod_data[2] = response[index];
 							Pod.info_state = Pod.INFO_STATE.BYTE3;
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1)	% BluetoothChatService.buffer_size;
 							break;
 
 						case BYTE3:
 							Pod.pod_data[3] = response[index];
 							Pod.info_state = Pod.INFO_STATE.IDLE;
 							bytes--;
-							index = (index + 1)
-									% (BluetoothChatService.buffer_size - 1);
+							index = (index + 1) % BluetoothChatService.buffer_size;
+							// need to launch window to dump the data to
+							showDialog(DIALOG_SHOW_INFO);
 							break;
 						}
 					}
@@ -1565,10 +1555,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 					BT_STATE = Pod.BT_STATE.IDLE;
 					return;
 				}
-
-				// need to launch window to dump the data to
-				showDialog(DIALOG_SHOW_INFO);
-			}
 			break;
 
 		case ABORT_LEARN:
@@ -1610,16 +1596,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		case DIALOG_SHOW_INFO:
 			// define dialog			
 			StringBuilder podData = new StringBuilder();
-			podData.append("Component ID: ");
-			podData.append(Pod.pod_data[0] + "\n");
-			podData.append("Major Revision: ");
-			podData.append(Pod.pod_data[1] + "\n");
-			podData.append("Minor Revision: ");
-			podData.append(Pod.pod_data[2] + "\n");
-			podData.append("Revision: ");
+			//podData.append("Component ID: ");
+			podData.append(Pod.componentMap.get(new Integer(Pod.pod_data[0])));
+			podData.append(" Rev: ");
+			podData.append(Pod.pod_data[1] + ".");
+			podData.append(Pod.pod_data[2] + ".");
 			podData.append(Pod.pod_data[3]);
 			builder = new AlertDialog.Builder(this);
-			// .setCancelable(false)
 			builder.setMessage(podData).setTitle("Pod Information");
 			alert = builder.create();
 			return alert;

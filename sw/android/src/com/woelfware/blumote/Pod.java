@@ -1,6 +1,7 @@
 package com.woelfware.blumote;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 import android.widget.Toast;
 
@@ -76,6 +77,14 @@ class Pod {
     
     static int debug_send = 0;
       
+    // component ID is defined in blumote spec
+    static final HashMap<Integer, String> componentMap = new HashMap<Integer,String>();
+    static {
+        componentMap.put(0, "Hardware");
+        componentMap.put(1, "Firmware");
+        componentMap.put(2, "Software");
+    }
+    
     private static int popInt() {
     	try {
 	    	int upperByte = 0x00FF & (byte)pod_data[offset++];
