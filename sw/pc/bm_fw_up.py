@@ -99,15 +99,33 @@ class BluMote(bluetooth.BluetoothSocket):
 		self.send('$$$')
 		return self.recv(128)
 
+	def exit_bsl(self):
+		test = 1 << 2	# PIO-10
+		rst = 1 << 3	# PIO-11
+
+		# http://www.ti.com/lit/ug/slau319a/slau319a.pdf
+		# rst  ________|------
+		# test _______________
+		self.send('S*,%02X%02X\r\n' % (rst | test, 0))
+		self.recv(128)
+		self.send('S*,%02X%02X\r\n' % (rst, rst))
+		self.recv(128)
+
 	def get_buffer_size(self):
 		msg = (SYNC,)
 		self.send(struct.pack('B' * len(msg), *msg))
 		return self.recv(128)
 
-	def read_mem(self):
-		print 'sending rx password...'
-		msg = self.rx_password()
+	def mass_erase(self):
+		self.sync()
 
+		msg = [0x80, 0x18, 0x04, 0x04, 0x00, 0x00, 0x06, 0xA5]
+		msg.extend(self.calc_chksum(msg))
+
+		self.send(struct.pack('B' * len(msg), *msg))
+		return self.recv(128)
+
+	def read_mem(self):
 		print 'sending rx data block...'
 		self.sync()
 		msg = (0x80, 0x14, 0x04, 0x04, 0xF0, 0x0F, 0x0E, 0x00, 0x85, 0xE0)
@@ -122,38 +140,22 @@ class BluMote(bluetooth.BluetoothSocket):
 		self.sync()
 		msg = [0x80, 0x10, 0x24, 0x24, 0x00, 0x00, 0x00, 0x00]
 		passwd = (
-			0xFF,	# 0xE0
-			0xFF,	# 0xE1
-			0xFF,	# 0xE2
-			0xFF,	# 0xE3
-			0xFF,	# 0xE4
-			0xFF,	# 0xE5
-			0xFF,	# 0xE6
-			0xFF,	# 0xE7
-			0xFF,	# 0xE8
-			0xFF,	# 0xE9
-			0xFF,	# 0xEA
-			0xFF,	# 0xEB
-			0xFF,	# 0xEC
-			0xFF,	# 0xED
-			0x78,	# 0xEE
-			0xE6,	# 0xEF
-			0x56,	# 0xF0
-			0xEA,	# 0xF1
-			0xE6,	# 0xF2
-			0xEA,	# 0xF3
-			0xFF,	# 0xF4
-			0xFF,	# 0xF5
-			0xFF,	# 0xF6
-			0xFF,	# 0xF7
-			0xFF,	# 0xF8
-			0xFF,	# 0xF9
-			0xFF,	# 0xFA
-			0xFF,	# 0xFB
-			0xFF,	# 0xFC
-			0xFF,	# 0xFD
-			0x26,	# 0xFE
-			0xE9)	# 0xFF
+			0xFF, 0xFF,	# 0xFFE0
+			0xFF, 0xFF,	# 0xFFE2
+			0xFF, 0xFF,	# 0xFFE4
+			0xFF, 0xFF,	# 0xFFE6
+			0xFF, 0xFF,	# 0xFFE8
+			0xFF, 0xFF,	# 0xFFEA
+			0xFF, 0xFF,	# 0xFFEC
+			0xFF, 0xFF,	# 0xFFEE
+			0xFF, 0xFF,	# 0xFFF0
+			0xFF, 0xFF,	# 0xFFF2
+			0xFF, 0xFF,	# 0xFFF4
+			0xFF, 0xFF,	# 0xFFF6
+			0xFF, 0xFF,	# 0xFFF8
+			0xFF, 0xFF,	# 0xFFFA
+			0xFF, 0xFF,	# 0xFFFC
+			0xFF, 0xFF)	# 0xFFFE
 
 		msg.extend(passwd)
 		msg.extend(self.calc_chksum(msg))
@@ -183,12 +185,35 @@ class BluMote(bluetooth.BluetoothSocket):
 		msg = ''.join((msg, struct.pack('BB', ckl, ckh)))
 		self.send(msg)
 
+	def send_hex(self, fname):
+		fh = open(fname, 'r')
+
+		for line in fh:
+			# <start_code><byte_cnt><addr><record_type><data><chksum>
+			assert(line[0] == ':')
+			overhead = 1 + 2 + 4 + 2 + 2
+			assert(int(line[1:3], 16) == (len(line) - overhead) / 2)
+			AH = int(line[3:5], 16)
+			AL = int(line[5:7], 16)
+			HDR = 0x80
+			CMD = 0x12
+			LL = len(line[9:-2]) / 2
+			if LL == 0:
+				continue
+			LH = 0
+			L1 = L2 = LL + 4
+			msg = [HDR, CMD, L1, L2, AL, AH, LL, LH]
+			data = [int(line[i:i + 2], 16) for i in xrange(9, len(line) - 3, 2)]
+			msg.extend(data)
+			msg.extend(self.calc_chksum(msg))
+			self.send(struct.pack('B' * len(msg), *msg)
+			self.receive(128)
+
 	def set_baud_9600(self):
 		self.send('U,9600,E\r\n')
 		return self.recv(128)
 
 	def set_baud_115k(self):
-		#self.send('U,115K,E\r\n')
 		self.send('SU,11\r\n')
 		return self.recv(128)
 
@@ -207,6 +232,10 @@ class BluMote(bluetooth.BluetoothSocket):
 			return False
 
 if __name__ == '__main__':
+	if (len(sys.argv) != 2):
+		print 'Usage: %s <blumote.hex>'
+		exit()
+
 	blumotes = find_blumotes()
 	addr = get_target_addr(blumotes, False)
 
@@ -218,13 +247,30 @@ if __name__ == '__main__':
 		bm_up.connect((addr, 1))
 
 		print 'Entering command mode:', bm_up.enter_cmd_mode()
+
 		print 'Entering the BSL...'
 		bm_up.enter_bsl()
+
 		print 'Setting the RN-42 UART baud to 9600:', bm_up.set_baud_9600()
-		print 'Getting some memory: '
-		msg = bm_up.read_mem()
-		print struct.unpack('B' * len(msg), msg)
-		for i in xrange(10):
-			msg = bm_up.recv(128)
-			print struct.unpack('B' * len(msg), msg)
+
+		print 'Mass erase...'
+		msg = bm_up.mass_erase()
+		print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
+
+		print 'sending rx password...'
+		msg = bm_up.rx_password()
+		print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
+
+		msg = bm_up.send_hex(sys.argv[1])
+		print msg
+
+		#print 'Getting some memory: '
+		#msg = bm_up.read_mem()
+		#print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
+		#for i in xrange(10):
+		#	msg = bm_up.recv(128)
+		#	print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
+
+		print 'Exiting the BSL...'
+		bm_up.exit_bsl()
 
