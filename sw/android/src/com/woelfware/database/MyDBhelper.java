@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.os.Environment;
 
-import com.woelfware.blumote.Utilities;
+import com.woelfware.blumote.Util;
 
 public class MyDBhelper extends SQLiteOpenHelper{
 
@@ -44,7 +44,7 @@ public class MyDBhelper extends SQLiteOpenHelper{
         File backupDB = new File(sd, backupDBName);
         	  
 	    if (backupDB.exists()) {
-	        Utilities.FileUtils.copyFile(backupDB, currentDB);
+	        Util.FileUtils.copyFile(backupDB, currentDB);
 	        // Access the copied database so SQLiteHelper will cache it and mark
 	        // it as created.
 	        getWritableDatabase().close();

@@ -1,7 +1,10 @@
 package com.woelfware.blumote;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -18,6 +21,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
@@ -26,7 +30,9 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,18 +40,16 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.ContextMenu.ContextMenuInfo;
-import android.view.GestureDetector.SimpleOnGestureListener;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.woelfware.blumote.Activities.ImageActivityItem;
 import com.woelfware.database.DeviceDB;
@@ -99,6 +103,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	static final int DIALOG_INIT_PROGRESS = 2; 
 	private static final int DIALOG_ABOUT = 3;
 	private static final int DIALOG_LEARN_WAIT = 4;
+	private static final int DIALOG_FW_WAIT = 5;
 
 	// Layout Views
 	private TextView mTitle;
@@ -116,6 +121,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Member object for the chat services
 	private BluetoothChatService mChatService = null;	
 
+	// where to download the list of firmware updates from the web
+	private static final String FW_IMAGE_URL = "http://www.woelfware.com/fw/FW_LOG";
+	
 	// SQL database class
 	DeviceDB device_data;
 	// Shared preferences class - for storing config settings between runs
@@ -853,7 +861,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
 			hapticFeedback = myprefs.getBoolean("hapticPREF", true);			
 			break;
-		}		
+			
+		}				
 	}
 
 	@Override
@@ -928,6 +937,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			
 		case R.id.about:
 			showDialog(DIALOG_ABOUT);
+			return true;
+			
+		case R.id.fw_update:
+			showDialog(DIALOG_FW_WAIT);
+			DownloadTextFileTask downloadFile = new DownloadTextFileTask();
+			downloadFile.execute(FW_IMAGE_URL);
 			return true;
 			
 		case R.id.preferences:
@@ -1098,7 +1113,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
         if (backupDB.exists()) {
         	try {
-        		Utilities.FileUtils.copyFile(backupDB, currentDB);	       
+        		Util.FileUtils.copyFile(backupDB, currentDB);	       
         	} catch (IOException e) {
         		Log.e("IMPORT",e.getMessage(),e);
         		Toast.makeText(this, "Import failed", Toast.LENGTH_SHORT).show();
@@ -1117,7 +1132,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
         if (prefsFile.exists()) {
         	try {
             	backupDB.createNewFile();
-            	Utilities.FileUtils.copyFile(prefsFile, backupDB);
+            	Util.FileUtils.copyFile(prefsFile, backupDB);
             } catch (IOException e) {
             	Log.e("BACKUP",e.getMessage(),e);
             	Toast.makeText(this, "Export failed", Toast.LENGTH_SHORT).show();
@@ -1428,7 +1443,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 					case PKT_LENGTH:
 						// if we got here then we are on the second byte of data
-						if (Utilities.isGreaterThanUnsignedByte(
+						if (Util.isGreaterThanUnsignedByte(
 								response[index], 0)) {
 							Pod.pod_data = new byte[(0x00FF & response[index]) + Pod.HP_OFFSET];  
 							// first three bytes are 'pkt_length carrier_freq reserved' 
@@ -1472,7 +1487,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						if (checkPodDataBounds(bytes)) {
 							Pod.pod_data[Pod.data_index++] = response[index];
 							// first check to see if this is the last byte
-							if (Utilities.isGreaterThanUnsignedByte(
+							if (Util.isGreaterThanUnsignedByte(
 									Pod.data_index, Pod.pod_data[0] + 2)) { 
 								// data index at final position is nth or N+1 total items, pod_data[0]
 								// is the # of bytes of IR data, so adding 2 gives (n+2)th index.
@@ -1661,6 +1676,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			learnWait.setMessage("Aim the remote control at the pod and push the selected button");
             return learnWait;
 			
+		case DIALOG_FW_WAIT:
+			// should create a new progressdialog 
+			// the dialog should exit after the FW image list is downloaded
+			ProgressDialog fwListWait = new ProgressDialog(BluMote.this);
+			fwListWait .setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			fwListWait .setCancelable(true); // don't allow back button to cancel it
+			fwListWait .setMessage("Downloading list of firmware images...");
+            return fwListWait;
+            
 		case DIALOG_ABOUT:
 			// define dialog			
 			StringBuilder aboutDialog = new StringBuilder();
@@ -1740,4 +1764,35 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             // this method unused
         }
     }
+	
+	 private class DownloadTextFileTask extends AsyncTask<String, Integer, String[]> {
+	     protected String[] doInBackground(String... urls) {
+	    	 try {
+	    		 URL url = new URL(urls[0]);
+	             BufferedReader bufferReader = new BufferedReader(
+	            		 new InputStreamReader(url.openStream()));
+	             String StringBuffer;
+	             ArrayList<String> stringText = new ArrayList<String>();
+	             while ((StringBuffer = bufferReader.readLine()) != null) {
+	            	 stringText.add(StringBuffer);
+	             }             
+	             bufferReader.close();
+	                          
+	             String[] returnStrings = new String[stringText.size()];
+	             return stringText.toArray(returnStrings);
+	         } catch (Exception e) {}
+	         return null;
+	     }
+
+	     protected void onPostExecute(String[] result) {
+	         //TODO
+	    	 // cancel the progressDialog and display the results
+	    	 dismissDialog(DIALOG_FW_WAIT);
+	    	 Intent i = new Intent(BluMote.this, FwUpdateActivity.class);
+	    	 // tack on the downloaded lines of text
+	    	 i.putExtra(FwUpdateActivity.FW_IMAGES, result);
+	    	 startActivity(i);
+	    	 return;
+	     }
+	 }
 }

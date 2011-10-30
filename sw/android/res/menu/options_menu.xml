@@ -40,6 +40,7 @@
 			 <!--<item android:title="@string/discoverable" android:id="@+id/discoverable" android:icon="@android:drawable/ic_menu_add" /> -->			 
 			<item android:title="@string/get_pod_info" android:id="@+id/get_info" android:icon="@android:drawable/ic_menu_info_details" />
 			<item android:title="About" android:id="@+id/about" android:icon="@android:drawable/ic_menu_info_details" />
+			<item android:title="Check for firmware updates" android:id="@+id/fw_update"/>
 			<item android:title="Preferences" android:id="@+id/preferences" android:icon="@android:drawable/ic_menu_preferences" />
 			<item android:title="Backup to SD card" android:id="@+id/backup" android:icon="@android:drawable/ic_menu_upload" />
 			<item android:title="Import from SD card" android:id="@+id/restore" android:icon="@android:drawable/ic_menu_recent_history" />
