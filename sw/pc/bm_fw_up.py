@@ -223,6 +223,9 @@ class BluMote(bluetooth.BluetoothSocket):
 		rc = struct.unpack('B' * len(rc), *rc)
 		if rc[0] == 0:
 			print 'rc is 0'
+			if len(rc) > 1:
+				print 'remaining bytes:', [hex(i) for i in rc]
+			print 'Retrieving more bluetooth packets...'
 			rc = self.recv(128)
 			rc = struct.unpack('B' * len(rc), *rc)
 		if rc[0] == DATA_ACK:
