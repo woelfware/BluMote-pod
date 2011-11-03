@@ -189,6 +189,8 @@ class BluMote(bluetooth.BluetoothSocket):
 		fh = open(fname, 'r')
 
 		for line in fh:
+			self.sync()
+			line = line.rstrip('\r\n')
 			# <start_code><byte_cnt><addr><record_type><data><chksum>
 			assert(line[0] == ':')
 			overhead = 1 + 2 + 4 + 2 + 2
@@ -207,7 +209,8 @@ class BluMote(bluetooth.BluetoothSocket):
 			msg.extend(data)
 			msg.extend(self.calc_chksum(msg))
 			self.send(struct.pack('B' * len(msg), *msg))
-			self.recv(128)
+			msg = self.recv(128)
+			print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
 
 	def set_baud_9600(self):
 		self.send('U,9600,E\r\n')
@@ -218,17 +221,16 @@ class BluMote(bluetooth.BluetoothSocket):
 		return self.recv(128)
 
 	def sync(self):
+		print 'Handshaking...'
 		self.send(struct.pack('B', SYNC))
 		rc = self.recv(128)
 		rc = struct.unpack('B' * len(rc), *rc)
 		if rc[0] == 0:
-			print 'rc is 0'
-			if len(rc) > 1:
-				print 'remaining bytes:', [hex(i) for i in rc]
-			print 'Retrieving more bluetooth packets...'
-			rc = self.recv(128)
+			print 'sync received:', [hex(i) for i in rc]
+			self.sync()
 			rc = struct.unpack('B' * len(rc), *rc)
 		if rc[0] == DATA_ACK:
+			print 'Handshake is successful.'
 			return True
 		else:
 			print 'Handshake is unsuccessful.'
@@ -247,6 +249,7 @@ if __name__ == '__main__':
 		exit()
 
 	with BluMote() as bm_up:
+		#bm_up.connect(('00:06:66:42:05:91', 1))
 		bm_up.connect((addr, 1))
 
 		print 'Entering command mode:', bm_up.enter_cmd_mode()
@@ -264,16 +267,10 @@ if __name__ == '__main__':
 		msg = bm_up.rx_password()
 		print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
 
-		msg = bm_up.send_hex(sys.argv[1])
-		print msg
+		print 'sending %s' % (sys.argv[1],)
+		bm_up.send_hex(sys.argv[1])
 
-		#print 'Getting some memory: '
-		#msg = bm_up.read_mem()
-		#print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
-		#for i in xrange(10):
-		#	msg = bm_up.recv(128)
-		#	print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
-
+		print 'Entering command mode:', bm_up.enter_cmd_mode()
 		print 'Exiting the BSL...'
-		bm_up.exit_bsl()
+		bm_up.exit_bsl()	# this resets the firmware, which will in turn reset the rn-42
 
