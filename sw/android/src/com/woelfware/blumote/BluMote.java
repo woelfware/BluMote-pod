@@ -2,6 +2,7 @@ package com.woelfware.blumote;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -83,6 +84,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static final int MISC_RENAME = 7;
 	static final int ACTIVITY_INIT_EDIT = 8;
 	private static final int PREFERENCES = 9;
+	private static final int UPDATE_FW = 10;
 	
 	// Message types sent from the BluetoothChatService Handler
 	static final int MESSAGE_STATE_CHANGE = 1;
@@ -104,7 +106,16 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static final int DIALOG_ABOUT = 3;
 	private static final int DIALOG_LEARN_WAIT = 4;
 	private static final int DIALOG_FW_WAIT = 5;
-
+	private static final int FLASH_PROGRESS_DIALOG = 6;
+	
+	// for firmware flashing process
+	ProgressDialog progressDialog2;
+	
+	private static String FW_LOCATION;
+	
+	// used to lock displaying dialogs for sendCode()
+	private boolean lockDialog = false;
+	
 	// Layout Views
 	private TextView mTitle;
 
@@ -123,6 +134,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// where to download the list of firmware updates from the web
 	private static final String FW_IMAGE_URL = "http://www.woelfware.com/fw/FW_LOG";
+	
+	// the firmware log data we downloaded when requesting a firmware update proccess
+	String[] firmwareRevisions = null;
 	
 	// SQL database class
 	DeviceDB device_data;
@@ -641,7 +655,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * Sends the byte[] to the currently connected bluetooth device
 	 * @param message the byte[] to send
 	 */
-	private void sendMessage(byte[] message) {
+	void sendMessage(byte[] message) {
 		// Check that we're actually connected before trying anything
 		if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
 			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT)
@@ -860,8 +874,20 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// refresh the haptic feedback pref
 			SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
 			hapticFeedback = myprefs.getBoolean("hapticPREF", true);			
-			break;
+			break;			
 			
+		case UPDATE_FW:
+			if (resultCode == Activity.RESULT_OK) {
+				//TODO
+				Bundle return_bundle = data.getExtras();
+				if (return_bundle != null) {
+					FW_LOCATION = return_bundle.getString(FwUpdateActivity.FW_LOCATION);
+					showDialog(FLASH_PROGRESS_DIALOG);
+					FlashFileToPodTask flasher = new FlashFileToPodTask();
+					flasher.execute((Void)null);
+				}
+			}
+			break;
 		}				
 	}
 
@@ -1069,6 +1095,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			mainScreen.setDropDownVis(true);
 			// refresh data behind buttons
 			mainScreen.fetchButtons();
+			return true;
 			
 		case R.id.exit:
 			// quit the application
@@ -1321,8 +1348,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	}
 	
 	/**
-	 * This function sends the command codes to the pod, it is used for everything except 
-	 * the button data which uses {@link sendButton()}
+	 * This function sends the command codes to the pod application firmware
+	 * it is used for everything except the button data which 
+	 * uses {@link sendButton()} and BSL command codes 
+	 * 
 	 * @param code
 	 */
 	protected void sendCode(int code) {
@@ -1356,7 +1385,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			sendMessage(toSend);
 			break;
 		} // end switch
-	}
+	}		
 
 	/**
 	 * called after learn mode is finished and has data to store
@@ -1558,8 +1587,19 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							Pod.info_state = Pod.INFO_STATE.IDLE;
 							bytes--;
 							index = (index + 1) % BluetoothChatService.buffer_size;
-							// need to launch window to dump the data to
-							showDialog(DIALOG_SHOW_INFO);
+
+							if (lockDialog) { // this gets set when we are doing a FW update process
+								lockDialog = false; //always unlock after receiving data
+								Intent i = new Intent(BluMote.this, FwUpdateActivity.class);
+								// tack on the downloaded lines of text
+								i.putExtra(FwUpdateActivity.FW_IMAGES, firmwareRevisions);								
+								startActivityForResult(i, UPDATE_FW);
+								return;
+							} else {
+								// else this request was sent by the menu
+								// create a dialog to display data to user
+								showDialog(DIALOG_SHOW_INFO);
+							}
 							break;
 						}
 					}
@@ -1598,6 +1638,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				}
 			}
 			break;
+			
+		case BSL:
+			// Just log the messages we get from the Pod during BSL
+			Log.v("BSL", response.toString() );
+			break;
+			
+		case SYNC:
+			// post the result to the Pod class
+			Pod.sync_data = response;
 		}
 	}
 
@@ -1703,6 +1752,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			alert = builder.create();
 			return alert;
 			
+		case FLASH_PROGRESS_DIALOG:	          
+			progressDialog2 = new ProgressDialog(BluMote.this);
+            progressDialog2.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog2.setCancelable(false); // don't allow back button to cancel it
+            progressDialog2.setMessage("Loading...");
+            return progressDialog2;
+
+            
 		default:
 			return alert;
 		}
@@ -1784,15 +1841,91 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	         return null;
 	     }
 
-	     protected void onPostExecute(String[] result) {
-	         //TODO
+	     protected void onPostExecute(String[] result) {	
+	    	 // save the data we downloaded for the firmware process
+	    	 firmwareRevisions = result;
+	    	 // get currently installed pod version
+	    	 lockDialog = true;
+	    	 sendCode(Pod.Codes.GET_VERSION);
+	    	 // interpretResponse() has the code to capture the version and start
+	    	 // the firmware update process
 	    	 // cancel the progressDialog and display the results
 	    	 dismissDialog(DIALOG_FW_WAIT);
-	    	 Intent i = new Intent(BluMote.this, FwUpdateActivity.class);
-	    	 // tack on the downloaded lines of text
-	    	 i.putExtra(FwUpdateActivity.FW_IMAGES, result);
-	    	 startActivity(i);
 	    	 return;
 	     }
 	 }
+	 
+	 private class FlashFileToPodTask extends AsyncTask<Void, Integer, Integer> {
+		 	Exception e = null;
+			int byteCounter = 0;   
+			//File temp = BluMote.this.getExternalFilesDir(null);
+
+			@Override 
+			protected Integer doInBackground(Void... voids) {
+				try {				
+					publishProgress(0); // start at 0
+					FileInputStream f = new FileInputStream(new File(FW_LOCATION));
+
+					// first jump into BSL using start sequence
+					BT_STATE = Pod.BT_STATE.BSL;
+					try {
+						Pod.startBSL(BluMote.this);
+					} catch(BslException error) {
+						e = error;
+					} 
+					
+					int count = f.available(); 
+					byte[] buffer = new byte[1024];
+					int len1 = 0;
+					while ( (len1 = f.read(buffer)) > 0 ) {
+						//TODO flash the data to the pod here
+						try {
+							Pod.sendBytes(buffer, len1);
+						} catch (BslException error) {
+							e = error;
+							break;
+						}
+						byteCounter += len1;
+						publishProgress((int) ((byteCounter / (float) count) * 100));
+					}
+					f.close();
+
+				} catch (IOException e) {
+					this.e = e;
+				}
+				return new Integer(byteCounter);
+			}
+
+			@Override
+			protected void onProgressUpdate(Integer... progress) {
+				// update progress bar
+				progressDialog2.setProgress(progress[0]);
+			}
+
+			@Override
+			protected void onPostExecute(Integer bytes) {
+				dismissDialog(FLASH_PROGRESS_DIALOG);
+				// when finished reset bluetooth state
+				BT_STATE = Pod.BT_STATE.IDLE;
+				
+				// tell user it was not successful
+				if (e != null) {
+					Log.e("BSL", e.getMessage());
+					new AlertDialog.Builder(BluMote.this)
+			        	.setIcon(android.R.drawable.ic_dialog_info)
+				        .setTitle(R.string.error_fw_download)
+				        .setPositiveButton(R.string.OK, null)
+				        .show();
+					return;
+				}
+								 
+				// Tell user it was successful
+				new AlertDialog.Builder(BluMote.this)
+		        	.setIcon(android.R.drawable.ic_dialog_info)
+			        .setTitle(R.string.success)
+			        .setPositiveButton(R.string.OK, null)
+			        .show();				
+				return;
+			}
+		}
 }

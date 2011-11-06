@@ -63,4 +63,5 @@
 	<string name="cancel">Cancel</string>
 	<string name="error">Error</string>
 	<string name="error_fw_download">There was an error downloading the file, please try again.</string>
+	<string name="success">Operation Succeeded!</string>
 </resources>

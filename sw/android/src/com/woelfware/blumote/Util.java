@@ -43,6 +43,19 @@ public class Util {
 	    return i;  
 	}
 	
+	/** 
+	 * adds together two byte arrays
+	 * @author keusej
+	 *
+	 */
+	public static byte[] concat(byte[] A, byte[] B) {
+		   byte[] C= new byte[A.length+B.length];
+		   System.arraycopy(A, 0, C, 0, A.length);
+		   System.arraycopy(B, 0, C, A.length, B.length);
+
+		   return C;
+	}
+	
 	public static class FileUtils {
 		/**
 		 * Create a copy of of a file
@@ -72,22 +85,21 @@ public class Util {
 		/**
 		 * checks the md5sum for a given file.  Compares to md5 parameter string.
 		 * @param md5
-		 * @param fileName
+		 * @param fileDir
 		 * @return
 		 */
-		public static boolean checkMD5(String md5, File fileName) {
-			if (md5 == null || md5 == "" || fileName == null) {
+		public static boolean checkMD5(String md5, File fileDir, String fileName) {
+			if (md5 == null || md5 == "" || fileDir == null || fileName == "") {
 				return false;
 			}
-			String calculatedDigest = calculateMD5(fileName);
+			String calculatedDigest = calculateMD5(fileDir, fileName);
 			if (calculatedDigest == null) {
 				return false;
 			}
 			return calculatedDigest.equalsIgnoreCase(md5);
 		}
 
-		public static String calculateMD5(File fileName) {
-			File updateFile = fileName;
+		public static String calculateMD5(File fileDir, String fileName) {
 			MessageDigest digest = null;
 			try {
 				digest = MessageDigest.getInstance("MD5");
@@ -97,7 +109,7 @@ public class Util {
 			
 			InputStream is = null;
 			try {
-				is = new FileInputStream(updateFile);
+				is = new FileInputStream(new File(fileDir, fileName));
 			} catch (FileNotFoundException e) {
 				return null;
 			}

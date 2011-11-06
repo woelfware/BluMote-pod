@@ -1,18 +1,24 @@
 package com.woelfware.blumote;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import android.os.CountDownTimer;
+import android.util.Log;
 import android.widget.Toast;
 
 // codes and state information for blumote pod operation
 class Pod {
 	// private constructor to make this class non-instantiable
 	private Pod() { }
+
+	static BluMote blumote; // reference to blumote instance
 	
 	// note to self, byte is signed datatype
 	static String new_name;
 	static byte[] pod_data;
+	static byte[] sync_data; // data used explicitly for syncing during BSL process
 	
 	// status return codes
 	static final int ERROR = -1;
@@ -62,6 +68,13 @@ class Pod {
         public static final byte ABORT_TRANSMIT = (byte)0x03; // stop repeating IR command
     }
     
+    class BSL_CODES {
+    	public static final String CMD_MODE = "$$$";
+    	public static final byte SYNC = (byte)0x80;
+    	public static final byte DATA_ACK = (byte)0x90;
+    	public static final byte DATA_NAK = (byte)0xA0;
+    }
+    
     // this is to keep track of state machines for example
     // for receiving data from bluetooth interface, how that
     // data should be interpreted
@@ -73,6 +86,8 @@ class Pod {
         ABORT_LEARN, // aborting the learn mode
         DEBUG, // debug mode for testing
         ABORT_TRANSMIT,
+        BSL, // bootstrap loader
+        SYNC, // Syncing the BSL to the Pod
     }    
     
     static int debug_send = 0;
@@ -214,7 +229,7 @@ class Pod {
 	 * 
 	 * @param startingOffset
 	 */
-	protected static int findEndOfPkt() {			
+	static int findEndOfPkt() {			
 
 		int lastIndex; 
 		lastIndex = matchHeaders();
@@ -238,7 +253,7 @@ class Pod {
 	 * Analyzes the data from the pod to determine the packet to store to the DB.
 	 * @param startingAddr
 	 */
-	protected static void processRawData(BluMote caller) {
+	static void processRawData(BluMote caller) {
 		
 		int endingOffset = findEndOfPkt();
 		
@@ -255,6 +270,164 @@ class Pod {
 		} else {
 			Toast.makeText(caller, "Data was not good, please retry",
 					Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	/**
+	 * Implements scheme to enter the BSL and get ready to receive the image
+	 * TODO determine if we need to add delays between these steps
+//	 * TODO implement error handling?
+	 */
+	static void startBSL(BluMote blumote) throws BslException {
+		Pod.blumote = blumote;
+		byte[] msg;
+		
+		byte test = 1 << 2; // PIO-10
+		byte rst = 1 << 3; // PIO-11
+		
+		// step 1, enter the command mode
+		sendBSLString(BSL_CODES.CMD_MODE);
+		
+		// step 2, enter the BSL
+		// http://www.ti.com/lit/ug/slau319a/slau319a.pdf
+		// rst  ________|------
+		// test ___|-|_|--|____		
+		sendBSLString( String.format("S*,%02X%02X\r\n", (rst|test), 0) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", test, test) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", test, test) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", rst, rst) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
+
+		// step 3, set to 9600 baud
+		sendBSLString( "U,9600,E\r\n" );
+		
+		// step 4, mass erase
+		sync();
+		msg = new byte[] {(byte) 0x80, 0x18, 0x04, 0x04, 0x00, 0x00, 0x06, (byte) 0xA5};
+		blumote.sendMessage(Util.concat(msg, calcChkSum(msg) ) );
+		
+		// step 5, sending Rx password
+		sync();
+		msg = new byte[] {(byte)0x80, 0x10, 0x24, 0x24, 0x00, 0x00, 0x00, 0x00};
+		byte[] passwd = {
+				(byte)0xFF, (byte)0xFF,	// 0xFFE0		
+				(byte)0xFF, (byte)0xFF,	// 0xFFE2
+				(byte)0xFF, (byte)0xFF,	// 0xFFE4
+				(byte)0xFF, (byte)0xFF,	// 0xFFE6
+				(byte)0xFF, (byte)0xFF,	// 0xFFE8
+				(byte)0xFF, (byte)0xFF,	// 0xFFEA
+				(byte)0xFF, (byte)0xFF,	// 0xFFEC
+				(byte)0xFF, (byte)0xFF,	// 0xFFEE
+				(byte)0xFF, (byte)0xFF,	// 0xFFF0
+				(byte)0xFF, (byte)0xFF,	// 0xFFF2
+				(byte)0xFF, (byte)0xFF,	// 0xFFF4
+				(byte)0xFF, (byte)0xFF,	// 0xFFF6
+				(byte)0xFF, (byte)0xFF,	// 0xFFF8
+				(byte)0xFF, (byte)0xFF,	// 0xFFFA
+				(byte)0xFF, (byte)0xFF,	// 0xFFFC
+				(byte)0xFF, (byte)0xFF	// 0xFFFE
+		};
+		msg = Util.concat(msg, passwd);
+		blumote.sendMessage(Util.concat(msg, calcChkSum(msg) ) );
+		
+		// after this is finished we are ready to start flashing the hex code to the pod
+	}
+	
+	/**
+	 * Sync's the loader program to the pod, requires a ACK/NAK to continue
+	 */
+	private static void sync() throws BslException {
+		sync_data = null;
+		blumote.BT_STATE = BT_STATE.SYNC;
+		final SyncWait waiter = new SyncWait(100);
+		
+		while ( waiter.waitTime < waiter.maxWaitTime ) {
+			// check if data was received yet from Pod
+			if (sync_data != null) { 
+				break;  
+			} else if (waiter.unlocked) {
+				new CountDownTimer(1, 1) {
+					public void onTick(long millisUntilFinished) {
+						// no need to use this function
+					}
+					public void onFinish() {
+						// called when timer expired
+						waiter.unlocked = true; // release lock
+						waiter.waitTime++;
+					}
+				}.start();
+			}
+		}
+		
+		// process the data received, if it ever came
+		if ( (waiter.waitTime >= waiter.maxWaitTime)) {
+			throw new BslException("Exceeded max wait time during sync");
+		}
+		
+		if ( sync_data == null ) {
+			throw new BslException("never received any data during sync");
+		}
+		
+		switch (sync_data[0]) {
+		case BSL_CODES.DATA_ACK:
+			return;
+
+		case BSL_CODES.DATA_NAK:
+			throw new BslException("Received NAK sync byte");			
+
+		default:
+			throw new BslException("Received invalid sync byte");
+		}
+	}
+
+	private static class SyncWait {
+		public final int maxWaitTime;
+		public int waitTime = 0;
+		public boolean unlocked = true;
+		
+		public SyncWait(int maxWait) {
+			maxWaitTime = maxWait;
+		}		
+	}
+	
+	/**
+	 * calculate the 2 byte checksum for transactions to Pod
+	 */
+	private static byte[] calcChkSum(byte[] data) {
+		byte[] result = {0,0};
+		
+		for (int i = 0; i < data.length; i++) {
+			if ( (i % 2) == 1) {
+				result[1] ^= data[i]; // upper byte
+			} else {
+				result[0] ^= data[i]; // lower byte
+			}
+		}
+		
+		result[0] ^= 0xFF;
+		result[1] ^= 0xFF;
+		
+		return result;		
+	}
+	
+	/**
+	 * Sends a string to the pod in ascii format
+	 */
+	private static void sendBSLString(String code) {
+		try {
+			blumote.sendMessage(code.getBytes("ASCII") );			
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void sendBytes(byte[] data, int number) 
+			throws BslException {
+		//TODO
+		byte[] toSend = new byte[number];
+		for (int i = 0; i < number ; i++ ) {
+			toSend[i] = data[i];
 		}
 	}
 }
