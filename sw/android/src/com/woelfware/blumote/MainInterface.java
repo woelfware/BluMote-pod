@@ -366,7 +366,7 @@ public class MainInterface {
 	 * move screen to the left	
 	 */
 	void moveLeft() {
-		blumote.BUTTON_LOOPING = false;
+		BluMote.BUTTON_LOOPING = false;
 		
 		// setup flipper animations
 		flip.setInAnimation(slide_right_anim); // -100 -> 0
@@ -403,7 +403,7 @@ public class MainInterface {
 	 * move screen to the right
 	 */
 	void moveRight() {
-		blumote.BUTTON_LOOPING = false;
+		BluMote.BUTTON_LOOPING = false;
 		
 		// setup flipper animations
 		flip.setInAnimation(slide_left_anim); // 100 -> 0

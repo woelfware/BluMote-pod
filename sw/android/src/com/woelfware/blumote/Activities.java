@@ -622,7 +622,7 @@ public class Activities {
 					}
 					// execute button code
 					if (toSend != null) {					
-						blumote.sendButtonCode(toSend);
+						Pod.sendButtonCode(toSend);
 					}
 				}
 			}				
@@ -638,8 +638,7 @@ public class Activities {
 	 * sends the power off codes with a proper delay between sends to prevent buffer overflow on pod
 	 * @param powerOff
 	 */
-	public void sendPowerOffData(ButtonData[] powerOff) {
-		
+	public void sendPowerOffData(ButtonData[] powerOff) {		
 		powerOffData = powerOff;
 		powerOffDataIndex = 0;
 		
@@ -648,7 +647,7 @@ public class Activities {
 	
 	public void nextPowerOffData() {
 		if (powerOffDataIndex < powerOffData.length) {
-			blumote.sendButtonCode(powerOffData[powerOffDataIndex].getButtonData());
+			Pod.sendButtonCode(powerOffData[powerOffDataIndex].getButtonData());
 			powerOffDataIndex++;
 
 			if (powerOffDataIndex < powerOffData.length) {

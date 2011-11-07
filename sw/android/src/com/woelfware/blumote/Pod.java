@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import android.content.Intent;
 import android.os.CountDownTimer;
 import android.util.Log;
 import android.widget.Toast;
@@ -14,6 +15,25 @@ class Pod {
 	private Pod() { }
 
 	static BluMote blumote; // reference to blumote instance
+	
+	// current State of the pod bluetooth communication
+	static BT_STATES BT_STATE = BT_STATES.IDLE;
+	
+	// used to lock displaying dialogs for get_version cmd
+	private static boolean lockDialog = false;
+
+    // if the button has been pushed down recently, this prevents another button press which could overflow the
+    // pod with too much button data
+	private static boolean buttonLock = false;
+
+	// these are all in ms (milli-seconds)
+	private static int LOCK_RELEASE_TIME = 5000; // timeout to release IR transmit lock if pod doesn't send us an ACK		
+
+	// number of times that pod should repeat when button held down
+	private static final byte REPEAT_IR_LONG = (byte) 150;
+	
+	// the firmware log data we downloaded when requesting a firmware update proccess
+	static String[] firmwareRevisions = null;
 	
 	// note to self, byte is signed datatype
 	static String new_name;
@@ -78,7 +98,7 @@ class Pod {
     // this is to keep track of state machines for example
     // for receiving data from bluetooth interface, how that
     // data should be interpreted
-    enum BT_STATE {
+    enum BT_STATES {
         IDLE, // not doing anything
         LEARN, // in button learn mode
         GET_VERSION, // getting pod information
@@ -98,6 +118,10 @@ class Pod {
         componentMap.put(0, "Hardware");
         componentMap.put(1, "Firmware");
         componentMap.put(2, "Software");
+    }
+    
+    static void setBluMoteRef(BluMote ref) {
+    	blumote = ref;
     }
     
     private static int popInt() {
@@ -253,7 +277,7 @@ class Pod {
 	 * Analyzes the data from the pod to determine the packet to store to the DB.
 	 * @param startingAddr
 	 */
-	static void processRawData(BluMote caller) {
+	static void processRawData() {
 		
 		int endingOffset = findEndOfPkt();
 		
@@ -266,20 +290,378 @@ class Pod {
 			System.arraycopy(pod_data, 0, temp, 0, endingOffset);
 			pod_data = temp;
 			// after data is processed, store it to the database		
-			caller.storeButton();
+			blumote.storeButton();
 		} else {
-			Toast.makeText(caller, "Data was not good, please retry",
+			Toast.makeText(blumote, "Data was not good, please retry",
 					Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	static void setFirmwareRevision(String[] rev) {
+		firmwareRevisions = rev;
+	}
+
+	/**
+	 * A state machine error happened while receiving data over bluetooth
+	 * @param code 1 is for errors while in LEARN_MODE and 2 is for errors
+	 * while in GET_INFO mode, affects the usage of Toast
+	 */
+	private static void signalError(int code) {
+		if (code == 1) {
+			Toast.makeText(blumote, "Error occured, exiting learn mode!",
+					Toast.LENGTH_SHORT).show();
+			try {
+				blumote.dismissDialog(BluMote.DIALOG_LEARN_WAIT);
+			} catch (Exception e) {
+				// if dialog had not been shown it throws an error, ignore
+			}
+			blumote.stopLearning();
+//			BT_STATE = BT_STATES.IDLE;
+//			learn_state = LEARN_STATE.IDLE;
+		} else if (code == 2) {
+			BT_STATE = BT_STATES.IDLE;
+			info_state = INFO_STATE.IDLE;
 		}
 	}
 	
 	/**
+	 * this function sends the byte[] for a button to the pod
+	 * @param code the IR code data to send
+	 */
+	static void sendButtonCode(byte[] code) {
+		if (!buttonLock && code != null) { // make sure we have not recently sent a button
+			buttonLock = true;
+			//create a new timer to avoid flooding pod with button data
+			new CountDownTimer(LOCK_RELEASE_TIME, LOCK_RELEASE_TIME) {
+				public void onTick(long millisUntilFinished) {
+					// no need to use this function
+				}
+				public void onFinish() {
+					// called when timer expired
+					buttonLock = false; // release lock
+				}
+			}.start();	
+			
+			byte command = (byte) (Codes.IR_TRANSMIT);
+			byte[] toSend = new byte[code.length + 2]; // 1 extra byte for command byte, 1 for repeat #
+			toSend[0] = command;
+			// insert different repeat flags based on if this
+			// is a long press or a short press of the button
+			if (BluMote.BUTTON_LOOPING) {
+				toSend[1] = REPEAT_IR_LONG; // long press
+			} else {
+				toSend[1] = 0; // short press
+			}
+			for (int j = 2; j < toSend.length; j++) {	
+				toSend[j] = code[j - 2];
+			}
+			setIrTransmitState();
+
+			blumote.sendMessage(toSend); // send data if matches
+		}
+	}
+	
+//	static BT_STATES getCurrentState() {
+//		return BT_STATE;
+//	}
+//	
+	static boolean isLearnState() {
+		return BT_STATE == BT_STATES.LEARN;
+	}
+	
+	static void setStopLearnState() {
+		BT_STATE = BT_STATES.ABORT_LEARN;
+	}
+	
+	static void setStopTransmitState() {
+		BT_STATE = BT_STATES.ABORT_TRANSMIT;
+	}
+	
+	static void setGetVerState() {
+		BT_STATE = BT_STATES.GET_VERSION;
+	}
+	
+	static void setIrTransmitState() {
+		BT_STATE = BT_STATES.IR_TRANSMIT;
+	}
+	
+	static void setLearnState() {
+		BT_STATE = BT_STATES.LEARN;
+	}
+	
+	static void setIdleState() {
+		BT_STATE = BT_STATES.IDLE;
+	}
+	
+	static void setBslState() {
+		BT_STATE = BT_STATES.BSL;
+	}
+	
+	static void lockDialog() {
+		lockDialog = true;
+	}
+	
+	static void unlockDialog() {
+		lockDialog = false;
+	}
+	
+	/**
+	 * This method should be called whenever we receive a byte[] from the pod.
+	 * @param response the circular buffer that contains the data that was received over BT
+	 * @param bytes how many bytes were received and stored in response[] on the call to this method
+	 * @param index the starting index into the circular data buffer that should be read
+	 */
+	static void interpretResponse(byte[] response, int bytes, int index) {
+		switch (BT_STATE) {
+		case LEARN:
+			try { // catch any unforseen state machine errors.....
+				// learn data may not come all together, so need to process data
+				// in chunks
+				while (bytes > 0) {
+					switch (learn_state) {
+					case IDLE:
+						if (response[index] == Codes.ACK) {
+							learn_state = LEARN_STATE.PKT_LENGTH;
+							index = (index + 1)	% BluetoothChatService.buffer_size;
+							bytes--;
+							data_index = 0;
+						} else {
+							signalError(1);
+							return;
+						}
+						break;
+
+					case PKT_LENGTH:
+						// if we got here then we are on the second byte of data
+						if (Util.isGreaterThanUnsignedByte(
+								response[index], 0)) {
+							pod_data = new byte[(0x00FF & response[index]) + HP_OFFSET];  
+							// first three bytes are 'pkt_length carrier_freq reserved' 
+							pod_data[data_index++] = response[index];
+							bytes--;
+							index = (index + 1)	% BluetoothChatService.buffer_size;							
+							learn_state = LEARN_STATE.CARRIER_FREQ;
+						} else {
+							signalError(1);
+							return;
+						}
+						break;
+
+					case CARRIER_FREQ:
+						// third byte should be carrier frequency
+						if (checkPodDataBounds(bytes)) {
+							learn_state = LEARN_STATE.RESERVED;
+							pod_data[data_index++] = response[index];
+							bytes--;
+							index = (index + 1)	% BluetoothChatService.buffer_size;
+						} else {
+							signalError(1);
+							return;
+						}
+						break;
+
+					case RESERVED:
+						// fourth byte should be reserved
+						if (checkPodDataBounds(bytes)) {
+							learn_state = LEARN_STATE.COLLECTING;
+							pod_data[data_index++] = 0; // default to 0
+							bytes--;
+							index = (index + 1)	% BluetoothChatService.buffer_size;
+						} else {
+							signalError(1);
+							return;
+						}
+						break;
+
+					case COLLECTING:
+						if (checkPodDataBounds(bytes)) {
+							pod_data[data_index++] = response[index];
+							// first check to see if this is the last byte
+							if (Util.isGreaterThanUnsignedByte(
+									data_index, pod_data[0] + 2)) { 
+								// data index at final position is nth or N+1 total items, pod_data[0]
+								// is the # of bytes of IR data, so adding 2 gives (n+2)th index.
+								// After last byte received then data_index points to an index after
+								// the last so we exit the collecting routine and store data.
+								learn_state = LEARN_STATE.IDLE; 
+								blumote.dismissDialog(BluMote.DIALOG_LEARN_WAIT);
+								processRawData(); // first 3 bytes are not to be analyzed
+								return;
+							}							
+							bytes--;
+							index = (index + 1)	% BluetoothChatService.buffer_size;
+						} else {
+							signalError(1);
+							return;
+						}
+						break;
+					} // end switch/case
+				} // end while loop
+			} catch (Exception e) { // something unexpected occurred....exit
+				Toast.makeText(blumote, "Communication error, exiting learn mode",
+						Toast.LENGTH_SHORT).show();
+				BT_STATE = BT_STATES.IDLE;
+				return;
+			}
+			break;
+
+		case GET_VERSION:
+			try { 
+				while (bytes > 0) {
+					switch (info_state) {
+					case IDLE:
+						if (response[index] == Codes.ACK) {
+							pod_data = new byte[INFO_STATE.values().length]; 
+							info_state = INFO_STATE.BYTE0;
+							index = (index + 1)	% BluetoothChatService.buffer_size;
+							bytes--;
+							data_index = 0;
+						} else {
+							signalError(2);
+							return;
+						}
+						break;
+
+					case BYTE0:
+						pod_data[0] = response[index];
+						info_state = INFO_STATE.BYTE1;
+						bytes--;
+						index = (index + 1)	% BluetoothChatService.buffer_size;
+						break;
+
+					case BYTE1:
+						pod_data[1] = response[index];
+						info_state = INFO_STATE.BYTE2;
+						bytes--;
+						index = (index + 1)	% BluetoothChatService.buffer_size;
+						break;
+
+					case BYTE2:
+						pod_data[2] = response[index];
+						info_state = INFO_STATE.BYTE3;
+						bytes--;
+						index = (index + 1)	% BluetoothChatService.buffer_size;
+						break;
+
+					case BYTE3:
+						pod_data[3] = response[index];
+						info_state = INFO_STATE.IDLE;
+						bytes--;
+						index = (index + 1) % BluetoothChatService.buffer_size;
+
+						if (lockDialog) { // this gets set when we are doing a FW update process
+							lockDialog = false; //always unlock after receiving data
+							Intent i = new Intent(blumote, FwUpdateActivity.class);
+							// tack on the downloaded lines of text
+							i.putExtra(FwUpdateActivity.FW_IMAGES, firmwareRevisions);								
+							blumote.startActivityForResult(i, BluMote.UPDATE_FW);
+							return;
+						} else {
+							// else this request was sent by the menu
+							// create a dialog to display data to user
+							blumote.showDialog(BluMote.DIALOG_SHOW_INFO);
+						}
+						break;
+					}
+				}
+			} catch (Exception e) {
+				Toast.makeText(blumote,
+						"Communication error, exiting learn mode",
+						Toast.LENGTH_SHORT).show();
+				BT_STATE = BT_STATES.IDLE;
+				return;
+			}
+			break;
+
+		case ABORT_LEARN:
+			BT_STATE = BT_STATES.IDLE; // reset state
+			if (response[index] == Codes.ACK) {
+
+			}
+			break;
+
+		case IR_TRANSMIT:
+			BT_STATE = BT_STATES.IDLE;			
+			if (response[index] == Codes.ACK) {
+				// release lock if we get an ACK
+				buttonLock = false;
+				if (BluMote.DEBUG) {
+					Toast.makeText(blumote, "ACK received - lock removed", Toast.LENGTH_SHORT).show();
+				}
+			}
+			break;
+
+		case ABORT_TRANSMIT:
+			BT_STATE = BT_STATES.IDLE; // reset state
+			if (BluMote.DEBUG) {
+				if (response[index] == Codes.ACK) {
+					Toast.makeText(blumote, "ACK received for abort transmit", Toast.LENGTH_SHORT).show();
+				}
+			}
+			break;
+
+		case BSL:
+			// Just log the messages we get from the Pod during BSL
+			Log.v("BSL", response.toString() );
+			break;
+
+		case SYNC:
+			// post the result to the Pod class
+			//TODO
+			sync_data = response;
+		}
+	}
+	
+	static void requestLearn() {
+		byte[] toSend;
+		toSend = new byte[1];
+		toSend[0] = (byte)Codes.LEARN;
+		setLearnState();
+		blumote.sendMessage(toSend);
+	}
+	
+	static void abortLearn() {
+		byte[] toSend;
+		toSend = new byte[1];
+		toSend[0] = (byte)Codes.ABORT_LEARN;
+		setStopLearnState();
+		blumote.sendMessage(toSend);
+	}
+	
+	static void getVersion() {
+		byte[] toSend;
+		setGetVerState();
+		toSend = new byte[1];
+		toSend[0] = (byte)Codes.GET_VERSION;
+		blumote.sendMessage(toSend);
+	}
+	
+	static void abortTransmit() {
+		byte[] toSend;
+		setStopTransmitState();
+		toSend = new byte[1];
+		toSend[0] = (byte)Codes.ABORT_TRANSMIT;
+		blumote.sendMessage(toSend);
+	}
+		
+	/**
+	 * Determines if more bytes are being read that is available in the local data structure. This
+	 * function should be called whenever a new set of data is COLLECTING in interpretResponse()
+	 * @param bytes the number of bytes received
+	 * @return false if the data is outside of the local storage space available and true if there is no error.
+	 */
+	private static boolean checkPodDataBounds(int bytes) {
+		if (bytes > (pod_data.length - data_index)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Implements scheme to enter the BSL and get ready to receive the image
 	 * TODO determine if we need to add delays between these steps
-//	 * TODO implement error handling?
 	 */
-	static void startBSL(BluMote blumote) throws BslException {
-		Pod.blumote = blumote;
+	static void startBSL() throws BslException {
 		byte[] msg;
 		
 		byte test = 1 << 2; // PIO-10
@@ -337,9 +719,9 @@ class Pod {
 	/**
 	 * Sync's the loader program to the pod, requires a ACK/NAK to continue
 	 */
-	private static void sync() throws BslException {
+	static void sync() throws BslException {
 		sync_data = null;
-		blumote.BT_STATE = BT_STATE.SYNC;
+		BT_STATE = BT_STATES.SYNC;
 		final SyncWait waiter = new SyncWait(100);
 		
 		while ( waiter.waitTime < waiter.maxWaitTime ) {
@@ -414,20 +796,70 @@ class Pod {
 	/**
 	 * Sends a string to the pod in ascii format
 	 */
-	private static void sendBSLString(String code) {
+	private static void sendBSLString(String code) throws BslException {
 		try {
 			blumote.sendMessage(code.getBytes("ASCII") );			
 		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
+			throw new BslException("Encoding error while starting BSL");
 		}
 	}
 	
-	public static void sendBytes(byte[] data, int number) 
+	public static void sendFwLine(String line) 
 			throws BslException {
-		//TODO
-		byte[] toSend = new byte[number];
-		for (int i = 0; i < number ; i++ ) {
-			toSend[i] = data[i];
+		sync();
+		line = line.replace("\r\n", "");
+		
+		//<start_code><byte_cnt><addr><record_type><data><chksum>
+		// overhead is bytes of each element in the formatted BSL packet (except data)
+		int overhead = 1 + 2 + 4 + 2 + 2; 
+		
+		// improperly formatted file if doesn't start with :
+		if ( ! line.startsWith(":") ) {
+			throw new BslException("malformed fw image line");
 		}
+		
+		// verify the byte count matches the line record
+		int assert1 = Integer.parseInt(line.substring(1, 3), 16); // byte_cnt
+		int assert2 = (line.length() - overhead) / 2;
+		if (assert1 != assert2) {
+			throw new BslException("malformed fw image line");
+		}
+		
+		// See TI MSP430 datasheet for the definition of these fields
+		byte AH = Byte.parseByte(line.substring(3, 5), 16);
+		byte AL = Byte.parseByte(line.substring(5, 7), 16);
+		byte HDR = (byte)0x80;
+		byte CMD = 0x12;
+		byte LL = (byte) (Byte.parseByte((line.substring(9, line.length()-2)))/2);
+		if (LL == 0) {
+			return;
+		}
+		byte LH = 0;
+		byte L1 = (byte) (LL + 4);
+		byte L2 = (byte) (LL + 4);
+		byte[] msg = {HDR, CMD, L1, L2, AL, AH, LL, LH};
+		
+		// extract the data bytes from the intel hex message
+		byte[] dataBytes;
+		try {
+			dataBytes = line.substring(9, line.length()-3).getBytes("ASCII");
+		} catch (UnsupportedEncodingException e) {
+			throw new BslException("Encoding error in sending firmware");
+		}
+		// add together msg bytes, data bytes and 2 bytes for checksum
+		byte[] msgPlusData = new byte[msg.length + dataBytes.length + 2];
+		for (int i= 0; i < msg.length; i++) {
+			msgPlusData[i] = msg[i];
+		}
+		for (int i = 0; i < dataBytes.length; i++) {
+			msgPlusData[i+msg.length] = dataBytes[i]; 
+		}
+		// append checksum for total frame
+		byte[] chkSum = calcChkSum(msgPlusData);		
+		msgPlusData[msgPlusData.length - 2] = chkSum[0];
+		msgPlusData[msgPlusData.length - 1] = chkSum[1];
+		
+		// send to Pod
+		blumote.sendMessage(msgPlusData);
 	}
 }
