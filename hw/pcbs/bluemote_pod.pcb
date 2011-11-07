@@ -1065,16 +1065,6 @@ Element["lock" "tyco_1981568_usb_micro_b.fp" "J101" "none" 45275 33465 1524 6239
 
 	)
 
-Element["onsolder" "0805_resistor.fp" "R103" "100" 128400 88161 -3294 7419 1 100 "auto"]
-(
-	Pad[-787 0 787 0 3543 1600 4543 "1" "1" "onsolder,square"]
-	Pad[-787 -8661 787 -8661 3543 1600 4543 "2" "2" "onsolder,square"]
-	ElementLine [-4559 3772 4559 3772 1000]
-	ElementLine [-4559 -12433 -4559 3772 1000]
-	ElementLine [4559 -12433 4559 3772 1000]
-	ElementLine [-4559 -12433 4559 -12433 1000]
-
-	)
 
 Element["onsolder" "0805_resistor.fp" "R104" "100" 102000 88161 -3272 7441 1 100 "auto"]
 (
