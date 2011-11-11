@@ -282,6 +282,10 @@ void blumote_main()
 		ir_xmit();
 		break;
 
+	case BLUMOTE_RESET_BLUETOOTH:
+		reset_bluetooth();
+		break;
+
 	default:
 		send_NAK();
 	}
