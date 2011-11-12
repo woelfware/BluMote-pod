@@ -54,6 +54,20 @@ public class Util {
 		   return C;
 	}
 	
+	/** 
+	 * Appends a byte to a byte array
+	 * @param A
+	 * @param B
+	 * @return
+	 */
+	public static byte[] appendByte(byte[] A, byte B) {
+		   byte[] C= new byte[A.length+1];
+		   System.arraycopy(A, 0, C, 0, A.length);
+		   C[C.length-1] = B;
+		   
+		   return C;
+	}
+	
 	public static class FileUtils {
 		/**
 		 * Create a copy of of a file

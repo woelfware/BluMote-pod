@@ -62,8 +62,9 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
     	requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
     	setContentView(R.layout.fw_manage); 
 
-    	Intent i = getIntent();
-    	fwImages = i.getStringArrayExtra(FW_IMAGES);
+    	// we got this after we downloaded the file from the net
+    	// which was requested by BluMote
+    	fwImages = Pod.firmwareRevisions; 
 
     	// Initialize array adapters
     	fwImagesArrayAdapter = new FwArrayAdapter(this, R.layout.fw_images_item); 
@@ -94,6 +95,7 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
     		}
     	}    	
     	// set to OK only after data all downloaded and ready to flash
+    	Intent i = getIntent();
     	setResult(RESULT_CANCELED,i);        
 	}
 

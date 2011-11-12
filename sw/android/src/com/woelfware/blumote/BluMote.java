@@ -951,9 +951,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.fw_update:
-			showDialog(DIALOG_FW_WAIT);
-			DownloadTextFileTask downloadFile = new DownloadTextFileTask();
-			downloadFile.execute(FW_IMAGE_URL);
+// TODO stubbing out the code just to make things quicker for testing
+//			showDialog(DIALOG_FW_WAIT);			
+//			DownloadTextFileTask downloadFile = new DownloadTextFileTask();
+//			downloadFile.execute(FW_IMAGE_URL);
+// TODO below code for testing purposes only
+			FW_LOCATION = "/mnt/sdcard/Android/data/com.woelfware.blumote/files/fwImage.bin";
+			showDialog(FLASH_PROGRESS_DIALOG);
+			FlashFileToPodTask flasher = new FlashFileToPodTask();
+			flasher.execute((Void)null);
 			return true;
 			
 		case R.id.preferences:
@@ -1484,83 +1490,142 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             // this method unused
         }
     }
-	
-	 private class DownloadTextFileTask extends AsyncTask<String, Integer, String[]> {
-	     protected String[] doInBackground(String... urls) {
-	    	 try {
-	    		 URL url = new URL(urls[0]);
-	             BufferedReader bufferReader = new BufferedReader(
-	            		 new InputStreamReader(url.openStream()));
-	             String StringBuffer;
-	             ArrayList<String> stringText = new ArrayList<String>();
-	             while ((StringBuffer = bufferReader.readLine()) != null) {
-	            	 stringText.add(StringBuffer);
-	             }             
-	             bufferReader.close();
-	                          
-	             String[] returnStrings = new String[stringText.size()];
-	             return stringText.toArray(returnStrings);
-	         } catch (Exception e) {}
-	         return null;
-	     }
 
-	     protected void onPostExecute(String[] result) {	
-	    	 // save the data we downloaded for the firmware process
-	    	 Pod.setFirmwareRevision(result);
-	    	 // get currently installed pod version	    	 
-	    	 Pod.lockDialog(); // don't display pop-up
-	    	 Pod.getVersion();
-	    	 Pod.unlockDialog(); // unlock dialog pop-up
-	    	 // interpretResponse() has the code to capture the version and start
-	    	 // the firmware update process
-	    	 // cancel the progressDialog and display the results
-	    	 dismissDialog(DIALOG_FW_WAIT);
-	    	 return;
-	     }
+	/**
+	 * Download a file from the website which is used to determine the history
+	 * of firmware revisions.
+	 * @author keusej
+	 *
+	 */
+	private class DownloadTextFileTask extends AsyncTask<String, Integer, String[]> {
+		protected String[] doInBackground(String... urls) {
+			try {
+				URL url = new URL(urls[0]);
+				BufferedReader bufferReader = new BufferedReader(
+						new InputStreamReader(url.openStream()));
+				String StringBuffer;
+				ArrayList<String> stringText = new ArrayList<String>();
+				while ((StringBuffer = bufferReader.readLine()) != null) {
+					stringText.add(StringBuffer);
+				}             
+				bufferReader.close();
+
+				String[] returnStrings = new String[stringText.size()];
+				return stringText.toArray(returnStrings);
+			} catch (Exception e) {}
+			return null;
+		}
+
+		protected void onPostExecute(String[] result) {	
+			// save the data we downloaded for the firmware process
+
+			Pod.setFirmwareRevision(result);
+			// get currently installed pod version
+			Pod.currentSwRev = null; // clear it out first
+			Pod.lockDialog(); // don't display pop-up
+			// time-out if we don't receive it
+			Pod.getVersion();	
+			waitForGetVersion(1000, 0); // 1 sec max wait time
+			dismissDialog(DIALOG_FW_WAIT);
+			Pod.unlockDialog(); // unlock dialog pop-up
+			Intent i = new Intent(BluMote.this, FwUpdateActivity.class);							
+			startActivityForResult(i, BluMote.UPDATE_FW);
+			return;
+		}
+	}
+
+	/**
+	 * Recursive function to implement a time-out waiting for data
+	 * to arrive from the BT device.
+	 * @param maxWait
+	 * @param current
+	 */
+	private void waitForGetVersion(int maxWait, int current) {
+		final int maxWaitTime = maxWait;
+		final int currentWait = current;
+		
+		if ( currentWait < maxWaitTime && Pod.currentSwRev != null) {			
+			new CountDownTimer(10, 10) {
+				public void onTick(long millisUntilFinished) {
+					// no need to use this function
+				}
+				public void onFinish() {
+					// called when timer expired
+					// max recursions are maxWait / 10 
+					waitForGetVersion(maxWaitTime, currentWait + 10);
+				}
+			}.start();
+		}
+	}		
+
+	 /**
+	  * Facilitates implementing a wait time-out feature
+	  * usually used in conjunction with a CountDownTimer class.
+	  * Gets around Java not being able to talk to anything but Final
+	  * fields from inside an inner class thread
+	  * @author keusej
+	  *
+	  */
+	 public static class Wait {
+		 public final int maxWaitTime;
+		 public int waitTime = 0;
+		 public boolean unlocked = true;
+
+		 public Wait(int maxWait) {
+			 maxWaitTime = maxWait;
+		 }		
 	 }
-	 
+
+	 /**
+	  * AsyncTask to flash the file to the pod
+	  * @author keusej
+	  *
+	  */
 	 private class FlashFileToPodTask extends AsyncTask<Void, Integer, Integer> {
 		 	Exception e = null;
-			int byteCounter = 0;   
+		 	int byteCounter = 0;   
 
-			@Override 
-			protected Integer doInBackground(Void... voids) {
-				try {				
-					publishProgress(0); // start at 0													
-					
-					// first jump into BSL using start sequence
-					Pod.setBslState();
-					try {
-						Pod.startBSL();
-					} catch(BslException error) {
-						e = error;
-					}
-					
-					FileInputStream f = new FileInputStream(new File(FW_LOCATION));
-					BufferedReader br = new BufferedReader(new InputStreamReader(f));
-					String strLine;	
-					
-					// count # of lines in the file (used for progress bar)
-					int count = 0;
-					while (br.readLine() != null) count++;
-					
-					f.getChannel().position(0); // reset to beginning of file
-					br = new BufferedReader(new InputStreamReader(f));					
-					
-					//Read File Line By Line
-					int lineCounter = 0;
-					while ((strLine = br.readLine()) != null)   {
-						try {							
-							Pod.sendFwLine(strLine);
-						} catch (BslException error) {
-							e = error;
-							break;
-						}
-						lineCounter++;
-						publishProgress((int) ((lineCounter / count) * 100));
-					}
-					f.close();							
+		 	@Override 
+		 	protected Integer doInBackground(Void... voids) {
+		 		try {				
+		 			publishProgress(0); // start at 0													
 
+		 			// first jump into BSL using start sequence
+		 			Pod.setBslState();
+
+		 			Pod.startBSL();
+
+		 			FileInputStream f = new FileInputStream(new File(FW_LOCATION));
+		 			BufferedReader br = new BufferedReader(new InputStreamReader(f));
+		 			String strLine;	
+
+		 			// count # of lines in the file (used for progress bar)
+		 			int count = 0;
+		 			while (br.readLine() != null) count++;
+
+		 			f.getChannel().position(0); // reset to beginning of file
+		 			br = new BufferedReader(new InputStreamReader(f));					
+
+		 			//Read File Line By Line
+		 			int lineCounter = 0;
+		 			while ((strLine = br.readLine()) != null)   {
+		 				try {							
+		 					Pod.sendFwLine(strLine);
+		 				} catch (BslException error) {
+		 					e = error;
+		 					break;
+		 				}
+		 				lineCounter++;
+		 				publishProgress((int) ((lineCounter / count) * 100));
+		 			}
+		 			f.close();	
+		 			
+		 			// Enter cmd mode and instruct Pod to exit BSL and reset FW
+		 			Pod.sendBSLString("$$$");
+		 			Pod.receiveResponse();
+		 			Pod.exitBsl();
+		 		} catch(BslException error) {
+		 			e = error;													
 				} catch (IOException e) {
 					this.e = e;
 				} catch (NumberFormatException e) {
@@ -1583,10 +1648,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				
 				// tell user it was not successful
 				if (e != null) {
-					Log.e("BSL", e.getMessage());
+					//Log.e("BSL", e.getMessage());
 					new AlertDialog.Builder(BluMote.this)
 			        	.setIcon(android.R.drawable.ic_dialog_info)
-				        .setTitle(R.string.error_fw_download)
+				        .setMessage(R.string.error_fw_download)
 				        .setPositiveButton(R.string.OK, null)
 				        .show();
 					return;
