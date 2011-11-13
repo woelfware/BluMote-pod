@@ -1,5 +1,10 @@
 package com.woelfware.blumote;
 
+/**
+ * Simple exception class to use in the bootloader code
+ * @author keusej
+ *
+ */
 public class BslException extends Exception {
 
 	private static final long serialVersionUID = 1L;

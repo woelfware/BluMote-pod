@@ -25,8 +25,9 @@ import com.woelfware.blumote.screens.RokuActivity;
 import com.woelfware.blumote.screens.RokuDevice;
 
 /**
- * This class offloads several of the functions associated with dealing 
+ * This class encapsulates several of the functions associated with dealing 
  * with the interface and buttons/dropdowns/lists
+ * Understands the ButtonCreator interface
  * @author keusej
  *
  */

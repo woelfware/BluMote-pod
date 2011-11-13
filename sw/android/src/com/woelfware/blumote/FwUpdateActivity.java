@@ -30,7 +30,7 @@ import android.widget.TextView;
 
 /**
  * This activity is launched from the main BluMote interface. 
- * This activity deals with updating the firmware on the pod hardware.
+ * This activity lists FW releases and downloads them
  * @author keusej
  *
  */
@@ -300,6 +300,11 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
 		}
 	}
 
+	/**
+	 * Asynchronously downloads the firmware image from the web 
+	 * @author keusej
+	 *
+	 */
 	private class DownloadBinaryFileTask extends AsyncTask<URL, Integer, Integer> {
 		int byteCounter = 0;   
 		File fileDir = FwUpdateActivity.this.getExternalFilesDir(null);

@@ -4,12 +4,16 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import android.content.Intent;
 import android.os.CountDownTimer;
 import android.util.Log;
 import android.widget.Toast;
 
-// codes and state information for blumote pod operation
+/**
+ * Pod hardware codes and state information for blumote pod operation.
+ * Encapsulates all operations to/from the pod.
+ * @author keusej
+ *
+ */
 class Pod {
 	// private constructor to make this class non-instantiable
 	private Pod() { }
@@ -143,6 +147,10 @@ class Pod {
 		return (length + HP_OFFSET);
     }
     
+    /**
+     * Way of analyzing the raw code from the pod to find the unique packet
+     * @return
+     */
     private static int matchHeaders() {
 		offset = HP_OFFSET; // start of actual data
 		    	    	
@@ -176,6 +184,10 @@ class Pod {
 		return ERROR;
     }
     
+    /**
+     * Way of analyzing the raw code from the pod to find the unique packet
+     * @return
+     */
     private static int searchGapSize(int minGapTime) {
     	int workingData;
     	int endOffset = getLastOffset();
@@ -199,6 +211,10 @@ class Pod {
     	return searchGapSize(minGapTime);    	
     }
     
+    /**
+     * Way of analyzing the raw code from the pod to find the unique packet
+     * @return
+     */
     private static int threeLargestSpaces() {
     	int workingData;
     	int endOffset = getLastOffset();
@@ -398,11 +414,7 @@ class Pod {
 			blumote.sendMessage(toSend); // send data if matches
 		}
 	}
-	
-//	static BT_STATES getCurrentState() {
-//		return BT_STATE;
-//	}
-//	
+
 	static boolean isLearnState() {
 		return BT_STATE == BT_STATES.LEARN;
 	}
@@ -700,6 +712,10 @@ class Pod {
 		return true;
 	}
 
+	/**
+	 * Exit the bootstrap loader routine
+	 * @throws BslException
+	 */
 	static void exitBsl() throws BslException {
 		byte test = 1 << 2; // PIO-10
 		byte rst = 1 << 3; // PIO-11
@@ -713,6 +729,10 @@ class Pod {
 		receiveResponse();
 	}
 	
+	/**
+	 * Enters the bootstrap loader routine
+	 * @throws BslException
+	 */
 	static void enterBsl() throws BslException {
 		byte test = 1 << 2; // PIO-10
 		byte rst = 1 << 3; // PIO-11
@@ -864,6 +884,11 @@ class Pod {
 		}
 	}
 	
+	/**
+	 * Sends one line of data from the .hex file to the BSL
+	 * @param line
+	 * @throws BslException
+	 */
 	public static void sendFwLine(String line) 
 			throws BslException {
 		sync();

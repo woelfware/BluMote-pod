@@ -12,6 +12,11 @@ import android.widget.Toast;
 
 import com.woelfware.database.DeviceDB;
 
+/**
+ * Will asynchronously backup the database file to SDCARD
+ * @author keusej
+ *
+ */
 class ExportDatabaseFileTask extends AsyncTask<String, Void, Boolean> {
     private ProgressDialog dialog;
     private Context ctx;

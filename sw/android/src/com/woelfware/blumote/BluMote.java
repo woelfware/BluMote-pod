@@ -56,8 +56,7 @@ import com.woelfware.blumote.Activities.ImageActivityItem;
 import com.woelfware.database.DeviceDB;
 
 /**
- * Primary class for the project.
- * Implements the callbacks for the buttons/etc on the interface.
+ * Primary controller class for the project.
  * @author keusej
  *
  */
@@ -951,15 +950,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.fw_update:
-// TODO stubbing out the code just to make things quicker for testing
-//			showDialog(DIALOG_FW_WAIT);			
-//			DownloadTextFileTask downloadFile = new DownloadTextFileTask();
-//			downloadFile.execute(FW_IMAGE_URL);
-// TODO below code for testing purposes only
-			FW_LOCATION = "/mnt/sdcard/Android/data/com.woelfware.blumote/files/fwImage.bin";
-			showDialog(FLASH_PROGRESS_DIALOG);
-			FlashFileToPodTask flasher = new FlashFileToPodTask();
-			flasher.execute((Void)null);
+			showDialog(DIALOG_FW_WAIT);			
+			DownloadTextFileTask downloadFile = new DownloadTextFileTask();
+			downloadFile.execute(FW_IMAGE_URL);
+ 			// below code for testing purposes only
+//			FW_LOCATION = "/mnt/sdcard/Android/data/com.woelfware.blumote/files/fwImage.bin";
+//			showDialog(FLASH_PROGRESS_DIALOG);
+//			FlashFileToPodTask flasher = new FlashFileToPodTask();
+//			flasher.execute((Void)null);
 			return true;
 			
 		case R.id.preferences:

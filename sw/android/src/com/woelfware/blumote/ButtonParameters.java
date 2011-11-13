@@ -2,8 +2,12 @@ package com.woelfware.blumote;
 
 import android.view.View;
 
-//Parameters every interface button contains, used in the 
-// initialize function of ButtonCreator objects
+/**
+ * Parameters every interface button contains, used in the 
+ * initialize() function of ButtonCreator objects
+ * @author keusej
+ *
+ */
 public class ButtonParameters {
 	private int resourceID;
 	private String buttonName;
