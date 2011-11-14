@@ -22,6 +22,11 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
+/**
+ * Interface to create a new activity in the interface.
+ * @author keusej
+ *
+ */
 public class CreateActivity extends Activity {
 	
 	private static Integer[] mImageIds = {

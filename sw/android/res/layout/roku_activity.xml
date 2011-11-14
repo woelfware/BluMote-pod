@@ -27,7 +27,7 @@
 		android:weightSum="3.0">     
 		<ImageButton style="@style/CustomImageBtnText" android:layout_alignParentLeft="true" android:src="@drawable/pwr_grey" android:id="@+id/power_on_btn" android:layout_weight="1" android:background="@drawable/round_btn_look" android:layout_width="60dp" android:layout_height="60dp" android:adjustViewBounds="false" android:scaleType="centerInside" android:layout_centerVertical="true"></ImageButton>
 		<ImageButton android:id="@+id/btn_home" android:src="@drawable/go_home" style="@style/CustomImageBtnText" android:layout_marginLeft="20dp" android:layout_marginRight="20dp" android:layout_width="100dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_centerInParent="true"></ImageButton>					  					  
-		<ImageButton style="@style/CustomImageBtnText" android:layout_alignParentRight="true" android:layout_marginLeft="20dp" android:src="@drawable/pwr_off" android:id="@+id/power_off_btn" android:layout_weight="1" android:background="@drawable/round_btn_look" android:adjustViewBounds="false" android:scaleType="centerInside" android:layout_centerVertical="true" android:layout_width="60dp" android:layout_height="60dp"></ImageButton>
+		<ImageButton style="@style/CustomImageBtnText" android:layout_alignParentRight="true" android:layout_marginLeft="20dp" android:src="@drawable/pwr_dark" android:id="@+id/power_off_btn" android:layout_weight="1" android:background="@drawable/round_btn_look" android:adjustViewBounds="false" android:scaleType="centerInside" android:layout_centerVertical="true" android:layout_width="60dp" android:layout_height="60dp"></ImageButton>
 	</RelativeLayout>
 	<LinearLayout
 		android:layout_marginTop="10dp"

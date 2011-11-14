@@ -281,16 +281,29 @@ public class Activities {
 	public void deleteActivity(int position) {
 		ImageActivityItem name = mActivitiesArrayAdapter.getItem(position);
 		mActivitiesArrayAdapter.remove(name);
-				
-		String toDelete = addActivityPrefix(name.title);
+		
+		String toDelete;		
+		String activityName = addActivityPrefix(name.title);
 		
 		// remove the ID associated with the device
-		blumote.lookup.deleteLookupId(toDelete);
+		blumote.lookup.deleteLookupId(activityName);
+		
+		MainInterface.deleteMiscButtons(activityName, blumote.prefs);
 		
 		Editor mEditor = blumote.prefs.edit();
-		// delete the activity record as well as it's associated INIT routine
-		mEditor.remove(toDelete); 	
-		toDelete = formatActivityInitSuffix(toDelete);
+		mEditor.remove(activityName); 	
+
+		toDelete = formatActivityInitSuffix(activityName);
+		mEditor.remove(toDelete);
+		
+		toDelete = formatActivityImageIdSuffix(activityName);
+		mEditor.remove(toDelete);
+		
+		// activity off codes
+		toDelete = formatActivityOffSuffix(activityName);
+		mEditor.remove(toDelete);
+		
+		toDelete = formatActivityBtnCnfgSuffix(activityName);
 		mEditor.remove(toDelete);
 		
 		mEditor.commit();
@@ -390,6 +403,14 @@ public class Activities {
 		String activityInit = blumote.prefs.getString(oldINIT, null);
 		mEditor.remove(oldINIT); // remove old one
 		mEditor.putString(newINIT, activityInit); // add new name with old data		
+		
+		// rename all Button Config data keys
+		String oldCfg = formatActivityBtnCnfgSuffix(oldName);
+		String newCfg = formatActivityBtnCnfgSuffix(newName);
+		String cfgValue = blumote.prefs.getString(oldCfg, null);
+		mEditor.remove(oldCfg);
+		mEditor.putString(newCfg, cfgValue);
+		
 		mEditor.commit();
 		
 		mainint.populateDropDown(); // always refresh dropdown when renaming an activity
@@ -601,7 +622,7 @@ public class Activities {
 					}
 					// execute button code
 					if (toSend != null) {					
-						blumote.sendButtonCode(toSend);
+						Pod.sendButtonCode(toSend);
 					}
 				}
 			}				
@@ -617,8 +638,7 @@ public class Activities {
 	 * sends the power off codes with a proper delay between sends to prevent buffer overflow on pod
 	 * @param powerOff
 	 */
-	public void sendPowerOffData(ButtonData[] powerOff) {
-		
+	public void sendPowerOffData(ButtonData[] powerOff) {		
 		powerOffData = powerOff;
 		powerOffDataIndex = 0;
 		
@@ -627,7 +647,7 @@ public class Activities {
 	
 	public void nextPowerOffData() {
 		if (powerOffDataIndex < powerOffData.length) {
-			blumote.sendButtonCode(powerOffData[powerOffDataIndex].getButtonData());
+			Pod.sendButtonCode(powerOffData[powerOffDataIndex].getButtonData());
 			powerOffDataIndex++;
 
 			if (powerOffDataIndex < powerOffData.length) {

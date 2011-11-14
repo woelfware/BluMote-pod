@@ -12,6 +12,11 @@ import android.widget.Toast;
 
 import com.woelfware.database.DeviceDB;
 
+/**
+ * Will asynchronously backup the database file to SDCARD
+ * @author keusej
+ *
+ */
 class ExportDatabaseFileTask extends AsyncTask<String, Void, Boolean> {
     private ProgressDialog dialog;
     private Context ctx;
@@ -31,6 +36,7 @@ class ExportDatabaseFileTask extends AsyncTask<String, Void, Boolean> {
 
     // automatically done on worker thread (separate from UI thread)
     protected Boolean doInBackground(final String... args) {
+    	// TODO getExternalFilesDir() should be used for data backup location!
     	File sd = Environment.getExternalStorageDirectory();
         File data = Environment.getDataDirectory();
         
@@ -46,7 +52,7 @@ class ExportDatabaseFileTask extends AsyncTask<String, Void, Boolean> {
             if (currentDB.exists()) {
                 try {
                 	backupDB.createNewFile();
-                	Utilities.FileUtils.copyFile(currentDB,backupDB);                	
+                	Util.FileUtils.copyFile(currentDB,backupDB);                	
                 } catch (IOException e) {
                 	Log.e("BACKUP",e.getMessage(),e);           
                 	Toast.makeText(ctx, "Export failed", Toast.LENGTH_SHORT).show();

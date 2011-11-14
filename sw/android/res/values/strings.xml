@@ -57,4 +57,11 @@
 	<string name="delete_devices">Clear known pods</string>
 	<string name="layout_spinner">Choose a button configuration</string>
 	<string name="blank_screen">You have no devices or activities.  Please create a new device by selecting the menu button of your phone and selecting \&quot;Manage Devices\&quot;</string>
+	<string name="confirm_fw">Are you sure you want to load the firmware?  You should not remove power to the pod until this operation completes.</string>
+	<string name="confirmation">Are you sure?</string>
+	<string name="OK">OK</string>
+	<string name="cancel">Cancel</string>
+	<string name="error">Error</string>
+	<string name="error_fw_download">There was an error downloading the file, please try again.</string>
+	<string name="success">Operation Succeeded!</string>
 </resources>

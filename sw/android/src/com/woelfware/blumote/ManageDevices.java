@@ -17,7 +17,11 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.woelfware.database.DeviceDB;
 
-
+/**
+ * Used to list all the pod devices and manage them.
+ * @author keusej
+ *
+ */
 public class ManageDevices extends Activity {
 	private DeviceDB device_data;
 	private ArrayAdapter<String> mDevicesArrayAdapter;

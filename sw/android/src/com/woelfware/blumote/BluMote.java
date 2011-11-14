@@ -1,7 +1,11 @@
 package com.woelfware.blumote;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -18,6 +22,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
@@ -26,7 +31,9 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,25 +41,22 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.ContextMenu.ContextMenuInfo;
-import android.view.GestureDetector.SimpleOnGestureListener;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.woelfware.blumote.Activities.ImageActivityItem;
 import com.woelfware.database.DeviceDB;
 
 /**
- * Primary class for the project.
- * Implements the callbacks for the buttons/etc on the interface.
+ * Primary controller class for the project.
  * @author keusej
  *
  */
@@ -79,6 +83,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static final int MISC_RENAME = 7;
 	static final int ACTIVITY_INIT_EDIT = 8;
 	private static final int PREFERENCES = 9;
+	static final int UPDATE_FW = 10;
 	
 	// Message types sent from the BluetoothChatService Handler
 	static final int MESSAGE_STATE_CHANGE = 1;
@@ -94,12 +99,23 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	static final String TOAST = "toast";
 
 	// Dialog menu constants
-	private static final int DIALOG_SHOW_INFO = 0;
+	static final int DIALOG_SHOW_INFO = 0;
 	private static final int DIALOG_INIT_DELAY = 1;
 	static final int DIALOG_INIT_PROGRESS = 2; 
 	private static final int DIALOG_ABOUT = 3;
-	private static final int DIALOG_LEARN_WAIT = 4;
+	static final int DIALOG_LEARN_WAIT = 4;
+	private static final int DIALOG_FW_WAIT = 5;
+	private static final int FLASH_PROGRESS_DIALOG = 6;
+	
+	// for firmware flashing process
+	ProgressDialog progressDialog2;
+	
+	private static String FW_LOCATION;
 
+	// these are all in milli secs
+	private static int LONG_DELAY_TIME = 1000; // starts repeated button clicks
+	static int DELAY_TIME = 200; // repeat button click delay (after button held)
+	
 	// Layout Views
 	private TextView mTitle;
 
@@ -116,6 +132,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// Member object for the chat services
 	private BluetoothChatService mChatService = null;	
 
+	// where to download the list of firmware updates from the web
+	private static final String FW_IMAGE_URL = "http://www.woelfware.com/fw/FW_LOG";
+	
 	// SQL database class
 	DeviceDB device_data;
 	// Shared preferences class - for storing config settings between runs
@@ -139,21 +158,10 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	// used to prevent the drop-down from changing the last device, unless we specifically
 	// selected a new device after the program is all set up, seems like when the interface
 	// loads we get spurious onItemSelected() events firing.
-	boolean LOCK_LAST_DEVICE = false;  
-
-	// current State of the pod bluetooth communication
-	Pod.BT_STATE BT_STATE = Pod.BT_STATE.IDLE;		
-	
-	// these are all in ms (milli-seconds)
-	private static int LOCK_RELEASE_TIME = 5000; // timeout to release IR transmit lock if pod doesn't send us an ACK
-	static int DELAY_TIME = 200; // repeat button click delay (after button held)
-	private static int LONG_DELAY_TIME = 1000; // starts repeated button clicks
-
-	// number of times that pod should repeat when button held down
-	private static final byte REPEAT_IR_LONG = (byte) 150;
+	boolean LOCK_LAST_DEVICE = false;  		
 	
 	// Flag that tells us if we are holding our finger on a button and should loop
-	boolean BUTTON_LOOPING = false;
+	static boolean BUTTON_LOOPING = false;
 	
 	// arraylist position of activity that we want to rename
 	private static int activity_rename;
@@ -196,11 +204,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
     private boolean captureButton = false;
     // keeps track of what the actiivty button was that we clicked on that wanted to be associated
     // with the device button
-    private String activityButton = "";
-
-    // if the button has been pushed down recently, this prevents another button press which could overflow the
-    // pod with too much button data
-	private boolean buttonLock = false;   
+    private String activityButton = "";   
     
     // these variables are all used in the gesture listener logic
 	private static boolean isButtonTimerStarted = false;
@@ -217,6 +221,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		
 		LOCK_LAST_DEVICE = true;
 
+		// set blumote reference for Pod helper class
+		Pod.setBluMoteRef(this);
+		
 		// get preferences file
 		prefs = getSharedPreferences(PREFS_FILE, MODE_PRIVATE);
 		
@@ -304,7 +311,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 			// if we were doing a long press, 
 							// make sure that we exit repeat mode
                 			if (BUTTON_LOOPING) {  	
-                				sendCode(Pod.Codes.ABORT_TRANSMIT); 
+                				Pod.abortTransmit();
                 				BUTTON_LOOPING = false;
                 			}
                 		}
@@ -481,7 +488,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		} else {
 			BUTTON_LOOPING = false;
 			// send abort IR transmit command if button not being held any longer
-			sendCode(Pod.Codes.ABORT_TRANSMIT);
+			Pod.abortTransmit();
 		}
 	}
 	
@@ -591,7 +598,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "Invalid button!",	Toast.LENGTH_SHORT).show();
 			}
 		} else if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.LEARN) {
-			sendCode(Pod.Codes.LEARN);
+			Pod.requestLearn();
 			showDialog(DIALOG_LEARN_WAIT);
 			
 		} else { 
@@ -633,7 +640,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * Sends the byte[] to the currently connected bluetooth device
 	 * @param message the byte[] to send
 	 */
-	private void sendMessage(byte[] message) {
+	void sendMessage(byte[] message) {
 		// Check that we're actually connected before trying anything
 		if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
 			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT)
@@ -718,7 +725,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			case MESSAGE_READ:
 				// arg1 is the # of bytes read
 				byte[] readBuf = (byte[]) msg.obj;
-				interpretResponse(readBuf, msg.arg1, msg.arg2);
+				Pod.interpretResponse(readBuf, msg.arg1, msg.arg2);
 				break;
 
 			case MESSAGE_DEVICE_NAME:
@@ -852,8 +859,20 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// refresh the haptic feedback pref
 			SharedPreferences myprefs = PreferenceManager.getDefaultSharedPreferences(this);
 			hapticFeedback = myprefs.getBoolean("hapticPREF", true);			
+			break;			
+			
+		case UPDATE_FW:
+			if (resultCode == Activity.RESULT_OK) {
+				Bundle return_bundle = data.getExtras();
+				if (return_bundle != null) {
+					FW_LOCATION = return_bundle.getString(FwUpdateActivity.FW_LOCATION);
+					showDialog(FLASH_PROGRESS_DIALOG);
+					FlashFileToPodTask flasher = new FlashFileToPodTask();
+					flasher.execute((Void)null);
+				}
+			}
 			break;
-		}		
+		}				
 	}
 
 	@Override
@@ -885,7 +904,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			} else { // use default menu (MAIN menu)
 				MenuInflater inflater = getMenuInflater();
 				inflater.inflate(R.menu.options_menu, menu);
-				if (BT_STATE == Pod.BT_STATE.LEARN) {
+				if (Pod.isLearnState() ) {
 					// if we are currently in learn mode, then offer up the 'cancel learn' item
 					menu.findItem(R.id.stop_learn).setVisible(true);
 					menu.findItem(R.id.learn_mode).setVisible(false);
@@ -928,6 +947,17 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			
 		case R.id.about:
 			showDialog(DIALOG_ABOUT);
+			return true;
+			
+		case R.id.fw_update:
+			showDialog(DIALOG_FW_WAIT);			
+			DownloadTextFileTask downloadFile = new DownloadTextFileTask();
+			downloadFile.execute(FW_IMAGE_URL);
+ 			// below code for testing purposes only
+//			FW_LOCATION = "/mnt/sdcard/Android/data/com.woelfware.blumote/files/fwImage.bin";
+//			showDialog(FLASH_PROGRESS_DIALOG);
+//			FlashFileToPodTask flasher = new FlashFileToPodTask();
+//			flasher.execute((Void)null);
 			return true;
 			
 		case R.id.preferences:
@@ -979,7 +1009,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 
 		case R.id.get_info:
-			sendCode(Pod.Codes.GET_VERSION);
+			Pod.getVersion();
 			return true;
 
 		case R.id.learn_mode:
@@ -994,7 +1024,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// entering learn mode
 			if (mainScreen.getCurrentDropDown() != null) {
 				Toast.makeText(this, "Select button to train", Toast.LENGTH_SHORT).show();
-				BT_STATE = Pod.BT_STATE.LEARN;
+				Pod.setLearnState();
 				mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.LEARN);
 				// disable drop-down
 				mainScreen.setDropDownVis(false);
@@ -1054,6 +1084,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			mainScreen.setDropDownVis(true);
 			// refresh data behind buttons
 			mainScreen.fetchButtons();
+			return true;
 			
 		case R.id.exit:
 			// quit the application
@@ -1065,9 +1096,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		return false;
 	}
 
-	private void stopLearning() {
-		sendCode(Pod.Codes.ABORT_LEARN);
-		BT_STATE = Pod.BT_STATE.ABORT_LEARN;
+	void stopLearning() {
+		Pod.abortLearn();
+		Pod.setStopLearnState();
 		mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.MAIN);
 		mainScreen.setDropDownVis(true);
 		Pod.learn_state = Pod.LEARN_STATE.IDLE;
@@ -1098,7 +1129,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
         if (backupDB.exists()) {
         	try {
-        		Utilities.FileUtils.copyFile(backupDB, currentDB);	       
+        		Util.FileUtils.copyFile(backupDB, currentDB);	       
         	} catch (IOException e) {
         		Log.e("IMPORT",e.getMessage(),e);
         		Toast.makeText(this, "Import failed", Toast.LENGTH_SHORT).show();
@@ -1117,7 +1148,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
         if (prefsFile.exists()) {
         	try {
             	backupDB.createNewFile();
-            	Utilities.FileUtils.copyFile(prefsFile, backupDB);
+            	Util.FileUtils.copyFile(prefsFile, backupDB);
             } catch (IOException e) {
             	Log.e("BACKUP",e.getMessage(),e);
             	Toast.makeText(this, "Export failed", Toast.LENGTH_SHORT).show();
@@ -1252,7 +1283,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 						byte[] code = buttons[i].getButtonData();
 						if (code != null) {
 							foundIt = true;
-							sendButtonCode(code);
+							Pod.sendButtonCode(code);
 						}
 					}				 
 				}
@@ -1266,81 +1297,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Toast.makeText(this, "Button not setup!", Toast.LENGTH_SHORT).show();
 			}
 		}		
-	}
-	
-	/**
-	 * this function sends the byte[] for a button to the pod
-	 * @param code the IR code data to send
-	 */
-	protected void sendButtonCode(byte[] code) {
-		if (!buttonLock && code != null) { // make sure we have not recently sent a button
-			buttonLock = true;
-			//create a new timer to avoid flooding pod with button data
-			new CountDownTimer(LOCK_RELEASE_TIME, LOCK_RELEASE_TIME) {
-				public void onTick(long millisUntilFinished) {
-					// no need to use this function
-				}
-				public void onFinish() {
-					// called when timer expired
-					buttonLock = false; // release lock
-				}
-			}.start();	
-			
-			byte command = (byte) (Pod.Codes.IR_TRANSMIT);
-			byte[] toSend = new byte[code.length + 2]; // 1 extra byte for command byte, 1 for repeat #
-			toSend[0] = command;
-			// insert different repeat flags based on if this
-			// is a long press or a short press of the button
-			if (BUTTON_LOOPING) {
-				toSend[1] = REPEAT_IR_LONG; // long press
-			} else {
-				toSend[1] = 0; // short press
-			}
-			for (int j = 2; j < toSend.length; j++) {	
-				toSend[j] = code[j - 2];
-			}
-			BT_STATE = Pod.BT_STATE.IR_TRANSMIT;
-
-			sendMessage(toSend); // send data if matches
-		}
-	}
-	
-	/**
-	 * This function sends the command codes to the pod, it is used for everything except 
-	 * the button data which uses {@link sendButton()}
-	 * @param code
-	 */
-	protected void sendCode(int code) {
-		byte[] toSend;
-		switch (code) {
-		case Pod.Codes.LEARN:
-			toSend = new byte[1];
-			toSend[0] = (byte)Pod.Codes.LEARN;
-			BT_STATE = Pod.BT_STATE.LEARN;
-			sendMessage(toSend);
-			break;
-
-		case Pod.Codes.ABORT_LEARN:
-			toSend = new byte[1];
-			toSend[0] = (byte)Pod.Codes.ABORT_LEARN;
-			BT_STATE = Pod.BT_STATE.ABORT_LEARN;
-			sendMessage(toSend);
-			break;
-
-		case Pod.Codes.GET_VERSION:
-			BT_STATE = Pod.BT_STATE.GET_VERSION;
-			toSend = new byte[1];
-			toSend[0] = (byte)Pod.Codes.GET_VERSION;
-			sendMessage(toSend);
-			break;
-
-		case Pod.Codes.ABORT_TRANSMIT:
-			BT_STATE = Pod.BT_STATE.ABORT_TRANSMIT;
-			toSend = new byte[1];
-			toSend[0] = (byte)Pod.Codes.ABORT_TRANSMIT;
-			sendMessage(toSend);
-			break;
-		} // end switch
 	}
 
 	/**
@@ -1360,231 +1316,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		Toast.makeText(this, "Button Code Received", Toast.LENGTH_SHORT).show();
 		mainScreen.fetchButtons();
-	}
-
-	/**
-	 * Determines if more bytes are being read that is available in the local data structure. This
-	 * function should be called whenever a new set of data is COLLECTING in interpretResponse()
-	 * @param bytes the number of bytes received
-	 * @return false if the data is outside of the local storage space available and true if there is no error.
-	 */
-	protected boolean checkPodDataBounds(int bytes) {
-		if (bytes > (Pod.pod_data.length - Pod.data_index)) {
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * A state machine error happened while receiving data over bluetooth
-	 * @param code 1 is for errors while in LEARN_MODE and 2 is for errors
-	 * while in GET_INFO mode, affects the usage of Toast
-	 */
-	protected void signalError(int code) {
-		if (code == 1) {
-			Toast.makeText(this, "Error occured, exiting learn mode!",
-					Toast.LENGTH_SHORT).show();
-			try {
-				dismissDialog(DIALOG_LEARN_WAIT);
-			} catch (Exception e) {
-				// if dialog had not been shown it throws an error, ignore
-			}
-			stopLearning();
-//			BT_STATE = Pod.BT_STATE.IDLE;
-//			Pod.learn_state = Pod.LEARN_STATE.IDLE;
-		} else if (code == 2) {
-			BT_STATE = Pod.BT_STATE.IDLE;
-			Pod.info_state = Pod.INFO_STATE.IDLE;
-		}
-	}
-
-	
-	
-	/**
-	 * This method should be called whenever we receive a byte[] from the pod.
-	 * @param response the circular buffer that contains the data that was received over BT
-	 * @param bytes how many bytes were received and stored in response[] on the call to this method
-	 * @param index the starting index into the circular data buffer that should be read
-	 */
-	protected void interpretResponse(byte[] response, int bytes, int index) {
-		switch (BT_STATE) {
-		case LEARN:
-			try { // catch any unforseen state machine errors.....
-				// learn data may not come all together, so need to process data
-				// in chunks
-				while (bytes > 0) {
-					switch (Pod.learn_state) {
-					case IDLE:
-						if (response[index] == Pod.Codes.ACK) {
-							Pod.learn_state = Pod.LEARN_STATE.PKT_LENGTH;
-							index = (index + 1)	% BluetoothChatService.buffer_size;
-							bytes--;
-							Pod.data_index = 0;
-						} else {
-							signalError(1);
-							return;
-						}
-						break;
-
-					case PKT_LENGTH:
-						// if we got here then we are on the second byte of data
-						if (Utilities.isGreaterThanUnsignedByte(
-								response[index], 0)) {
-							Pod.pod_data = new byte[(0x00FF & response[index]) + Pod.HP_OFFSET];  
-							// first three bytes are 'pkt_length carrier_freq reserved' 
-							Pod.pod_data[Pod.data_index++] = response[index];
-							bytes--;
-							index = (index + 1)	% BluetoothChatService.buffer_size;							
-							Pod.learn_state = Pod.LEARN_STATE.CARRIER_FREQ;
-						} else {
-							signalError(1);
-							return;
-						}
-						break;
-						
-					case CARRIER_FREQ:
-						// third byte should be carrier frequency
-						if (checkPodDataBounds(bytes)) {
-							Pod.learn_state = Pod.LEARN_STATE.RESERVED;
-							Pod.pod_data[Pod.data_index++] = response[index];
-							bytes--;
-							index = (index + 1)	% BluetoothChatService.buffer_size;
-						} else {
-							signalError(1);
-							return;
-						}
-						break;
-
-					case RESERVED:
-						// fourth byte should be reserved
-						if (checkPodDataBounds(bytes)) {
-							Pod.learn_state = Pod.LEARN_STATE.COLLECTING;
-							Pod.pod_data[Pod.data_index++] = 0; // default to 0
-							bytes--;
-							index = (index + 1)	% BluetoothChatService.buffer_size;
-						} else {
-							signalError(1);
-							return;
-						}
-						break;
-
-					case COLLECTING:
-						if (checkPodDataBounds(bytes)) {
-							Pod.pod_data[Pod.data_index++] = response[index];
-							// first check to see if this is the last byte
-							if (Utilities.isGreaterThanUnsignedByte(
-									Pod.data_index, Pod.pod_data[0] + 2)) { 
-								// data index at final position is nth or N+1 total items, pod_data[0]
-								// is the # of bytes of IR data, so adding 2 gives (n+2)th index.
-								// After last byte received then data_index points to an index after
-								// the last so we exit the collecting routine and store data.
-								Pod.learn_state = Pod.LEARN_STATE.IDLE; 
-								dismissDialog(DIALOG_LEARN_WAIT);
-								Pod.processRawData(this); // first 3 bytes are not to be analyzed
-								return;
-							}							
-							bytes--;
-							index = (index + 1)	% BluetoothChatService.buffer_size;
-						} else {
-							signalError(1);
-							return;
-						}
-						break;
-					} // end switch/case
-				} // end while loop
-			} catch (Exception e) { // something unexpected occurred....exit
-				Toast.makeText(this, "Communication error, exiting learn mode",
-						Toast.LENGTH_SHORT).show();
-				BT_STATE = Pod.BT_STATE.IDLE;
-				return;
-			}
-			break;
-
-		case GET_VERSION:
-				try { 
-					while (bytes > 0) {
-						switch (Pod.info_state) {
-						case IDLE:
-							if (response[index] == Pod.Codes.ACK) {
-								Pod.pod_data = new byte[Pod.INFO_STATE.values().length]; 
-								Pod.info_state = Pod.INFO_STATE.BYTE0;
-								index = (index + 1)	% BluetoothChatService.buffer_size;
-								bytes--;
-								Pod.data_index = 0;
-							} else {
-								signalError(2);
-								return;
-							}
-							break;
-
-						case BYTE0:
-							Pod.pod_data[0] = response[index];
-							Pod.info_state = Pod.INFO_STATE.BYTE1;
-							bytes--;
-							index = (index + 1)	% BluetoothChatService.buffer_size;
-							break;
-
-						case BYTE1:
-							Pod.pod_data[1] = response[index];
-							Pod.info_state = Pod.INFO_STATE.BYTE2;
-							bytes--;
-							index = (index + 1)	% BluetoothChatService.buffer_size;
-							break;
-
-						case BYTE2:
-							Pod.pod_data[2] = response[index];
-							Pod.info_state = Pod.INFO_STATE.BYTE3;
-							bytes--;
-							index = (index + 1)	% BluetoothChatService.buffer_size;
-							break;
-
-						case BYTE3:
-							Pod.pod_data[3] = response[index];
-							Pod.info_state = Pod.INFO_STATE.IDLE;
-							bytes--;
-							index = (index + 1) % BluetoothChatService.buffer_size;
-							// need to launch window to dump the data to
-							showDialog(DIALOG_SHOW_INFO);
-							break;
-						}
-					}
-				} catch (Exception e) {
-					Toast.makeText(this,
-							"Communication error, exiting learn mode",
-							Toast.LENGTH_SHORT).show();
-					BT_STATE = Pod.BT_STATE.IDLE;
-					return;
-				}
-			break;
-
-		case ABORT_LEARN:
-			BT_STATE = Pod.BT_STATE.IDLE; // reset state
-			if (response[index] == Pod.Codes.ACK) {
-
-			}
-			break;
-
-		case IR_TRANSMIT:
-			BT_STATE = Pod.BT_STATE.IDLE;			
-			if (response[index] == Pod.Codes.ACK) {
-				// release lock if we get an ACK
-				buttonLock = false;
-				if (DEBUG) {
-					Toast.makeText(this, "ACK received - lock removed", Toast.LENGTH_SHORT).show();
-				}
-			}
-			break;
-			
-		case ABORT_TRANSMIT:
-			BT_STATE = Pod.BT_STATE.IDLE; // reset state
-			if (DEBUG) {
-				if (response[index] == Pod.Codes.ACK) {
-					Toast.makeText(this, "ACK received for abort transmit", Toast.LENGTH_SHORT).show();
-				}
-			}
-			break;
-		}
-	}
+	}	
 
 	@Override
 	protected Dialog onCreateDialog(int id) {
@@ -1661,6 +1393,15 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			learnWait.setMessage("Aim the remote control at the pod and push the selected button");
             return learnWait;
 			
+		case DIALOG_FW_WAIT:
+			// should create a new progressdialog 
+			// the dialog should exit after the FW image list is downloaded
+			ProgressDialog fwListWait = new ProgressDialog(BluMote.this);
+			fwListWait .setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			fwListWait .setCancelable(true); // don't allow back button to cancel it
+			fwListWait .setMessage("Downloading list of firmware images...");
+            return fwListWait;
+            
 		case DIALOG_ABOUT:
 			// define dialog			
 			StringBuilder aboutDialog = new StringBuilder();
@@ -1679,6 +1420,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			alert = builder.create();
 			return alert;
 			
+		case FLASH_PROGRESS_DIALOG:	          
+			progressDialog2 = new ProgressDialog(BluMote.this);
+            progressDialog2.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog2.setCancelable(false); // don't allow back button to cancel it
+            progressDialog2.setMessage("Loading...");
+            return progressDialog2;
+            
 		default:
 			return alert;
 		}
@@ -1740,4 +1488,180 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             // this method unused
         }
     }
+
+	/**
+	 * Download a file from the website which is used to determine the history
+	 * of firmware revisions.
+	 * @author keusej
+	 *
+	 */
+	private class DownloadTextFileTask extends AsyncTask<String, Integer, String[]> {
+		protected String[] doInBackground(String... urls) {
+			try {
+				URL url = new URL(urls[0]);
+				BufferedReader bufferReader = new BufferedReader(
+						new InputStreamReader(url.openStream()));
+				String StringBuffer;
+				ArrayList<String> stringText = new ArrayList<String>();
+				while ((StringBuffer = bufferReader.readLine()) != null) {
+					stringText.add(StringBuffer);
+				}             
+				bufferReader.close();
+
+				String[] returnStrings = new String[stringText.size()];
+				return stringText.toArray(returnStrings);
+			} catch (Exception e) {}
+			return null;
+		}
+
+		protected void onPostExecute(String[] result) {	
+			// save the data we downloaded for the firmware process
+
+			Pod.setFirmwareRevision(result);
+			// get currently installed pod version
+			Pod.currentSwRev = null; // clear it out first
+			Pod.lockDialog(); // don't display pop-up
+			// time-out if we don't receive it
+			Pod.getVersion();	
+			waitForGetVersion(1000, 0); // 1 sec max wait time
+			dismissDialog(DIALOG_FW_WAIT);
+			Pod.unlockDialog(); // unlock dialog pop-up
+			Intent i = new Intent(BluMote.this, FwUpdateActivity.class);							
+			startActivityForResult(i, BluMote.UPDATE_FW);
+			return;
+		}
+	}
+
+	/**
+	 * Recursive function to implement a time-out waiting for data
+	 * to arrive from the BT device.
+	 * @param maxWait
+	 * @param current
+	 */
+	private void waitForGetVersion(int maxWait, int current) {
+		final int maxWaitTime = maxWait;
+		final int currentWait = current;
+		
+		if ( currentWait < maxWaitTime && Pod.currentSwRev != null) {			
+			new CountDownTimer(10, 10) {
+				public void onTick(long millisUntilFinished) {
+					// no need to use this function
+				}
+				public void onFinish() {
+					// called when timer expired
+					// max recursions are maxWait / 10 
+					waitForGetVersion(maxWaitTime, currentWait + 10);
+				}
+			}.start();
+		}
+	}		
+
+	 /**
+	  * Facilitates implementing a wait time-out feature
+	  * usually used in conjunction with a CountDownTimer class.
+	  * Gets around Java not being able to talk to anything but Final
+	  * fields from inside an inner class thread
+	  * @author keusej
+	  *
+	  */
+	 public static class Wait {
+		 public final int maxWaitTime;
+		 public int waitTime = 0;
+		 public boolean unlocked = true;
+
+		 public Wait(int maxWait) {
+			 maxWaitTime = maxWait;
+		 }		
+	 }
+
+	 /**
+	  * AsyncTask to flash the file to the pod
+	  * @author keusej
+	  *
+	  */
+	 private class FlashFileToPodTask extends AsyncTask<Void, Integer, Integer> {
+		 	Exception e = null;
+		 	int byteCounter = 0;   
+
+		 	@Override 
+		 	protected Integer doInBackground(Void... voids) {
+		 		try {				
+		 			publishProgress(0); // start at 0													
+
+		 			// first jump into BSL using start sequence
+		 			Pod.setBslState();
+
+		 			Pod.startBSL();
+
+		 			FileInputStream f = new FileInputStream(new File(FW_LOCATION));
+		 			BufferedReader br = new BufferedReader(new InputStreamReader(f));
+		 			String strLine;	
+
+		 			// count # of lines in the file (used for progress bar)
+		 			int count = 0;
+		 			while (br.readLine() != null) count++;
+
+		 			f.getChannel().position(0); // reset to beginning of file
+		 			br = new BufferedReader(new InputStreamReader(f));					
+
+		 			//Read File Line By Line
+		 			int lineCounter = 0;
+		 			while ((strLine = br.readLine()) != null)   {
+		 				try {							
+		 					Pod.sendFwLine(strLine);
+		 				} catch (BslException error) {
+		 					e = error;
+		 					break;
+		 				}
+		 				lineCounter++;
+		 				publishProgress((int) ((lineCounter / count) * 100));
+		 			}
+		 			f.close();	
+		 			
+		 			// Enter cmd mode and instruct Pod to exit BSL and reset FW
+		 			Pod.sendBSLString("$$$");
+		 			Pod.receiveResponse();
+		 			Pod.exitBsl();
+		 		} catch(BslException error) {
+		 			e = error;													
+				} catch (IOException e) {
+					this.e = e;
+				} catch (NumberFormatException e) {
+					this.e = e;
+				}
+				return new Integer(byteCounter);
+			}
+
+			@Override
+			protected void onProgressUpdate(Integer... progress) {
+				// update progress bar
+				progressDialog2.setProgress(progress[0]);
+			}
+
+			@Override
+			protected void onPostExecute(Integer bytes) {
+				dismissDialog(FLASH_PROGRESS_DIALOG);
+				// when finished reset bluetooth state
+				Pod.setIdleState();
+				
+				// tell user it was not successful
+				if (e != null) {
+					//Log.e("BSL", e.getMessage());
+					new AlertDialog.Builder(BluMote.this)
+			        	.setIcon(android.R.drawable.ic_dialog_info)
+				        .setMessage(R.string.error_fw_download)
+				        .setPositiveButton(R.string.OK, null)
+				        .show();
+					return;
+				}
+								 
+				// Tell user it was successful
+				new AlertDialog.Builder(BluMote.this)
+		        	.setIcon(android.R.drawable.ic_dialog_info)
+			        .setTitle(R.string.success)
+			        .setPositiveButton(R.string.OK, null)
+			        .show();				
+				return;
+			}
+		}
 }

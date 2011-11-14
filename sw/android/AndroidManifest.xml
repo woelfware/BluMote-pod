@@ -15,7 +15,7 @@
 		<activity android:name="MyPreferences" android:screenOrientation="portrait"/>
 		<activity android:name="PodListActivity" android:screenOrientation="portrait"/>    
 		<activity android:name="ManageDevices" android:screenOrientation="portrait"/>
-		
+		<activity android:name="FwUpdateActivity" android:screenOrientation="portrait"/>
 		<activity android:theme="@android:style/Theme.Dialog" android:label="New Device" android:name="EnterDevice" android:screenOrientation="portrait"></activity>
 		<activity android:theme="@android:style/Theme.Dialog" android:label="New Activity" android:name="CreateActivity" android:screenOrientation="portrait"></activity>
 		<activity android:name="ActivityInitEdit" android:screenOrientation="portrait"></activity>
@@ -25,5 +25,7 @@
 	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN"></uses-permission>
 	<uses-permission android:name="android.permission.BLUETOOTH"></uses-permission>
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
 	<uses-sdk android:targetSdkVersion="10" android:minSdkVersion="5"></uses-sdk>
 </manifest> 
