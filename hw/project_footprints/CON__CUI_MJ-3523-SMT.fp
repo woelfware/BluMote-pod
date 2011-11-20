@@ -8,8 +8,8 @@ Element [ 0x0 "CON__CUI_MJ-3523-SMT"  ""  ""  20000  20000  0  0   0   100   0x0
 
 	#Now adding Pins(Vias)
 	#Pin [rX  rY  Annular-Ring  Copper-Clearance  Soldermask-Clearance  Drill-Size  "Name" "Number" SFlags]
-	Pin [ 0 	0 	400 	1600 	400 	6700 	""  	"" 	 0x00 ]
-	Pin [ -27600 	0 	400 	1600 	400 	6700 	""  	"" 	 0x00 ]
+	Pin [ 0 	0 	8700 	3200 	6700 	6700 	""  	"" 	 0x0008 ]
+	Pin [ -27600 	0 	8700 	3200 	6700 	6700 	""  	"" 	 0x0008 ]
 
 	#Now adding Pads
 	#Pad [rX1 rY1 rX2 rY2 Thickness Clearance Mask "Name" "Number" SFlags]
