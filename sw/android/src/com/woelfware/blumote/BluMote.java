@@ -640,12 +640,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * Sends the byte[] to the currently connected bluetooth device
 	 * @param message the byte[] to send
 	 */
-	void sendMessage(byte[] message) {
+	boolean sendMessage(byte[] message) {
 		// Check that we're actually connected before trying anything
 		if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
 			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT)
 					.show();
-			return;
+			return false;
 		}
 		
 		// Check that there's actually something to send
@@ -654,7 +654,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// write
 			byte[] send = message;
 			mChatService.write(send);
+			return true;
 		}		
+		return false;
 	}
 
 	/**
@@ -950,6 +952,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 			
 		case R.id.fw_update:
+			// Make sure we are connected to pod before allowing this
+			if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
+				Toast.makeText(this, "You need to connect to a Pod first",
+						Toast.LENGTH_SHORT).show();
+				return true;
+			}
 			showDialog(DIALOG_FW_WAIT);			
 			DownloadTextFileTask downloadFile = new DownloadTextFileTask();
 			downloadFile.execute(FW_IMAGE_URL);
@@ -1398,7 +1406,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// the dialog should exit after the FW image list is downloaded
 			ProgressDialog fwListWait = new ProgressDialog(BluMote.this);
 			fwListWait .setProgressStyle(ProgressDialog.STYLE_SPINNER);
-			fwListWait .setCancelable(true); // don't allow back button to cancel it
+			fwListWait .setCancelable(true); // allow back button to cancel it
 			fwListWait .setMessage("Downloading list of firmware images...");
             return fwListWait;
             
@@ -1590,9 +1598,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		 			// first jump into BSL using start sequence
 		 			Pod.setBslState();
-
 		 			Pod.startBSL();
-
+		 			
 		 			FileInputStream f = new FileInputStream(new File(FW_LOCATION));
 		 			BufferedReader br = new BufferedReader(new InputStreamReader(f));
 		 			String strLine;	
@@ -1606,29 +1613,20 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 		 			//Read File Line By Line
 		 			int lineCounter = 0;
-		 			while ((strLine = br.readLine()) != null)   {
-		 				try {							
-		 					Pod.sendFwLine(strLine);
-		 				} catch (BslException error) {
-		 					e = error;
-		 					break;
-		 				}
+		 			while ((strLine = br.readLine()) != null)   {		 					
+		 				Pod.sendFwLine(strLine);
 		 				lineCounter++;
-		 				publishProgress((int) ((lineCounter / count) * 100));
+		 				publishProgress((int)((lineCounter / (float) count) * 100));
 		 			}
 		 			f.close();	
 		 			
 		 			// Enter cmd mode and instruct Pod to exit BSL and reset FW
 		 			Pod.sendBSLString("$$$");
 		 			Pod.receiveResponse();
-		 			Pod.exitBsl();
-		 		} catch(BslException error) {
-		 			e = error;													
-				} catch (IOException e) {
-					this.e = e;
-				} catch (NumberFormatException e) {
-					this.e = e;
-				}
+		 			Pod.exitBsl();				
+		 		} catch (Exception e) {
+		 			this.e = e;
+		 		}
 				return new Integer(byteCounter);
 			}
 
