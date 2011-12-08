@@ -286,7 +286,7 @@ void blumote_main()
 		/* ACK upon receipt of the reset since the link will be reset
 		 * at the end of this function.
 		 */
-		uber_buf.rdptr = uber_buf.wr_ptr = 0;
+		uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
 		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;
 		bluetooth_tx(&uber_buf);
 
