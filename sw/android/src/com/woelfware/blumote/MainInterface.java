@@ -310,11 +310,10 @@ public class MainInterface {
 
 	}
 	
-	void setInterfaceState(INTERFACE_STATES state) {
-		INTERFACE_STATE = state;
+	void refreshInterfaceBackground() {		
 		// set background based on mode of operation
 		try {
-			switch (state) {
+			switch (INTERFACE_STATE) {
 			case MAIN:				
 				toplevel.setBackgroundResource(R.drawable.background_gry_scaled);
 				break;
@@ -340,6 +339,12 @@ public class MainInterface {
 				break;
 			}
 		} catch (Exception e) {}
+	}
+	
+	void setInterfaceState(INTERFACE_STATES state) {
+		INTERFACE_STATE = state;
+		
+		refreshInterfaceBackground();
 	}
 	
 	/**
@@ -544,6 +549,8 @@ public class MainInterface {
 		
 		// update buttons
 		fetchButtons();				
+		
+		refreshInterfaceBackground();
 	}
 	
 	/**

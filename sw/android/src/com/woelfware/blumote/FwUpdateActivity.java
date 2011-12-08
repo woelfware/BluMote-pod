@@ -166,7 +166,6 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
         	.setIcon(android.R.drawable.ic_dialog_alert)
 	        .setMessage(R.string.confirm_fw)
 	        .setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
-	            @Override
 	            public void onClick(DialogInterface dialog, int which) {	               
 	            	// run the download manager for the image
 	        		manager.start(item);

@@ -13,10 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<menu xmlns:android="http://schemas.android.com/apk/res/android">    
-    <item android:id="@+id/activity_edit_init"
-          android:icon="@android:drawable/ic_menu_edit"
-          android:title="Edit Startup Sequence" ></item>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">        
     <item android:id="@+id/end_activity_edit"
           android:icon="@android:drawable/ic_menu_manage"
           android:title="Complete" ></item>  

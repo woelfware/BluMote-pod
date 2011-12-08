@@ -759,7 +759,6 @@ class Pod {
 	
 	/**
 	 * Implements scheme to enter the BSL and get ready to receive the image
-	 * TODO determine if we need to add delays between these steps
 	 */
 	static void startBSL() throws BslException {
 		byte[] msg;				
@@ -771,13 +770,13 @@ class Pod {
 		// step 2, enter the BSL
 		enterBsl();
 		
-		// step 4, mass erase
+		// step 3, mass erase
 		sync();
 		msg = new byte[] {(byte) 0x80, 0x18, 0x04, 0x04, 0x00, 0x00, 0x06, (byte) 0xA5};
 		blumote.sendMessage(Util.concat(msg, calcChkSum(msg) ) );
 		receiveResponse();
 		
-		// step 5, sending Rx password
+		// step 4, sending Rx password
 		sync();
 		msg = new byte[] {(byte)0x80, 0x10, 0x24, 0x24, 0x00, 0x00, 0x00, 0x00};
 		byte[] passwd = {
