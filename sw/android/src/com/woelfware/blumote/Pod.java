@@ -738,19 +738,20 @@ class Pod {
 		byte rst = 1 << 3; // PIO-11
 		
 		// http://www.ti.com/lit/ug/slau319a/slau319a.pdf
-		// rst  ________|------
-		// test ___|-|_|--|____		
-		sendBSLString( String.format("S*,%02X%02X\r\n", (rst|test), 0) );
+		// rst  _________|------
+		// test ___|-|_|---|____
+		// NOTE: inverted rst and test due to FETs on the pod
+		sendBSLString( String.format("S*,%02X%02X\r\n", (rst|test), (rst|test)) );
+		receiveResponse();
+		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
 		receiveResponse();
 		sendBSLString( String.format("S*,%02X%02X\r\n", test, test) );
 		receiveResponse();
 		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
 		receiveResponse();
+		sendBSLString( String.format("S*,%02X%02X\r\n", rst, 0) );
+		receiveResponse();
 		sendBSLString( String.format("S*,%02X%02X\r\n", test, test) );
-		receiveResponse();
-		sendBSLString( String.format("S*,%02X%02X\r\n", rst, rst) );
-		receiveResponse();
-		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
 		receiveResponse();
 		// step 3, set to 9600 baud
 		sendBSLString( "U,9600,E\r\n" );
