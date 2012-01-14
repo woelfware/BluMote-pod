@@ -82,7 +82,7 @@ class BluMote(bluetooth.BluetoothSocket):
 		# http://www.ti.com/lit/ug/slau319a/slau319a.pdf
 		# rst  ________|------
 		# test ___|-|_|--|____
-		self.send('S*,%02X%02X\r\n' % (rst | test, 0))
+		self.send('S*,%02X%02X\r\n' % (rst | test, rst))
 		self.recv(128)
 		self.send('S*,%02X%02X\r\n' % (test, test))
 		self.recv(128)
@@ -90,7 +90,7 @@ class BluMote(bluetooth.BluetoothSocket):
 		self.recv(128)
 		self.send('S*,%02X%02X\r\n' % (test, test))
 		self.recv(128)
-		self.send('S*,%02X%02X\r\n' % (rst, rst))
+		self.send('S*,%02X%02X\r\n' % (rst, 0))
 		self.recv(128)
 		self.send('S*,%02X%02X\r\n' % (test, 0))
 		self.recv(128)
@@ -259,8 +259,8 @@ if __name__ == '__main__':
 
 		print 'Setting the RN-42 UART baud to 9600:', bm_up.set_baud_9600()
 
-		print 'Mass erase...'
-		msg = bm_up.mass_erase()
+		print 'sending rx password...'
+		msg = bm_up.rx_password()
 		print [hex(i) for i in struct.unpack('B' * len(msg), msg)]
 
 		print 'sending rx password...'
