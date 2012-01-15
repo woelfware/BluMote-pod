@@ -93,6 +93,7 @@ class Pod {
         public static final byte ACK = (byte)0x06;
         public static final byte NACK = (byte)0x15;
         public static final byte ABORT_TRANSMIT = (byte)0x03; // stop repeating IR command
+        public static final byte RESET_RN42 = 0x04; // resets the rn42 module from msp430
     }
     
     class BSL_CODES {
@@ -683,6 +684,13 @@ class Pod {
 		blumote.sendMessage(toSend);
 	}
 	
+	static void resetRn42() {
+		byte[] toSend;
+		toSend = new byte[1];
+		toSend[0] = (byte)Codes.RESET_RN42;
+		blumote.sendMessage(toSend);
+	}
+	
 	static void getVersion() {
 		byte[] toSend;
 		setGetVerState();
@@ -721,11 +729,11 @@ class Pod {
 		byte rst = 1 << 3; // PIO-11
 		
 		// http://www.ti.com/lit/ug/slau319a/slau319a.pdf
-		//	rst  ________|------
+		//	rst  ________|------ (actually inverted)
 		//	test _______________
-		sendBSLString( String.format("S*,%02X%02X\r\n", (rst|test), 0) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", (rst|test), rst) );
 		receiveResponse();
-		sendBSLString( String.format("S*,%02X%02X\r\n", rst, rst) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", rst, 0) );
 		receiveResponse();
 	}
 	
@@ -738,31 +746,33 @@ class Pod {
 		byte rst = 1 << 3; // PIO-11
 		
 		// http://www.ti.com/lit/ug/slau319a/slau319a.pdf
-		// rst  _________|------
+		// rst  _________|------  (actually inverted)
 		// test ___|-|_|---|____
-		// NOTE: inverted rst and test due to FETs on the pod
-		sendBSLString( String.format("S*,%02X%02X\r\n", (rst|test), (rst|test)) );
-		receiveResponse();
-		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
+		// NOTE: inverted rst due to FET on the pod hw
+		sendBSLString( String.format("S*,%02X%02X\r\n", (rst|test), rst) );
 		receiveResponse();
 		sendBSLString( String.format("S*,%02X%02X\r\n", test, test) );
 		receiveResponse();
 		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
+		receiveResponse();
+		sendBSLString( String.format("S*,%02X%02X\r\n", test, test) );
 		receiveResponse();
 		sendBSLString( String.format("S*,%02X%02X\r\n", rst, 0) );
 		receiveResponse();
-		sendBSLString( String.format("S*,%02X%02X\r\n", test, test) );
+		sendBSLString( String.format("S*,%02X%02X\r\n", test, 0) );
 		receiveResponse();
 		// step 3, set to 9600 baud
 		sendBSLString( "U,9600,E\r\n" );
-		receiveResponse();
+		receiveResponse();				
 	}
 	
 	/**
 	 * Implements scheme to enter the BSL and get ready to receive the image
 	 */
-	static void startBSL() throws BslException {
-		byte[] msg;				
+	static void startBSL() throws BslException {				
+		//reset the RN42 module
+		//TODO test this
+		resetRn42();
 		
 		// step 1, enter the command mode
 		sendBSLString(BSL_CODES.CMD_MODE);
@@ -771,13 +781,18 @@ class Pod {
 		// step 2, enter the BSL
 		enterBsl();
 		
-		// step 3, mass erase
-		sync();
-		msg = new byte[] {(byte) 0x80, 0x18, 0x04, 0x04, 0x00, 0x00, 0x06, (byte) 0xA5};
-		blumote.sendMessage(Util.concat(msg, calcChkSum(msg) ) );
-		receiveResponse();
+		// step 3, sending Rx password
+		sendPassword();
 		
 		// step 4, sending Rx password
+		sendPassword();
+		
+		// after this is finished we are ready to start flashing the hex code to the pod
+	}
+	
+	static void sendPassword() throws BslException {
+		byte[] msg;	
+		
 		sync();
 		msg = new byte[] {(byte)0x80, 0x10, 0x24, 0x24, 0x00, 0x00, 0x00, 0x00};
 		byte[] passwd = {
@@ -801,7 +816,6 @@ class Pod {
 		msg = Util.concat(msg, passwd);
 		blumote.sendMessage(Util.concat(msg, calcChkSum(msg) ) );
 		receiveResponse();
-		// after this is finished we are ready to start flashing the hex code to the pod
 	}
 	
 	/**
