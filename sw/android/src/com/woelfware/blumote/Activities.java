@@ -915,14 +915,14 @@ public class Activities {
 					try {
 						// convert each devices element back to the actual name from the id
 						devices[i] = blumote.lookup.getName(devices[i]);
-						
+				 		
 						// try to insert data from database if it exists
-						buttonData = blumote.device_data.getButton(devices[i], blumote.button_map.get(R.id.power_on_btn));
+						buttonData = blumote.device_data.getButton(devices[i], mainint.button_map.get(R.id.power_on_btn));
 						returnData[i] = new ButtonData( R.id.power_on_btn, 
-								blumote.button_map.get(R.id.power_on_btn),buttonData);
+								mainint.button_map.get(R.id.power_on_btn),buttonData);
 					} catch (Exception e) {
 						// if the call the getButtion() failed then lets just create a button with null for data
-						returnData[i] = new ButtonData(0, blumote.button_map.get(R.id.power_on_btn),null);
+						returnData[i] = new ButtonData(0, mainint.button_map.get(R.id.power_on_btn),null);
 					}
 				}
 				

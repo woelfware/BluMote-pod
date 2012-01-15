@@ -353,7 +353,7 @@ public class MainInterface {
 	public void initializeButtons(ButtonCreator type) {
 		ButtonParameters[] buttons = type.getButtons(blumote);
 		button_map.clear(); // start out clear
-		
+		 
 		if (buttons != null) {
 			for (int i=0; i<buttons.length; i++) {
 				View v = buttons[i].getView();
@@ -469,7 +469,7 @@ public class MainInterface {
 	 * @return true if it is a navigation button, false if not
 	 */
 	boolean isNavigationButton(int buttonID) {
-		String payload = blumote.button_map.get(buttonID);
+		String payload = button_map.get(buttonID);
 		if (payload != null) {
 			try {
 				// see if we have a navigation page move command....

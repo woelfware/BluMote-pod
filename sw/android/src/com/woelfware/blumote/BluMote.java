@@ -171,11 +171,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 	// a unique integer code for each time a button is pushed, used for preventing
 	// a user from double pushing a button and the long timer accidentally activates
-	private static int buttonPushID = 0;
-
-	// Hash map to keep track of all the buttons on the interface and associated
-	// properties
-	HashMap<Integer, String> button_map;	
+	private static int buttonPushID = 0;	
 	
 	// for holding the activity init sequence while it's being built
 	ArrayList<String> activityInit = new ArrayList<String>();
@@ -187,7 +183,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private static final int ID_DELETE = 0;
 	private static final int ID_RENAME = 1;
 	private static final int ID_MANAGE = 2;	
-	
+	 
 	// Menu object - initalized in onCreateOptionsMenu()
 	Menu myMenu;		
 
@@ -274,7 +270,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
                 }                
                 else // non fling event
                 {                     	
-                	if (button_map.get(v.getId()) != null) {
+                	if (mainScreen.button_map.get(v.getId()) != null) {
                 		// if this is a valid button press then execute the button logic
                 		if (e.getAction() == MotionEvent.ACTION_DOWN) {
                 			isButtonPushed = true;
@@ -373,8 +369,6 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			}			
 			
 			mainScreen.fetchButtons();
-
-			button_map = mainScreen.getButtonMap();
 			
 			// context menu on array list
 			registerForContextMenu(findViewById(R.id.activities_list));
@@ -498,7 +492,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * @param buttonID the button name
 	 */
 	public void executeNavigationButton(int buttonID) {
-		String buttonName = button_map.get(buttonID);
+		String buttonName = mainScreen.button_map.get(buttonID);
 		if (buttonName != null) {
 			try {
 				// see if we have a navigation page move command....
@@ -523,7 +517,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		BUTTON_ID = v.getId(); // save Button ID - besides this function, also referenced in storeButton()
 								// when a new button is learned	
 		String buttonName = null;
-		buttonName = button_map.get(BUTTON_ID); // convert ID to button name
+		buttonName = mainScreen.button_map.get(BUTTON_ID); // convert ID to button name
 		if (mainScreen.isNavigationButton(BUTTON_ID)) {
 			return;  // navigation buttons don't need an onClick handler
 		}
@@ -551,12 +545,14 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 					// activityButton holds the original activity button we want to associate to
 					//addActivityKeyBinding(String btnID, String device, String deviceBtn)
-					activities.addActivityKeyBinding(activityButton, cur_device, button_map.get(BUTTON_ID));
+					activities.addActivityKeyBinding(activityButton, cur_device, mainScreen.button_map.get(BUTTON_ID));
 					captureButton = false; 
 					// make sure to jump back to original activity and then re-show the drop-down				
 					mainScreen.setDropDown(activities.getWorkingActivity());					
 					Toast.makeText(this, "Button associated with device",
 							Toast.LENGTH_SHORT).show();
+					
+					mainScreen.setDropDownVis(false); // make sure drop-down stays hidden until completel finished
 				}
 				else {
 					// else we want to associate a new button on the activity interface
@@ -571,7 +567,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 							// this device for the next step.  Also set the global flags for the button that
 							// we are working on and the flag that indicates we are waiting for a keypress
 							captureButton = true;
-							activityButton = button_map.get(BUTTON_ID);		
+							activityButton = mainScreen.button_map.get(BUTTON_ID);		
 							activities.setWorkingActivity(mainScreen.getCurrentDropDown());
 							// switch to the selected device
 							mainScreen.setInterfaceState(MainInterface.INTERFACE_STATES.MAIN); // setting drop-down only works in ACTIVITY/MAIN modes
@@ -591,7 +587,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		} else if (mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.ACTIVITY_INIT) {
 			// store init entries by device, button-id
 			if (Activities.isValidActivityButton(BUTTON_ID)) {
-				activityInit.add(cur_device+" "+button_map.get(BUTTON_ID));
+				activityInit.add(cur_device+" "+mainScreen.button_map.get(BUTTON_ID));
 				Toast.makeText(this, "Button press added to initialization list!",
 						Toast.LENGTH_SHORT).show();
 			} else {
@@ -619,7 +615,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 * @param map the new map to use
 	 */
 	protected void setButtonMap(HashMap<Integer, String> map) {
-		button_map = map;
+		mainScreen.button_map = map;
 	}
 
 	/**
@@ -1283,7 +1279,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			}
 		}
 		else if (buttons != null && buttons.length > 0) {
-			String buttonName = button_map.get(buttonID);
+			String buttonName = mainScreen.button_map.get(buttonID);
 			if (buttonName != null) {
 				for (int i=0; i < buttons.length; i++) {
 					if ( buttonName.equals(buttons[i].getButtonName()) ) {
@@ -1312,7 +1308,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	 */
 	protected void storeButton() {
 		String buttonName = null;
-		buttonName = button_map.get(BUTTON_ID);
+		buttonName = mainScreen.button_map.get(BUTTON_ID);
 
 		// make sure payload is not null and make sure we are in learn mode
 		if (buttonName != null && mainScreen.INTERFACE_STATE == MainInterface.INTERFACE_STATES.LEARN) {
