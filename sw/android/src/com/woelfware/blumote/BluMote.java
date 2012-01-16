@@ -106,6 +106,8 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	static final int DIALOG_LEARN_WAIT = 4;
 	private static final int DIALOG_FW_WAIT = 5;
 	private static final int FLASH_PROGRESS_DIALOG = 6;
+	private static final int DIALOG_WAIT_BSL = 7;
+	private static final int DIALOG_RESET_POD = 8;
 	
 	// for firmware flashing process
 	ProgressDialog progressDialog2;
@@ -380,7 +382,20 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		super.onResume();
 		device_data.open(); // make sure database open
 
-		// Performing this check in onResume() covers the case in which BT was
+		reconnectPod();
+	}
+
+	int getBluetoothState() {
+		if (mChatService != null) {
+			// Only if the state is STATE_NONE, do we know that we haven't
+			// started already
+			return mChatService.getState();
+		}
+		else return -1;
+	}
+	
+	void reconnectPod() {
+		// Performing this check covers the case in which BT was
 		// not enabled during onStart(), so we were paused to enable it...
 		// onResume() will be called when ACTION_REQUEST_ENABLE activity
 		// returns.
@@ -864,9 +879,12 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Bundle return_bundle = data.getExtras();
 				if (return_bundle != null) {
 					FW_LOCATION = return_bundle.getString(FwUpdateActivity.FW_LOCATION);
-					showDialog(FLASH_PROGRESS_DIALOG);
-					FlashFileToPodTask flasher = new FlashFileToPodTask();
-					flasher.execute((Void)null);
+					//showDialog(FLASH_PROGRESS_DIALOG);
+					showDialog(DIALOG_WAIT_BSL);
+					EnterBSLTask bsl = new EnterBSLTask();
+					bsl.execute(Pod.ENABLE_RESET);
+					//FlashFileToPodTask flasher = new FlashFileToPodTask();
+					//flasher.execute((Void)null);
 				}
 			}
 			break;
@@ -1431,6 +1449,35 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
             progressDialog2.setMessage("Loading...");
             return progressDialog2;
             
+		case DIALOG_WAIT_BSL:
+			// should create a new progressdialog 
+			ProgressDialog bslWait = new ProgressDialog(BluMote.this);
+			bslWait.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			bslWait.setCancelable(false); // allow back button to cancel it
+			bslWait.setMessage("Resetting pod...this may take a minute");
+            return bslWait;
+            
+		case DIALOG_RESET_POD:
+			builder = new AlertDialog.Builder(this);
+			builder.setMessage("Automatic reset failed.  Please power cycle " +
+					"the pod and press OK.  Press CANCEL to stop the FW update utility.")
+			       .setCancelable(false)
+			       .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+			    	   public void onClick(DialogInterface dialog, int id) {
+			    		   // launch another instance of EnterBslTask
+			    		   EnterBSLTask enterbsl = new EnterBSLTask();
+			    		   enterbsl.execute(Pod.INHIBIT_RESET);
+			           }
+			       })
+			       .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			        	   	dismissDialog(DIALOG_WAIT_BSL);
+			                dialog.cancel();
+			           }
+			       });
+			alert = builder.create();
+			return alert;
+            
 		default:
 			return alert;
 		}
@@ -1578,6 +1625,42 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		 }		
 	 }
 
+	 // part 1 of BSL routine, need to reset rn42 and kick off BSL entry sequence, then
+	 // call the FlashFileToPod task
+	 private class EnterBSLTask extends AsyncTask<Integer, Integer, String> {
+			protected String doInBackground(Integer... flag) {
+				try {
+		 			Pod.setBslState();
+					if (flag[0] == Pod.INHIBIT_RESET) {
+						Pod.startBSL(Pod.INHIBIT_RESET);
+					} else {
+						Pod.startBSL(Pod.ENABLE_RESET);
+					}		 			
+				} catch (BslException e) {
+					if (e.getTag() == BslException.RESET_FAILED) {
+						return "FAILED";
+					} else return "PASSED";
+				}
+				return "PASSED";
+			}
+
+			protected void onPostExecute(String result) {	
+				// check return code
+				if (result.matches("FAILED")) {
+					//TODO pop up OK/Cancel screen to prevent endless loop of this
+					// try a power cycle option
+					showDialog(DIALOG_RESET_POD);
+				} else {
+					// need to change visual indicator screen
+					dismissDialog(DIALOG_WAIT_BSL);
+					showDialog(FLASH_PROGRESS_DIALOG);
+					FlashFileToPodTask flasher = new FlashFileToPodTask();
+					flasher.execute((Void)null);
+				}
+				return;
+			}
+		}
+	 
 	 /**
 	  * AsyncTask to flash the file to the pod
 	  * @author keusej
@@ -1590,11 +1673,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		 	@Override 
 		 	protected Integer doInBackground(Void... voids) {
 		 		try {				
-		 			publishProgress(0); // start at 0													
-
-		 			// first jump into BSL using start sequence
-		 			Pod.setBslState();
-		 			Pod.startBSL();
+		 			publishProgress(0); // start at 0															 			
 		 			
 		 			FileInputStream f = new FileInputStream(new File(FW_LOCATION));
 		 			BufferedReader br = new BufferedReader(new InputStreamReader(f));
@@ -1617,9 +1696,13 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		 			f.close();	
 		 			
 		 			// Enter cmd mode and instruct Pod to exit BSL and reset FW
-		 			Pod.sendBSLString("$$$");
-		 			Pod.receiveResponse();
-		 			Pod.exitBsl();				
+		 			try {
+			 			Pod.sendBSLString("$$$");
+			 			Pod.receiveResponse();
+			 			Pod.exitBsl();
+		 			} catch (Exception exception) {
+		 				// do nothing if BSL fails here
+		 			}		 				 			
 		 		} catch (Exception e) {
 		 			this.e = e;
 		 		}

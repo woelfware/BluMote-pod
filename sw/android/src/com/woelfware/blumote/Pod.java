@@ -103,6 +103,9 @@ class Pod {
     	public static final byte DATA_NAK = (byte)0xA0;
     }
     
+    public static final Integer INHIBIT_RESET = 1;
+    public static final Integer ENABLE_RESET = 0;
+    
     // this is to keep track of state machines for example
     // for receiving data from bluetooth interface, how that
     // data should be interpreted
@@ -663,7 +666,6 @@ class Pod {
 
 		case SYNC:
 			// post the result to the Pod class
-			//TODO
 			sync_data = response[index];			
 		}
 	}
@@ -768,11 +770,60 @@ class Pod {
 	
 	/**
 	 * Implements scheme to enter the BSL and get ready to receive the image
+	 * @param flag flag = 1 when we want to inhibit the automatic reset of the RN42
 	 */
-	static void startBSL() throws BslException {				
-		//reset the RN42 module
-		//TODO test this
-		resetRn42();
+	static void startBSL(int flag) throws BslException {
+		int timer = 0;
+		if (flag == ENABLE_RESET) { 
+			//reset the RN42 module
+			resetRn42();
+			// connection will drop eventually, then need to reconnect....
+			while (blumote.getBluetoothState() == BluetoothChatService.STATE_CONNECTED) {		
+				try {
+					Thread.sleep(100);			
+				} catch (InterruptedException e) {
+					// Auto-generated catch block
+					e.printStackTrace();
+				}
+				timer++;
+				if (timer == 100) {
+					Log.v("BSL", "Trying to reset again");
+					resetRn42();
+				}
+				if (timer > 200) {
+					// give up, indicate the reset failed which means user should try a power cycle of pod
+					throw new BslException("Timed out waiting for RN42 to reset", BslException.RESET_FAILED);
+				}
+			}
+		}
+						
+		// once we got here the connection dropped
+		// tell it to reconnect
+		if (blumote.getBluetoothState() == BluetoothChatService.STATE_NONE) {
+			blumote.reconnectPod();	
+		}
+		timer = 0;
+		// wait until it reconnects
+		while (blumote.getBluetoothState() != BluetoothChatService.STATE_CONNECTED) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// Auto-generated catch block
+				e.printStackTrace();
+			}
+			timer++;
+			if (timer == 50) {
+				// try again
+				Log.v("BSL", "Trying to connect again");
+				if (blumote.getBluetoothState() == BluetoothChatService.STATE_NONE) {
+					blumote.reconnectPod();
+				}
+			}
+			if (timer >= 100) {
+				// give up
+				throw new BslException("Timed out waiting for RN42 to reset");
+			}
+		}
 		
 		// step 1, enter the command mode
 		sendBSLString(BSL_CODES.CMD_MODE);

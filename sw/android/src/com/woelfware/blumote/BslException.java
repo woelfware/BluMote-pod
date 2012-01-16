@@ -10,6 +10,9 @@ public class BslException extends Exception {
 	private static final long serialVersionUID = 1L;
 	
 	String oopsMsg;
+	int TAG = -1;
+	
+	static final int RESET_FAILED = 0;
 	
 	public BslException() {
 		super();
@@ -21,8 +24,18 @@ public class BslException extends Exception {
 		oopsMsg = msg;
 	}
 	
+	public BslException(String msg, int tag) {
+		super();
+		oopsMsg = msg;
+		TAG = tag;
+	}
+	
 	@Override
 	public String getMessage() {
 		return oopsMsg;
+	}
+	
+	public int getTag() {
+		return TAG;
 	}
 }
