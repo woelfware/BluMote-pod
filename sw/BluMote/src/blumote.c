@@ -12,11 +12,18 @@
 #include "hw.h"
 #include "ir.h"
 
-static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast32_t ttl);
+static void get_calibration(
+	volatile struct buf * const bluetooth_rx_buf,
+	uint16_t addr,
+	uint8_t length);
 static void get_name(struct buf * const bluetooth_rx_buf);
+static void get_rn42_data(
+	volatile struct buf * const bluetooth_rx_buf,
+	int_fast32_t ttl);
 static void ir_xmit();
 static void send_ACK();
-static void send_cmd(struct buf *const bluetooth_rx_buf,
+static void send_cmd(
+	struct buf *const bluetooth_rx_buf,
 	char const * const cmd,
 	int const cmd_len);
 static void send_NAK();
@@ -28,6 +35,20 @@ static void set_low_power(struct buf * const bluetooth_rx_buf);
 static void set_name(struct buf * const bluetooth_rx_buf);
 static void reset_bluetooth();
 
+static void get_calibration(
+	volatile struct buf * const bluetooth_rx_buf,
+	uint16_t addr,
+	uint8_t length)
+{
+	int len = (int)length;
+
+	len = len <= bluetooth_rx_buf->buf_size ? len : bluetooth_rx_buf->buf_size;
+
+	for ( ; len > 0; addr++, --len) {
+		bluetooth_rx_buf->buf[bluetooth_rx_buf->wr_ptr++] = *(char *)addr;
+	}
+}
+
 static void get_name(struct buf * const bluetooth_rx_buf)
 {
 	char const * const str_get_name = "GN\r";
@@ -37,7 +58,9 @@ static void get_name(struct buf * const bluetooth_rx_buf)
 		strlen(str_get_name));
 }
 
-static void get_rn42_data(volatile struct buf * const bluetooth_rx_buf, int_fast32_t ttl)
+static void get_rn42_data(
+	volatile struct buf * const bluetooth_rx_buf,
+	int_fast32_t ttl)
 {
 	int my_wr_ptr = bluetooth_rx_buf->wr_ptr;
  
@@ -122,7 +145,8 @@ static void send_ACK()
 	bluetooth_tx(&uber_buf);
 }
 
-static void send_cmd(struct buf *const bluetooth_rx_buf,
+static void send_cmd(
+	struct buf *const bluetooth_rx_buf,
 	char const * const cmd,
 	int const cmd_len)
 {
@@ -292,6 +316,22 @@ void blumote_main()
 
 		reset_bluetooth();
 		break;
+
+	case BLUMOTE_GET_CALIBRATION: {
+		uint16_t addr;
+		uint8_t len;
+
+		addr = uber_buf.buf[uber_buf.rd_ptr++];
+		addr <<= 8;
+		addr |= uber_buf.buf[uber_buf.rd_ptr++];
+		len = uber_buf.buf[uber_buf.rd_ptr++];
+
+		uber_buf.rd_ptr = uber_buf.wr_ptr = 0;
+		uber_buf.buf[uber_buf.wr_ptr++] = BLUMOTE_ACK;
+		get_calibration(&uber_buf, addr, len);
+		bluetooth_tx(&uber_buf);
+		break;
+	}
 
 	default:
 		send_NAK();

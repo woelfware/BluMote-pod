@@ -26,8 +26,7 @@ class Bluemote_Client(bluemote.Services):
 		self.client_sock.connect((addr, 1))
 
 	def transport_tx(self, cmd, msg):
-		full_msg = struct.pack("B", cmd)
-		full_msg += msg
+		full_msg = ''.join((struct.pack("B", cmd), msg))
 		self.client_sock.send(full_msg)
 
 	def rename_device(self, name):
@@ -66,8 +65,21 @@ class Bluemote_Client(bluemote.Services):
 
 	def learn(self):
 		self.transport_tx(self.cmd_codes.learn, "")
-		msg = self.client_sock.recv(1024)
+		msg = self.client_sock.recv(256)
 		return self._learn_unpack_msg(msg)
+
+	def _get_calibration_unpack_msg(self, msg):
+		calibration = []
+		full_msg = struct.unpack(len(msg) * 'B', msg)
+		return full_msg
+
+	def get_calibration(self, addr, length):
+		print 'Sending request for calibration data.'
+		self.client_sock.send('31')
+
+		#self.transport_tx(self.cmd_codes.get_calibration, struct.pack('>HB', addr, length))
+		msg = self.client_sock.recv(256)
+		return self._get_calibration_unpack_msg(msg)
 
 	def _get_version_unpack_msg(self, msg):
 		version = []
@@ -95,7 +107,7 @@ class Bluemote_Client(bluemote.Services):
 
 	def ir_transmit(self, msg):
 		self.transport_tx(self.cmd_codes.ir_transmit, msg)
-		return self.client_sock.recv(128)
+		return self.client_sock.recv(256)
 
 	def _debug_unpack_msg(self, msg):
 		return self._learn_unpack_msg(msg)
@@ -124,39 +136,14 @@ if __name__ == "__main__":
 					found = True
 					break
 
+		'''
 		print 'getting version info'
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
-
-		if (False and os.path.exists('orion_1.pkl')):
-			orion_1 = open('orion_1.pkl', 'rb')
-			key_code = cPickle.load(orion_1)
-		else:
-			print "Please push a button on your remote."
-			key_code = bm_remote.learn()
-			orion_1 = open('orion_1.pkl', 'wb')
-			cPickle.dump(key_code, orion_1, cPickle.HIGHEST_PROTOCOL)
-		orion_1.close()
-
-		'''
-		print 'Transmitting 5 times.'
-		for i in xrange(5):
-			print '.'
-			msg = bm_remote.ir_transmit(''.join(['\x03', key_code]))
-			for i in msg:
-				print 'ack/nak: %s.' % hex(ord(i))
-			time.sleep(2)
 		'''
 
-		nbr_of_xmits = int(raw_input('How many times to transmit (0 to quit): '))
-		while (nbr_of_xmits):
-			print 'Transmitting %i times.' % (nbr_of_xmits)
-			for i in xrange(nbr_of_xmits):
-				sys.stdout.write('.')
-				print ord(bm_remote.ir_transmit(''.join(['\x03', key_code]))[0])
-				time.sleep(2)
-			nbr_of_xmits = int(raw_input('\nHow many times to transmit (0 to quit): '))
+		print ['%X' % i for i in bm_remote.get_calibration(0x10FE, 10)]
 
 		bm_remote.client_sock.close()
 	except IOError:

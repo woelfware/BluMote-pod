@@ -3,10 +3,12 @@
 
 class Command_Codes():
 	def __init__(self):
-		self.get_version   = 0x00
-		self.learn         = 0x01
-		self.ir_transmit   = 0x02
-		self.ir_transmit_abort   = 0x03
+		self.get_version	= 0x00
+		self.learn	= 0x01
+		self.ir_transmit	= 0x02
+		self.ir_transmit_abort	= 0x03
+		self.reset_bluetooth	= 0x04
+		self.get_calibration	= 0x05
 		self.debug         = 0xFF	# specialized debug command whose functionality change whenever
 
 class Command_Return_Codes():

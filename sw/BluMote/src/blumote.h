@@ -14,6 +14,7 @@ enum command_codes {
 	BLUMOTE_IR_TRANSMIT,
 	BLUMOTE_IR_TRANSMIT_ABORT,
 	BLUMOTE_RESET_BLUETOOTH,
+	BLUMOTE_GET_CALIBRATION,
 	BLUMOTE_DEBUG = 0xFF	/* specialized debug command whose functionality may change any time */
 };
 
