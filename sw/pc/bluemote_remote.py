@@ -75,9 +75,8 @@ class Bluemote_Client(bluemote.Services):
 
 	def get_calibration(self, addr, length):
 		print 'Sending request for calibration data.'
-		self.client_sock.send('31')
 
-		#self.transport_tx(self.cmd_codes.get_calibration, struct.pack('>HB', addr, length))
+		self.transport_tx(self.cmd_codes.get_calibration, struct.pack('>HB', addr, length))
 		msg = self.client_sock.recv(256)
 		return self._get_calibration_unpack_msg(msg)
 
@@ -136,12 +135,10 @@ if __name__ == "__main__":
 					found = True
 					break
 
-		'''
 		print 'getting version info'
 		version = bm_remote.get_version()
 		for component in version:
 			print "%s version: %s" % component
-		'''
 
 		print ['%X' % i for i in bm_remote.get_calibration(0x10FE, 10)]
 
