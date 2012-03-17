@@ -140,7 +140,7 @@ if __name__ == "__main__":
 		for component in version:
 			print "%s version: %s" % component
 
-		print ['%X' % i for i in bm_remote.get_calibration(0x10FE, 10)]
+		print ['%X' % i for i in bm_remote.get_calibration(0x10F6, 10)]
 
 		bm_remote.client_sock.close()
 	except IOError:
