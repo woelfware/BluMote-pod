@@ -47,14 +47,18 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
     private static final int FW_DOWNLOAD_DIALOG = 0;
 
     static final String FW_LOCATION = "FW_LOCATION";
+    static final String ORIGINAL_FW_LOCATION = "ORIGINAL_FW_LOCATION";
     
     // name of file when stored in the sdcard temp directory
     private static final String FW_IMAGE_NAME = "fwImage.bin";
+    private static final String ORIGINAL_FW_IMAGE_NAME = "originalFwImage.bin";
 
     // progress dialog used for flashing code to pod and downloading FW
     ProgressDialog progressDialog;
     ProgressDialog progressDialog2;
 
+    String podV; // the pod FW version , gets set to "" if not discovered
+        
     @Override
     protected void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -77,11 +81,12 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
     	// since we know that GET_VERSION was called prior to this activity, we can
     	// construct the version data from the Pod class
     	StringBuilder podVersion = new StringBuilder();
-    	String podV;
+    	
     	try {
-	    	podVersion.append(Pod.pod_data[1] + ".");
-	    	podVersion.append(Pod.pod_data[2] + ".");
-	    	podVersion.append(Pod.pod_data[3]);
+    		byte[] version = Pod.getFwVersion();
+	    	podVersion.append(version[1] + ".");
+	    	podVersion.append(version[2] + ".");
+	    	podVersion.append(version[3]);
 	    	podV = podVersion.toString();
     	} catch (Exception e) {
     		podV = "";
@@ -94,6 +99,7 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
     			break;
     		}
     	}    	
+    	
     	// set to OK only after data all downloaded and ready to flash
     	Intent i = getIntent();
     	setResult(RESULT_CANCELED,i);        
@@ -178,32 +184,62 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
 	}
 	
 	private class DownloadManager {
-		FwItem item;
+		FwItem downloadItem; // new FW on pod
+		FwItem originalItem = null; // original FW on pod
 		
 		DownloadManager() {
 			// unused constructor
 		}
 		
 		void start(FwItem item) {
+			FwItem temp;
+			
 			// download the binary file
-			this.item = item;
+			this.downloadItem = item;
+			
+			for (int i=0; i< fwImagesArrayAdapter.getCount(); i++) {
+				temp = fwImagesArrayAdapter.getItem(i);
+				if (temp.title.equalsIgnoreCase(podV)) {
+					// found a match
+					originalItem = temp;
+					break;
+				}
+			}						
 						
 			showDialog(FW_DOWNLOAD_DIALOG);
-			DownloadBinaryFileTask downloader = new DownloadBinaryFileTask();
-			downloader.execute(item.url); 
+			// check if the original FW was detected, if so download both 
+			// the original image and the new image
+			if (originalItem != null) {
+				DownloadBinaryFileTask downloader = new DownloadBinaryFileTask();
+				downloader.execute(item.url, originalItem.url); 
+			} else {
+				// just download the new firmware
+				DownloadBinaryFileTask downloader = new DownloadBinaryFileTask();
+				downloader.execute(item.url);
+			}
 		}
 		
-		void loadFwImage(String imageName, File fileDir) {
+		void loadFwImage(File fileDir) {
 			dismissDialog(FW_DOWNLOAD_DIALOG);
 			
+			if ( originalItem != null ) {
+				if ( !(Util.FileUtils.checkMD5(originalItem.md5sum, fileDir, ORIGINAL_FW_IMAGE_NAME)) ) {
+					displayDownloadError(); // if we tried to download the original item and it failed
+					return;
+				}
+			}
 			// compare md5sum of downloaded file with expected value
-			if (Util.FileUtils.checkMD5(item.md5sum, fileDir, FW_IMAGE_NAME)) {
+			if (Util.FileUtils.checkMD5(downloadItem.md5sum, fileDir, FW_IMAGE_NAME) ) {
 				// if it passes then begin loading process......
 				// send BluMote the name of the downloaded file
 				// and it will then start loading it to the pod
 				Intent i = getIntent();
 				
 				try {
+					if (originalItem != null) {
+						i.putExtra(FwUpdateActivity.ORIGINAL_FW_LOCATION,
+								new File(fileDir, ORIGINAL_FW_IMAGE_NAME).getCanonicalPath());
+					} 
 					i.putExtra(FwUpdateActivity.FW_LOCATION, 
 							new File(fileDir, FW_IMAGE_NAME).getCanonicalPath());
 
@@ -213,15 +249,18 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
 					e.printStackTrace();
 				}
 			} else {
-				// if md5sum check doesn't pass then alert user
-				new AlertDialog.Builder(FwUpdateActivity.this)
-		        	.setIcon(android.R.drawable.ic_dialog_alert)
-			        .setTitle(R.string.error)
-			        .setMessage(R.string.error_fw_download)
-			        .setPositiveButton(R.string.OK, null)
-			        .show();
+				displayDownloadError();
 			}
 		}
+	}
+	
+	private void displayDownloadError() {
+		new AlertDialog.Builder(FwUpdateActivity.this)
+        	.setIcon(android.R.drawable.ic_dialog_alert)
+	        .setTitle(R.string.error)
+	        .setMessage(R.string.error_fw_download)
+	        .setPositiveButton(R.string.OK, null)
+	        .show();
 	}
 
 	/**
@@ -304,33 +343,41 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
 	 * @author keusej
 	 *
 	 */
-	private class DownloadBinaryFileTask extends AsyncTask<URL, Integer, Integer> {
-		int byteCounter = 0;   
+	private class DownloadBinaryFileTask extends AsyncTask<URL, Integer, Integer> {   
 		File fileDir = FwUpdateActivity.this.getExternalFilesDir(null);
 
 		@Override 
 		protected Integer doInBackground(URL... urls) {
-			try {
-				publishProgress(0); // start at 0
-				URL url = urls[0];
-				HttpURLConnection c = (HttpURLConnection) url.openConnection();
-				c.setRequestMethod("GET");
-				c.setDoOutput(true);
-				c.connect();
-				int count = c.getContentLength(); // get file size
-				FileOutputStream f = new FileOutputStream(new File(fileDir,FW_IMAGE_NAME));
+			int byteCounter = 0;
 
-				InputStream in = c.getInputStream();
-				byte[] buffer = new byte[1024];
-				int len1 = 0;
-				while ( (len1 = in.read(buffer)) > 0 ) {
-					f.write(buffer, 0, len1);
-					byteCounter += len1;
-					publishProgress((int) ((byteCounter / (float) count) * 100));
-				}
-				c.disconnect();
-				f.close();
-
+			try {				
+				for (int i=0 ; i < urls.length ; i++) { 
+					byteCounter = 0;
+					publishProgress(0); // start at 0
+					URL url = urls[i];
+					HttpURLConnection c = (HttpURLConnection) url.openConnection();
+					c.setRequestMethod("GET");
+					c.setDoOutput(true);
+					c.connect();
+					int count = c.getContentLength(); // get file size
+					FileOutputStream f;
+					if (i == 0) {
+						f = new FileOutputStream(new File(fileDir,FW_IMAGE_NAME));
+					} else {
+						f = new FileOutputStream(new File(fileDir,ORIGINAL_FW_IMAGE_NAME));
+					}
+					InputStream in = c.getInputStream();
+					byte[] buffer = new byte[1024];
+					int len1 = 0;
+					while ( (len1 = in.read(buffer)) > 0 ) {
+						f.write(buffer, 0, len1);
+						byteCounter += len1;
+						publishProgress((int) ((byteCounter / (float) count) * 100));
+					}
+					c.disconnect();
+					f.close();	
+				}				
+												
 			} catch (Exception e) {}
 			return new Integer(byteCounter);
 		}
@@ -343,7 +390,7 @@ public class FwUpdateActivity extends Activity implements OnItemClickListener {
 
 		@Override
 		protected void onPostExecute(Integer bytes) {
-			manager.loadFwImage(FW_IMAGE_NAME, fileDir);
+			manager.loadFwImage(fileDir);
 			return;
 		}
 	}

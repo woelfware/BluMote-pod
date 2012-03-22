@@ -39,7 +39,7 @@ public class Util {
 	    i <<= 8;
 	    i |= lowerByte & 0xFF;
 	    return i;  
-	}
+	}	 
 	
 	/** 
 	 * adds together two byte arrays

@@ -1,5 +1,10 @@
 package com.woelfware.blumote;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,12 +45,32 @@ class Pod {
 	static String[] firmwareRevisions = null;
 
 	// holds the current revision code extracted from pod FW
-	static byte[] currentSwRev = null;
+	private static byte[] currentSwRev = null;
 	
 	// note to self, byte is signed datatype
 	static String new_name;
 	static byte[] pod_data;
 	static byte sync_data; // data used explicitly for syncing during BSL process
+	
+	// interrupt vector based BSL flash unlock password
+	private static byte[] passwd = {
+			(byte)0xFF, (byte)0xFF,	// 0xFFE0		
+			(byte)0xFF, (byte)0xFF,	// 0xFFE2
+			(byte)0xFF, (byte)0xFF,	// 0xFFE4
+			(byte)0xFF, (byte)0xFF,	// 0xFFE6
+			(byte)0xFF, (byte)0xFF,	// 0xFFE8
+			(byte)0xFF, (byte)0xFF,	// 0xFFEA
+			(byte)0xFF, (byte)0xFF,	// 0xFFEC
+			(byte)0xFF, (byte)0xFF,	// 0xFFEE
+			(byte)0xFF, (byte)0xFF,	// 0xFFF0
+			(byte)0xFF, (byte)0xFF,	// 0xFFF2
+			(byte)0xFF, (byte)0xFF,	// 0xFFF4
+			(byte)0xFF, (byte)0xFF,	// 0xFFF6
+			(byte)0xFF, (byte)0xFF,	// 0xFFF8
+			(byte)0xFF, (byte)0xFF,	// 0xFFFA
+			(byte)0xFF, (byte)0xFF,	// 0xFFFC
+			(byte)0xFF, (byte)0xFF	// 0xFFFE
+	};
 	
 	// status return codes
 	static final int ERROR = -1;
@@ -602,11 +627,12 @@ class Pod {
 						info_state = INFO_STATE.IDLE;
 						bytes--;
 						index = (index + 1) % BluetoothChatService.buffer_size;
+						
+						// save data we received
+						currentSwRev = pod_data;
 
 						if (lockDialog) { // this gets set when we are doing a FW update process
-							lockDialog = false; //always unlock after receiving data
-							// save data we received
-							currentSwRev = pod_data;							
+							lockDialog = false; //always unlock after receiving data													
 							return;
 						} else {
 							// else this request was sent by the menu
@@ -693,7 +719,7 @@ class Pod {
 		blumote.sendMessage(toSend);
 	}
 	
-	static void getVersion() {
+	static void retrieveFwVersion() {
 		byte[] toSend;
 		setGetVerState();
 		toSend = new byte[1];
@@ -720,6 +746,14 @@ class Pod {
 			return false;
 		}
 		return true;
+	}
+	
+	static void setFwVersion(byte[] version) {
+		currentSwRev = version;
+	}
+	
+	static byte[] getFwVersion() {
+		return currentSwRev;
 	}
 
 	/**
@@ -771,7 +805,7 @@ class Pod {
 	/**
 	 * Implements scheme to enter the BSL and get ready to receive the image
 	 * @param flag flag = 1 when we want to inhibit the automatic reset of the RN42
-	 */
+	 */ 
 	static void startBSL(int flag) throws BslException {
 		int timer = 0;
 		if (flag == ENABLE_RESET) { 
@@ -841,29 +875,69 @@ class Pod {
 		// after this is finished we are ready to start flashing the hex code to the pod
 	}
 	
+	// TODO - test this function
+	/**
+	 * This function will parse a stored hex file and search for the valid addresses of the
+	 * interrupt vector bytes (32 bytes) and then overlay those bytes with a passwd[] which
+	 * gets initialized to 0xFF's.  This is used as the password for unlocking the BSL flash.
+	 * The passwd array retains this value until this function is called again.
+	 * This function should be called before the BSL is run, if it is not then the password will
+	 * not be correct and flash will be wiped.
+	 * @param fileLocation the location on flash for the downloaded firmware image
+	 */
+	static void calculatePassword(String fileLocation) {
+		// re-initialize the private class passwd array to 0xFF for address range 0xFFE0 to 0xFFFF (32 bytes)
+		for (int i = 0; i < 32; i++) {
+			passwd[i] = (byte)0xFF;
+		}
+		
+		if (fileLocation == null) return;
+		
+		// parse the hex file looking for an address in this range, if it exists then dump
+		// that value into the array at the appropriate index
+		FileInputStream f = null;
+		try {			
+			String strLine;
+			f = new FileInputStream(new File(fileLocation));		
+			BufferedReader br = new BufferedReader(new InputStreamReader(f));					
+			br = new BufferedReader(new InputStreamReader(f));					
+	
+			final int header = 3; // # chars
+			final int recordType = 2; // # chars
+			final int checksum = 2; // # chars
+			final int address = 4; // # chars
+
+			int intVectorStart = Util.bytesToInt((byte)0xFF, (byte)0xE0);
+			while ((strLine = br.readLine()) != null)   {		 					
+				char lineChars[] = strLine.toCharArray();
+				int hexAddress = Integer.parseInt(new String(lineChars, header, 4), 16);
+				if (hexAddress >= intVectorStart) {
+					int lineElements = lineChars.length-header-recordType-checksum-address;
+					for (int i=0; i<lineElements; i+=2) {
+						// copy a byte of data into the array
+						int offset = hexAddress - intVectorStart + i/2;											
+					    String value = new String(lineChars, header+recordType+address+i, 2);					    
+					    passwd[offset] = (byte)Integer.parseInt(value, 16);
+					}
+				}
+			}							
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (f != null) f.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	static void sendPassword() throws BslException {
 		byte[] msg;	
 		
 		sync();
 		msg = new byte[] {(byte)0x80, 0x10, 0x24, 0x24, 0x00, 0x00, 0x00, 0x00};
-		byte[] passwd = {
-				(byte)0xFF, (byte)0xFF,	// 0xFFE0		
-				(byte)0xFF, (byte)0xFF,	// 0xFFE2
-				(byte)0xFF, (byte)0xFF,	// 0xFFE4
-				(byte)0xFF, (byte)0xFF,	// 0xFFE6
-				(byte)0xFF, (byte)0xFF,	// 0xFFE8
-				(byte)0xFF, (byte)0xFF,	// 0xFFEA
-				(byte)0xFF, (byte)0xFF,	// 0xFFEC
-				(byte)0xFF, (byte)0xFF,	// 0xFFEE
-				(byte)0xFF, (byte)0xFF,	// 0xFFF0
-				(byte)0xFF, (byte)0xFF,	// 0xFFF2
-				(byte)0xFF, (byte)0xFF,	// 0xFFF4
-				(byte)0xFF, (byte)0xFF,	// 0xFFF6
-				(byte)0xFF, (byte)0xFF,	// 0xFFF8
-				(byte)0xFF, (byte)0xFF,	// 0xFFFA
-				(byte)0xFF, (byte)0xFF,	// 0xFFFC
-				(byte)0xFF, (byte)0xFF	// 0xFFFE
-		};
+		
 		msg = Util.concat(msg, passwd);
 		blumote.sendMessage(Util.concat(msg, calcChkSum(msg) ) );
 		receiveResponse();

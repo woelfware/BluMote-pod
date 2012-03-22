@@ -113,6 +113,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	ProgressDialog progressDialog2;
 	
 	private static String FW_LOCATION;
+	private static String ORIGINAL_FW_LOCATION;
 
 	// these are all in milli secs
 	private static int LONG_DELAY_TIME = 1000; // starts repeated button clicks
@@ -135,7 +136,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 	private BluetoothChatService mChatService = null;	
 
 	// where to download the list of firmware updates from the web
-	private static final String FW_IMAGE_URL = "http://www.woelfware.com/fw/FW_LOG";
+	private static final String FW_IMAGE_URL = "http://woelfware.com/fw/FW_LOG";
 	
 	// SQL database class
 	DeviceDB device_data;
@@ -879,10 +880,20 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 				Bundle return_bundle = data.getExtras();
 				if (return_bundle != null) {
 					FW_LOCATION = return_bundle.getString(FwUpdateActivity.FW_LOCATION);
+					if (return_bundle.containsKey(FwUpdateActivity.ORIGINAL_FW_LOCATION) ) {
+						ORIGINAL_FW_LOCATION = 
+								return_bundle.getString(FwUpdateActivity.ORIGINAL_FW_LOCATION);						
+					} else {
+						ORIGINAL_FW_LOCATION = null;
+					}
+					// TODO - need to extract the interrupt byte vector from the downloaded original FW 
+					// image so that we can enter the password correctly (to prevent wiping the flash)
+					Pod.calculatePassword(ORIGINAL_FW_LOCATION);										
+					
 					//showDialog(FLASH_PROGRESS_DIALOG);
-					showDialog(DIALOG_WAIT_BSL);
-					EnterBSLTask bsl = new EnterBSLTask();
-					bsl.execute(Pod.ENABLE_RESET);
+//					showDialog(DIALOG_WAIT_BSL);
+//					EnterBSLTask bsl = new EnterBSLTask();
+//					bsl.execute(Pod.ENABLE_RESET);
 					//FlashFileToPodTask flasher = new FlashFileToPodTask();
 					//flasher.execute((Void)null);
 				}
@@ -1031,7 +1042,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			return true;
 
 		case R.id.get_info:
-			Pod.getVersion();
+			Pod.retrieveFwVersion();
 			return true;
 
 		case R.id.learn_mode:
@@ -1419,9 +1430,9 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 			// should create a new progressdialog 
 			// the dialog should exit after the FW image list is downloaded
 			ProgressDialog fwListWait = new ProgressDialog(BluMote.this);
-			fwListWait .setProgressStyle(ProgressDialog.STYLE_SPINNER);
-			fwListWait .setCancelable(true); // allow back button to cancel it
-			fwListWait .setMessage("Downloading list of firmware images...");
+			fwListWait.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			fwListWait.setCancelable(true); // allow back button to cancel it
+			fwListWait.setMessage("Downloading list of firmware images...");
             return fwListWait;
             
 		case DIALOG_ABOUT:
@@ -1561,22 +1572,23 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 
 				String[] returnStrings = new String[stringText.size()];
 				return stringText.toArray(returnStrings);
-			} catch (Exception e) {}
+			} catch (Exception e) {
+				Log.w("test", "failed: "+e.getMessage());
+			}
 			return null;
 		}
 
 		protected void onPostExecute(String[] result) {	
+			dismissDialog(DIALOG_FW_WAIT);
+			
 			// save the data we downloaded for the firmware process
-
 			Pod.setFirmwareRevision(result);
 			// get currently installed pod version
-			Pod.currentSwRev = null; // clear it out first
+			Pod.setFwVersion(null); // clear it out first
 			Pod.lockDialog(); // don't display pop-up
 			// time-out if we don't receive it
-			Pod.getVersion();	
-			waitForGetVersion(1000, 0); // 1 sec max wait time
-			dismissDialog(DIALOG_FW_WAIT);
-			Pod.unlockDialog(); // unlock dialog pop-up
+			Pod.retrieveFwVersion();	
+			waitForGetVersion(3000, 0); // 3 sec max wait time			
 			Intent i = new Intent(BluMote.this, FwUpdateActivity.class);							
 			startActivityForResult(i, BluMote.UPDATE_FW);
 			return;
@@ -1593,7 +1605,7 @@ public class BluMote extends Activity implements OnClickListener,OnItemClickList
 		final int maxWaitTime = maxWait;
 		final int currentWait = current;
 		
-		if ( currentWait < maxWaitTime && Pod.currentSwRev != null) {			
+		if ( currentWait < maxWaitTime && Pod.getFwVersion() == null) {			
 			new CountDownTimer(10, 10) {
 				public void onTick(long millisUntilFinished) {
 					// no need to use this function
