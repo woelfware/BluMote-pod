@@ -457,10 +457,12 @@ N 61700 48200 61700 48000 4
 N 61700 48000 61000 48000 4
 N 61700 49600 61700 49400 4
 N 61700 48900 61700 48700 4
-T 49200 43100 9 8 1 0 0 0 1
-Added indicator LED
+T 49200 42800 9 8 1 0 0 0 3
+Removed R201 to fix mode of RN42.
+Removed Q201 because it interfered with startup of the MSP430.
+R203 now connects from U202 pin33 to SBWTCK.
 T 60900 43100 9 8 1 0 0 0 1
-Version 0.3
+Version 0.4
 T 50200 49700 9 8 1 0 0 0 4
 NOTES:
 We may want to add extra cap and a limiting resistor to make sure we don't exceed 100mA from the USB port.
@@ -544,5 +546,4 @@ symversion=1.1
 T 54000 47500 5 8 0 1 0 0 1
 netname=3.3V
 }
-
 
