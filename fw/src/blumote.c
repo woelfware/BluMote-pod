@@ -246,11 +246,14 @@ static void set_latency(struct buf * const bluetooth_rx_buf)
 
 static void set_low_power(struct buf * const bluetooth_rx_buf)
 {
-	char const * const str_set_low_power = "SW,8050\r\n";
-
+#if LOW_POWER
+	char const * const str_set_power = "SW,8050\r\n";
+#else
+	char const * const str_set_power = "SW,0000\r\n";
+#endif
 	send_cmd(bluetooth_rx_buf,
-		str_set_low_power,
-		strlen(str_set_low_power));
+			str_set_power,
+			strlen(str_set_power));
 }
 
 static void set_name(struct buf * const bluetooth_rx_buf)

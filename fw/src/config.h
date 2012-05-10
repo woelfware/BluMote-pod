@@ -7,8 +7,10 @@
 
 #define BLUMOTE_NAME	"BluMote"
 #define VERSION_MAJOR	0
-#define VERSION_MINOR	1
+#define VERSION_MINOR	3
 #define VERSION_REV	0
+
+#define LOW_POWER	0	/* 1: sniff mode/deep sleep 0: active continuously */
 
 #define SYS_CLK	(16)	/* MHz */
 #define US_PER_SYS_TICK	(4)
