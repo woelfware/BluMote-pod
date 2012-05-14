@@ -54,6 +54,7 @@ MEMORY
 SECTIONS
 {
     .bss       : {} > RAM                /* GLOBAL & STATIC VARS              */
+    .data      : {} > RAM
     .sysmem    : {} > RAM                /* DYNAMIC MEMORY ALLOCATION AREA    */
     .stack     : {} > RAM (HIGH)         /* SOFTWARE SYSTEM STACK             */
 
