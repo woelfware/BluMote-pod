@@ -118,18 +118,18 @@ static void ir_xmit()
 		return;
 	}
 
+	send_ACK();
+
 	update_ccr0_timing(get_ir_carrier_frequency());
 
 	/* blast the ir code */
 	for ( ; repeat_cnt; --repeat_cnt) {
 		if (ir_tx(&bt_rx)) {
+			restore_bt_rx_buf();
+			send_ACK();
 			break;
 		}
 	}
-
-	restore_bt_rx_buf();
-
-	send_ACK();
 }
 
 static void reset_bluetooth()
