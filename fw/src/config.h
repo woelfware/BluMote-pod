@@ -8,7 +8,7 @@
 #define BLUMOTE_NAME	"BluMote"
 #define VERSION_MAJOR	0
 #define VERSION_MINOR	3
-#define VERSION_REV	2
+#define VERSION_REV	3
 
 #define LOW_POWER	0	/* 1: sniff mode/deep sleep 0: active continuously */
 
