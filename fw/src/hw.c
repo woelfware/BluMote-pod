@@ -40,11 +40,25 @@ int_fast32_t get_sys_tick()
 	return elapsed_time;
 }
 
+void msp430_init_dco()
+{
+  if(CALBC1_16MHZ!=0xFF){
+    //Clear DCL for BCL12
+    DCOCTL = 0x00;
+    //Info is intact, use it.
+    BCSCTL1 = CALBC1_16MHZ;
+    DCOCTL = CALDCO_16MHZ;
+  }else{
+    //Info is missing, guess at a good value.
+    BCSCTL1 = 0x8f;   //CALBC1_16MHZ at 0x10f9
+    DCOCTL = 0x7f;    //CALDCO_16MHZ at 0x10f8
+  }
+}
+
 void init_hw()
 {
 	WDTCTL = WDTPW + WDTHOLD;	/* stop WDT */
-	BCSCTL1 = CALBC1_16MHZ;	/* Set DCO */
-	DCOCTL = CALDCO_16MHZ;
+	msp430_init_dco();
 	P3SEL = BIT4 | BIT5;	/* P3.4,5 = USCI_A0 TXD/RXD */
 	P3DIR = BIT0 | BIT1 | BIT3;	/* reset, baud_rate, PIO3 */ 
 	P3OUT = BIT0;
