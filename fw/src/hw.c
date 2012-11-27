@@ -42,17 +42,16 @@ int_fast32_t get_sys_tick()
 
 void msp430_init_dco()
 {
-  if(CALBC1_16MHZ!=0xFF){
-    //Clear DCL for BCL12
-    DCOCTL = 0x00;
-    //Info is intact, use it.
-    BCSCTL1 = CALBC1_16MHZ;
-    DCOCTL = CALDCO_16MHZ;
-  }else{
-    //Info is missing, guess at a good value.
-    BCSCTL1 = 0x8f;   //CALBC1_16MHZ at 0x10f9
-    DCOCTL = 0x7f;    //CALDCO_16MHZ at 0x10f8
-  }
+	if (CALBC1_16MHZ != 0xFF) {
+		DCOCTL = 0x00;	/* Clear DCL for BCL12 */
+		/* Info is intact, use it. */
+		BCSCTL1 = CALBC1_16MHZ;
+		DCOCTL = CALDCO_16MHZ;
+	} else {
+		/* Info is missing; guess at a good value. */
+		BCSCTL1 = 0x8f;	/* CALBC1_16MHZ at 0x10f9 */
+		DCOCTL = 0x7f;	/* CALDCO_16MHZ at 0x10f8 */
+	}
 }
 
 void init_hw()

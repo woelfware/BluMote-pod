@@ -270,7 +270,7 @@ static void set_name(struct buf * const bluetooth_rx_buf)
 
 void blumote_main()
 {
-	volatile uint8_t c;
+	uint8_t c;
 
 	get_rn42_data(&uber_buf, MIN_UART_WAIT_TIME);
 	DISABLE_BT_RX_INT();
