@@ -80,13 +80,6 @@ void init_hw()
 
 void reset_rn42()
 {
-	enum state {
-		default_state = 0,
-		issue_reset = 0,
-		remove_reset,
-		wait_for_power_up
-	};
-
 	P3OUT &= ~BIT0;
 	wait_us(BLUETOOTH_RESET_HOLD_TIME);
 	P3OUT |= BIT0;
