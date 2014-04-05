@@ -1,2 +1,16 @@
-The firmware was last build with TI Code Composer Studio 5.3.
+Introduction
+------------
+Woelfware BluMote is a system for interfacing Android (and potentially other Bluetooth enabled devices) with IR devices (e.g. TVs, DVD/BluRay players, etc).
+
+How To use
+------------
+The hardware is built with gEDA.
+http://www.geda-project.org/
+
+The firmware was last built with TI Code Composer Studio 5.3.
 http://processors.wiki.ti.com/index.php/Download_CCS
+
+License
+-------
+Woelfware BluMote files are free to use under the GNU General Public License version 3 (GPLv3) or later.  See the file `COPYING' for the terms and
+conditions for copying, distribution, and modification.
